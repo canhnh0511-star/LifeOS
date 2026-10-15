@@ -74,16 +74,21 @@ function journey(db:Db):JourneyDto {
   }
   return {...db.journey,elapsedDays:elapsed,totalScheduledToDate:scheduled,completedToDate:completed};
 }
-function analytics(db:Db,period:'7d'|'30d'):AnalyticsDto {
-  const today=todayInTimezone();const length=period==='7d'?7:30;
-  const days=[];const categoryMap=new Map<string,{scheduled:number;completed:number}>();
+function periodStats(db:Db,endDate:string,length:number){
+  const days:AnalyticsDto['days']=[];const categoryMap=new Map<string,{scheduled:number;completed:number}>();
   for(let offset=length-1;offset>=0;offset--){
-    const date=moveDate(today,-offset); const daily=quests(db,date);const completed=daily.filter(q=>q.status==='COMPLETED');
+    const date=moveDate(endDate,-offset); const daily=quests(db,date);const completed=daily.filter(q=>q.status==='COMPLETED');
     days.push({date,scheduled:daily.length,completed:completed.length,xpEarned:db.xpTransactions.filter(t=>t.date===date).reduce((a,t)=>a+t.amount,0)});
     for(const q of daily){const stat=categoryMap.get(q.category)??{scheduled:0,completed:0};stat.scheduled++;if(q.status==='COMPLETED')stat.completed++;categoryMap.set(q.category,stat);}
   }
   const scheduledCount=days.reduce((a,d)=>a+d.scheduled,0);const completedCount=days.reduce((a,d)=>a+d.completed,0);
-  return {period,days,scheduledCount,completedCount,completionRate:scheduledCount?Math.round(completedCount/scheduledCount*100):0,earnedXp:days.reduce((a,d)=>a+d.xpEarned,0),categories:[...categoryMap].map(([category,values])=>({category:category as AnalyticsDto['categories'][number]['category'],...values}))};
+  return {days,scheduledCount,completedCount,completionRate:scheduledCount?Math.round(completedCount/scheduledCount*100):0,earnedXp:days.reduce((a,d)=>a+d.xpEarned,0),categories:[...categoryMap].map(([category,values])=>({category:category as AnalyticsDto['categories'][number]['category'],...values}))};
+}
+function analytics(db:Db,period:'7d'|'30d'):AnalyticsDto {
+  const today=todayInTimezone();const length=period==='7d'?7:30;
+  const current=periodStats(db,today,length);
+  const {days:_previousDays,...previous}=periodStats(db,moveDate(today,-length),length);
+  return {period,...current,previous};
 }
 function canModify(date:string) {
   const today=todayInTimezone();if(date>today)throw new Error('Chưa thể hoàn thành nhiệm vụ trong tương lai.');

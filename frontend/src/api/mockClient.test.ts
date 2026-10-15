@@ -44,4 +44,22 @@ describe('mock API contracts', () => {
     expect(a.days).toHaveLength(7);
     expect(a.completedCount).toBeLessThanOrEqual(a.scheduledCount);
   });
+  it('adds a previous period of the same length to analytics', async () => {
+    const a = await mockClient.getAnalytics('7d');
+    expect(a.previous).toBeTruthy();
+    expect(a.previous!.completedCount).toBeLessThanOrEqual(a.previous!.scheduledCount);
+    const m = await mockClient.getAnalytics('30d');
+    expect(m.days).toHaveLength(30);
+    expect(m.previous!.scheduledCount).toBeGreaterThanOrEqual(0);
+  });
+  it('previous period excludes the days of the current period', async () => {
+    const date = todayInTimezone();
+    const before = await mockClient.getAnalytics('7d');
+    const pending = (await mockClient.getDashboard(date)).quests.find(q => q.status === 'PENDING');
+    if (!pending) return;
+    await mockClient.completeQuest(pending.habitId, date);
+    const after = await mockClient.getAnalytics('7d');
+    expect(after.completedCount).toBe(before.completedCount + 1);
+    expect(after.previous).toEqual(before.previous);
+  });
 });

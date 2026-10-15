@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import {
-  Activity, ArrowRight, ArrowUpRight, BarChart3, BookOpen,
+  ArrowRight, ArrowUpRight, BarChart3, BookOpen,
   CalendarDays, Check, CheckCheck, CheckCircle2, ChevronLeft, ChevronRight, Circle,
   Clock3, Code2, Compass, Download, Flame, Heart, Home, Layers3, Lightbulb,
   Menu, Music2, Plus, RotateCcw, Settings2, ShieldCheck,
@@ -10,6 +10,8 @@ import { api, isDemo } from './api';
 import { exportDemoData, resetDemoData } from './api/mockClient';
 import type { AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalCategory, GoalDto, HabitDto, QuestDto, Weekday } from './api/types';
 import { categoryLabel, formatDate, moveDate, todayInTimezone } from './domain/rules';
+import { buildInsights, radarAxes } from './domain/insights';
+import { RadarChart } from './components/RadarChart';
 import './styles.css';
 
 type Tab = 'today' | 'journey' | 'insights';
@@ -106,7 +108,7 @@ export default function App() {
   const [period, setPeriod] = useState<'7d'|'30d'>('7d');
   const [dashboard, setDashboard] = useState<DailyDashboardDto | null>(null);
   const [goals, setGoals] = useState<GoalDto[]>([]); const [habits, setHabits] = useState<HabitDto[]>([]);
-  const [analytics, setAnalytics] = useState<AnalyticsDto | null>(null);
+  const [analytics, setAnalytics] = useState<AnalyticsDto | null>(null); const [weekly, setWeekly] = useState<AnalyticsDto | null>(null);
   const [modal, setModal] = useState<Modal>(null); const [busyId, setBusyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true); const [error, setError] = useState('');
   const [notice, setNotice] = useState(''); const [menuOpen, setMenuOpen] = useState(false);
@@ -114,8 +116,8 @@ export default function App() {
   const refresh = () => setRevision(n => n + 1);
   useEffect(() => {
     let alive = true;
-    Promise.all([api.getDashboard(selectedDate), api.getGoals(), api.getHabits(), api.getAnalytics(period)])
-      .then(([d, g, h, a]) => { if (alive) { setDashboard(d); setGoals(g); setHabits(h); setAnalytics(a); setError(''); } })
+    Promise.all([api.getDashboard(selectedDate), api.getGoals(), api.getHabits(), api.getAnalytics('7d'), period === '30d' ? api.getAnalytics('30d') : Promise.resolve(null)])
+      .then(([d, g, h, w, m]) => { if (alive) { setDashboard(d); setGoals(g); setHabits(h); setWeekly(w); setAnalytics(m ?? w); setError(''); } })
       .catch((e: Error) => { if (alive) setError(e.message || 'Không tải được dữ liệu.'); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
@@ -148,7 +150,8 @@ export default function App() {
   const levelPct = cur ? pct(cur.totalXp - cur.levelStartXp, cur.nextLevelXp - cur.levelStartXp) : 0;
   const journeyPct = journey ? pct(journey.elapsedDays, journey.durationDays) : 0;
   const journeyDonePct = journey ? pct(journey.completedToDate, journey.totalScheduledToDate) : 0;
-  const categoryStats = useMemo(() => Object.fromEntries((analytics?.categories || []).map(c => [c.category, c])), [analytics]);
+  const categoryStats = useMemo(() => Object.fromEntries((weekly?.categories || []).map(c => [c.category, c])), [weekly]);
+  const insights = useMemo(() => analytics ? buildInsights(analytics) : [], [analytics]);
   return <div className="app-shell">
     <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
       <div className="sidebar-top"><Logo/><button className="mobile-close icon-btn" aria-label="Đóng menu" onClick={() => setMenuOpen(false)}><X size={20}/></button></div>
@@ -182,7 +185,7 @@ export default function App() {
               </section>
               <aside className="secondary-column">
                 <article className="panel day-score"><CardTitle title="Daily focus" kicker="Độ hoàn thành trong ngày"/><CircleProgress value={dayPct}><strong>{dayPct}<small>%</small></strong><span>completed</span></CircleProgress><p>{dayPct === 100 && (dashboard?.scheduledCount || 0)>0 ? 'Amazing! Bạn đã hoàn thành tất cả nhiệm vụ.' : `Bạn đã hoàn thành ${dashboard?.completedCount || 0}/${dashboard?.scheduledCount || 0} nhiệm vụ. Keep going!`}</p><div className="score-micro"><CheckCircle2 size={16}/> Consistency beats intensity.</div></article>
-                <article className="panel side-activity"><CardTitle title="Weekly activity" kicker="Nhịp hoạt động 7 ngày gần đây" action={<button className="text-link" onClick={() => goTo('insights')}>Chi tiết <ArrowUpRight size={14}/></button>}/>{analytics && <ActivityBars analytics={analytics} compact/>}<div className="chart-legend"><span><i className="legend-done"/>Completed</span><span><i className="legend-planned"/>Planned</span></div></article>
+                <article className="panel side-activity"><CardTitle title="Cân bằng lĩnh vực" kicker="Tỷ lệ hoàn thành 7 ngày gần đây" action={<button className="text-link" onClick={() => goTo('insights')}>Chi tiết <ArrowUpRight size={14}/></button>}/>{weekly && <RadarChart axes={radarAxes(weekly)} compact/>}</article>
                 <article className="panel journey-preview"><div className="journey-top"><div className="journey-icon"><Target size={21}/></div><span>66-DAY CHALLENGE</span></div><h3>{journey?.title || 'Your journey'}</h3><div className="journey-day"><strong>Day {journey?.elapsedDays || 0}</strong><span>/ {journey?.durationDays || 66}</span></div><ProgressBar value={journeyPct} variant="blue"/><p>{journeyDonePct}% nhiệm vụ đã hoàn thành từ đầu hành trình</p><button className="inline-link" onClick={() => goTo('journey')}>Xem hành trình <ArrowRight size={16}/></button></article>
               </aside>
             </div>
@@ -196,8 +199,8 @@ export default function App() {
           {tab === 'insights' && <>
             <div className="page-header"><div><div className="eyebrow"><span className="eyebrow-dash"/> REFLECT & IMPROVE</div><h1>Progress is <span className="text-gradient">power.</span></h1><p>Không chỉ hoàn thành nhiệm vụ. Hãy hiểu mình đang phát triển ra sao.</p></div><div className="period-switch"><button className={period==='7d'?'active':''} onClick={()=>setPeriod('7d')}>7 ngày</button><button className={period==='30d'?'active':''} onClick={()=>setPeriod('30d')}>30 ngày</button></div></div>
             <div className="insight-stats"><div className="insight-stat"><span><CheckCircle2 size={17}/> Completion rate</span><strong>{analytics?.completionRate || 0}<small>%</small></strong><p>Trong {period==='7d'?'7':'30'} ngày gần nhất</p></div><div className="insight-stat"><span><Trophy size={17}/> Quests completed</span><strong>{analytics?.completedCount || 0}<small> / {analytics?.scheduledCount || 0}</small></strong><p>Nhiệm vụ đã hoàn thành</p></div><div className="insight-stat"><span><Zap size={17}/> XP collected</span><strong>{number(analytics?.earnedXp || 0)}</strong><p>Điểm kinh nghiệm tích lũy</p></div><div className="insight-stat"><span><Flame size={17}/> Best habit streak</span><strong>{cur?.currentStreak || 0}<small> phiên</small></strong><p>Streak tốt nhất hiện tại</p></div></div>
-            <div className="insights-grid"><article className="panel analytics-main"><CardTitle title="Activity overview" kicker="Số nhiệm vụ hoàn thành theo ngày"/>{analytics && <ActivityBars analytics={analytics}/>}<div className="chart-legend"><span><i className="legend-done"/>Completed</span><span><i className="legend-planned"/>Planned</span></div></article><article className="panel category-panel"><CardTitle title="Life area balance" kicker="Tiến độ theo lĩnh vực"/>{analytics?.categories.length ? analytics.categories.map(c => {const Icon=categoryIcons[c.category];return <div className="category-stat" key={c.category}><div className="category-stat-label"><Icon size={17}/><span>{categoryLabel(c.category)}</span><strong>{pct(c.completed,c.scheduled)}%</strong></div><ProgressBar value={pct(c.completed,c.scheduled)} variant="blue" size="slim"/></div>;}) : <EmptyState icon={Activity} title="Chưa có dữ liệu" details="Hãy hoàn thành nhiệm vụ để theo dõi tiến độ."/>}</article></div>
-            <article className="insight-message"><div className="insight-light"><Lightbulb size={24}/></div><div><span>WEEKLY REFLECTION</span><h3>{(analytics?.completionRate || 0)>=75?'Great consistency — keep the momentum.':'Progress starts with consistency.'}</h3><p>{(analytics?.completionRate || 0)>=75?'Bạn đang duy trì nhịp độ khá tốt. Hãy giữ các nhiệm vụ vừa sức và dành thời gian hồi phục.':'Hãy chọn 1–2 nhiệm vụ quan trọng nhất mỗi ngày, thay vì cố hoàn thành tất cả cùng lúc.'}</p></div><ArrowUpRight className="message-arrow" size={21}/></article>
+            <div className="insights-grid"><article className="panel analytics-main"><CardTitle title="Cân bằng 5 lĩnh vực" kicker={`Tỷ lệ hoàn thành · ${period === '7d' ? '7' : '30'} ngày gần nhất`}/>{analytics && <RadarChart axes={radarAxes(analytics)}/>}</article><article className="panel category-panel"><CardTitle title="Gợi ý hành động" kicker="Tính từ dữ liệu của bạn, không phải AI"/>{insights.length ? <ul className="insight-list">{insights.map(i => <li key={i.id} className={`insight-item tone-${i.tone}`}><strong>{i.title}</strong><p>{i.detail}</p></li>)}</ul> : <EmptyState icon={Lightbulb} title="Chưa đủ dữ liệu" details="Hoàn thành thêm vài nhiệm vụ để nhận gợi ý."/>}</article></div>
+            <article className="panel analytics-days"><CardTitle title="Hoạt động theo ngày" kicker="Số nhiệm vụ hoàn thành so với đã lên lịch"/>{analytics && <ActivityBars analytics={analytics}/>}<div className="chart-legend"><span><i className="legend-done"/>Completed</span><span><i className="legend-planned"/>Planned</span></div></article>
           </>}
         </>}
         <footer className="footer"><span>© Life OS · Built for progress, not perfection.</span><span>Version 0.1.0 · {isDemo ? 'Mock API' : 'Real API'} · Asia/Ho_Chi_Minh</span></footer>
