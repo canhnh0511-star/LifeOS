@@ -1,0 +1,297 @@
+openapi: 3.1.0
+info:
+  title: Life OS API
+  version: 0.1.0
+  description: |
+    Contract-first REST API for Life OS. Local dates (YYYY-MM-DD) use the authenticated
+    user's IANA timezone; instants use UTC ISO 8601. The frontend's mock and HTTP adapters
+    must implement the same shapes. Auth is intentionally absent from the frontend demo.
+servers:
+  - url: /api/v1
+security:
+  - sessionCookie: []
+tags:
+  - name: Identity
+  - name: Goals
+  - name: Habits
+  - name: Quests
+  - name: Progress
+  - name: Journey
+  - name: Analytics
+paths:
+  /me:
+    get:
+      tags: [Identity]
+      operationId: getMe
+      responses:
+        '200': {description: User, content: {application/json: {schema: {$ref: '#/components/schemas/User'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /dashboard/today:
+    get:
+      tags: [Quests]
+      operationId: getDashboard
+      parameters:
+        - {name: date, in: query, required: false, schema: {$ref: '#/components/schemas/LocalDate'}}
+      responses:
+        '200': {description: Dashboard, content: {application/json: {schema: {$ref: '#/components/schemas/DailyDashboard'}}}}
+  /goals:
+    get:
+      tags: [Goals]
+      operationId: getGoals
+      responses:
+        '200': {description: Goals, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Goal'}}}}}
+    post:
+      tags: [Goals]
+      operationId: createGoal
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CreateGoal'}}}}
+      responses:
+        '201': {description: Created goal, content: {application/json: {schema: {$ref: '#/components/schemas/Goal'}}}}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /goals/{id}:
+    patch:
+      tags: [Goals]
+      operationId: updateGoal
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PatchGoal'}}}}
+      responses:
+        '200': {description: Updated goal, content: {application/json: {schema: {$ref: '#/components/schemas/Goal'}}}}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /habits:
+    get:
+      tags: [Habits]
+      operationId: getHabits
+      responses:
+        '200': {description: Habits, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Habit'}}}}}
+    post:
+      tags: [Habits]
+      operationId: createHabit
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CreateHabit'}}}}
+      responses:
+        '201': {description: Created habit, content: {application/json: {schema: {$ref: '#/components/schemas/Habit'}}}}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /habits/{id}:
+    patch:
+      tags: [Habits]
+      operationId: updateHabit
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PatchHabit'}}}}
+      responses:
+        '200': {description: Updated habit, content: {application/json: {schema: {$ref: '#/components/schemas/Habit'}}}}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /quests:
+    get:
+      tags: [Quests]
+      operationId: getQuests
+      parameters: [{name: date, in: query, required: true, schema: {$ref: '#/components/schemas/LocalDate'}}]
+      responses:
+        '200': {description: Scheduled quests, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Quest'}}}}}
+  /quests/{habitId}/dates/{date}/completion:
+    parameters:
+      - {name: habitId, in: path, required: true, schema: {type: string}}
+      - {name: date, in: path, required: true, schema: {$ref: '#/components/schemas/LocalDate'}}
+    put:
+      tags: [Quests]
+      operationId: completeQuest
+      description: Idempotent transition to COMPLETED. Duplicate call returns xpAwarded=0.
+      responses:
+        '200': {description: Mutation result, content: {application/json: {schema: {$ref: '#/components/schemas/QuestMutation'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+    delete:
+      tags: [Quests]
+      operationId: undoQuest
+      description: Idempotent transition to PENDING. A repeated undo returns xpAwarded=0.
+      responses:
+        '200': {description: Mutation result, content: {application/json: {schema: {$ref: '#/components/schemas/QuestMutation'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /progress:
+    get:
+      tags: [Progress]
+      operationId: getProgress
+      responses:
+        '200': {description: Experience and streak, content: {application/json: {schema: {$ref: '#/components/schemas/Progress'}}}}
+  /journeys/current:
+    get:
+      tags: [Journey]
+      operationId: getCurrentJourney
+      responses:
+        '200': {description: Current journey or null, content: {application/json: {schema: {oneOf: [{$ref: '#/components/schemas/Journey'}, {type: 'null'}]}}}}
+  /analytics/weekly:
+    get:
+      tags: [Analytics]
+      operationId: getWeeklyAnalytics
+      responses:
+        '200': {description: 7 day analytics, content: {application/json: {schema: {$ref: '#/components/schemas/Analytics'}}}}
+  /analytics/monthly:
+    get:
+      tags: [Analytics]
+      operationId: getMonthlyAnalytics
+      responses:
+        '200': {description: 30 day analytics, content: {application/json: {schema: {$ref: '#/components/schemas/Analytics'}}}}
+components:
+  securitySchemes:
+    sessionCookie: {type: apiKey, in: cookie, name: LIFEOS_SESSION, description: 'Production auth only; CSRF protection required on mutations.'}
+  parameters:
+    Id: {name: id, in: path, required: true, schema: {type: string}}
+  responses:
+    Unauthorized: {description: Unauthenticated, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+    NotFound: {description: Not found or not owned, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+    Conflict: {description: Illegal quest state transition or date, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+    ValidationError: {description: Input validation failed, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+  schemas:
+    LocalDate: {type: string, format: date, example: '2026-10-13'}
+    Instant: {type: string, format: date-time, description: 'UTC timestamp'}
+    Category: {type: string, enum: [CAREER, CREATIVITY, HEALTH, KNOWLEDGE, MINDFULNESS]}
+    RecordStatus: {type: string, enum: [ACTIVE, PAUSED, ARCHIVED]}
+    Weekday: {type: integer, minimum: 1, maximum: 7, description: 'Monday=1, Sunday=7'}
+    User:
+      type: object
+      required: [id, displayName, email, timezone]
+      properties:
+        id: {type: string}
+        displayName: {type: string}
+        email: {type: string, format: email}
+        timezone: {type: string, example: Asia/Ho_Chi_Minh}
+    Goal:
+      type: object
+      required: [id, title, category, description, status, createdAt]
+      properties:
+        id: {type: string}
+        title: {type: string}
+        category: {$ref: '#/components/schemas/Category'}
+        description: {type: string}
+        status: {$ref: '#/components/schemas/RecordStatus'}
+        createdAt: {$ref: '#/components/schemas/Instant'}
+    CreateGoal:
+      type: object
+      required: [title, category, description]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 150}
+        category: {$ref: '#/components/schemas/Category'}
+        description: {type: string, maxLength: 600}
+    PatchGoal:
+      type: object
+      minProperties: 1
+      properties:
+        title: {type: string, minLength: 1, maxLength: 150}
+        description: {type: string, maxLength: 600}
+        status: {$ref: '#/components/schemas/RecordStatus'}
+    Habit:
+      type: object
+      required: [id, goalId, title, targetMinutes, xpReward, weekdays, startDate, endDate, status]
+      properties:
+        id: {type: string}
+        goalId: {type: string}
+        title: {type: string}
+        targetMinutes: {type: integer, minimum: 1}
+        xpReward: {type: integer, minimum: 0, maximum: 100}
+        weekdays: {type: array, uniqueItems: true, minItems: 1, items: {$ref: '#/components/schemas/Weekday'}}
+        startDate: {$ref: '#/components/schemas/LocalDate'}
+        endDate: {oneOf: [{$ref: '#/components/schemas/LocalDate'}, {type: 'null'}]}
+        status: {$ref: '#/components/schemas/RecordStatus'}
+    CreateHabit:
+      type: object
+      required: [goalId, title, targetMinutes, xpReward, weekdays, startDate]
+      properties:
+        goalId: {type: string}
+        title: {type: string, minLength: 1, maxLength: 150}
+        targetMinutes: {type: integer, minimum: 1, maximum: 480}
+        xpReward: {type: integer, minimum: 0, maximum: 100}
+        weekdays: {type: array, uniqueItems: true, minItems: 1, items: {$ref: '#/components/schemas/Weekday'}}
+        startDate: {$ref: '#/components/schemas/LocalDate'}
+    PatchHabit:
+      type: object
+      required: [status]
+      properties:
+        status: {$ref: '#/components/schemas/RecordStatus'}
+    Quest:
+      type: object
+      required: [habitId, goalId, goalTitle, title, targetMinutes, xpReward, category, date, status, completedAt]
+      properties:
+        habitId: {type: string}
+        goalId: {type: string}
+        goalTitle: {type: string}
+        title: {type: string}
+        targetMinutes: {type: integer}
+        xpReward: {type: integer}
+        category: {$ref: '#/components/schemas/Category'}
+        date: {$ref: '#/components/schemas/LocalDate'}
+        status: {type: string, enum: [PENDING, COMPLETED, SKIPPED]}
+        completedAt: {oneOf: [{$ref: '#/components/schemas/Instant'}, {type: 'null'}]}
+    Progress:
+      type: object
+      required: [totalXp, level, levelStartXp, nextLevelXp, currentStreak, longestStreak]
+      properties:
+        totalXp: {type: integer, minimum: 0}
+        level: {type: integer, minimum: 1}
+        levelStartXp: {type: integer, minimum: 0}
+        nextLevelXp: {type: integer, minimum: 0}
+        currentStreak: {type: integer, minimum: 0, description: 'Best current habit streak in scheduled sessions.'}
+        longestStreak: {type: integer, minimum: 0}
+    Journey:
+      type: object
+      required: [id, title, startDate, durationDays, elapsedDays, totalScheduledToDate, completedToDate, status]
+      properties:
+        id: {type: string}
+        title: {type: string}
+        startDate: {$ref: '#/components/schemas/LocalDate'}
+        durationDays: {type: integer, minimum: 7, maximum: 365}
+        elapsedDays: {type: integer, minimum: 0}
+        totalScheduledToDate: {type: integer, minimum: 0}
+        completedToDate: {type: integer, minimum: 0}
+        status: {type: string, enum: [ACTIVE, COMPLETED, CANCELLED]}
+    DailyDashboard:
+      type: object
+      required: [date, user, quests, progress, completedCount, scheduledCount, earnedXpToday, journey]
+      properties:
+        date: {$ref: '#/components/schemas/LocalDate'}
+        user: {$ref: '#/components/schemas/User'}
+        quests: {type: array, items: {$ref: '#/components/schemas/Quest'}}
+        progress: {$ref: '#/components/schemas/Progress'}
+        completedCount: {type: integer, minimum: 0}
+        scheduledCount: {type: integer, minimum: 0}
+        earnedXpToday: {type: integer}
+        journey: {oneOf: [{$ref: '#/components/schemas/Journey'}, {type: 'null'}]}
+    QuestMutation:
+      type: object
+      required: [habitId, date, status, xpAwarded, totalXp, level, streak]
+      properties:
+        habitId: {type: string}
+        date: {$ref: '#/components/schemas/LocalDate'}
+        status: {type: string, enum: [PENDING, COMPLETED]}
+        xpAwarded: {type: integer, description: 'Signed XP delta of this request; zero for idempotent retry.'}
+        totalXp: {type: integer, minimum: 0}
+        level: {type: integer, minimum: 1}
+        streak: {type: integer, minimum: 0}
+    DayStat:
+      type: object
+      required: [date, scheduled, completed, xpEarned]
+      properties:
+        date: {$ref: '#/components/schemas/LocalDate'}
+        scheduled: {type: integer, minimum: 0}
+        completed: {type: integer, minimum: 0}
+        xpEarned: {type: integer}
+    CategoryStat:
+      type: object
+      required: [category, scheduled, completed]
+      properties:
+        category: {$ref: '#/components/schemas/Category'}
+        scheduled: {type: integer, minimum: 0}
+        completed: {type: integer, minimum: 0}
+    Analytics:
+      type: object
+      required: [period, days, completionRate, completedCount, scheduledCount, earnedXp, categories]
+      properties:
+        period: {type: string, enum: [7d, 30d]}
+        days: {type: array, items: {$ref: '#/components/schemas/DayStat'}}
+        completionRate: {type: integer, minimum: 0, maximum: 100}
+        completedCount: {type: integer, minimum: 0}
+        scheduledCount: {type: integer, minimum: 0}
+        earnedXp: {type: integer}
+        categories: {type: array, items: {$ref: '#/components/schemas/CategoryStat'}}
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        fields: {type: object, additionalProperties: {type: string}}
