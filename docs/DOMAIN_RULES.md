@@ -1,23 +1,23 @@
 # Domain Rules — Life OS v1
 
-## Time semantics
-- Instants stored in UTC `TIMESTAMPTZ`; `scheduledDate` is ISO `YYYY-MM-DD` in user's IANA timezone.
-- Default timezone `Asia/Ho_Chi_Minh`; ISO weekday 1=Monday ... 7=Sunday.
-- Future completion rejected. Backdating up to 7 calendar days (inclusive) is permitted.
-- Server clock is authoritative; never trust browser `today` for real backend.
-- A habit can have a quest on date D when `startDate <= D <= endDate?`, schedule version covers D, and life-cycle status on D is active.
+## Ngữ nghĩa thời gian
+- Instant lưu ở UTC `TIMESTAMPTZ`; `scheduledDate` là ISO `YYYY-MM-DD` theo IANA timezone của user.
+- Timezone mặc định `Asia/Ho_Chi_Minh`; ISO weekday 1=Thứ Hai ... 7=Chủ Nhật.
+- Từ chối completion trong tương lai. Cho phép backdate tối đa 7 ngày lịch (bao gồm cả mốc 7).
+- Đồng hồ server là nguồn chuẩn; không bao giờ tin `today` của browser trên backend thật.
+- Một habit có quest vào ngày D khi `startDate <= D <= endDate?`, schedule version bao phủ D, và lifecycle status vào ngày D là active.
 
-## XP model
-Default fixed rewards: Easy 20; Medium 35; Medium+ 40; Hard 50; max 100 per scheduled quest. Reward snapshot at first materialized quest; changing habit reward must not rewrite past XP.
+## Mô hình XP
+Reward cố định mặc định: Easy 20; Medium 35; Medium+ 40; Hard 50; tối đa 100 cho mỗi scheduled quest. Reward được snapshot khi quest được materialize lần đầu; đổi reward của habit không được viết lại XP trong quá khứ.
 
-- `PUT /quests/{habitId}/dates/{date}/completion`: incomplete -> complete, append `QUEST_COMPLETE` +reward; complete -> complete, no transaction and `xpAwarded=0`.
-- `DELETE` on complete -> pending, append `QUEST_REVERT` -reward; pending -> pending, no transaction and `xpAwarded=0`.
-- Complete after undo: append a *new* `QUEST_COMPLETE` event with incremented cycle number. Maintain unique event key per `(questId, cycle, eventType)` and idempotent mutation under DB lock.
-- Never overwrite ledger events; `SUM(xp_transactions.amount)` yields actual total XP. Reject negative total XP after compensations (this should be impossible under normal transitions).
-- Idempotency is required per **resulting state**, including concurrent duplicate requests.
-- API `xpAwarded` = delta of *this request*, not historical reward.
+- `PUT /quests/{habitId}/dates/{date}/completion`: chưa hoàn thành -> hoàn thành, ghi thêm `QUEST_COMPLETE` +reward; hoàn thành -> hoàn thành, không tạo transaction và `xpAwarded=0`.
+- `DELETE` khi đã hoàn thành -> pending, ghi thêm `QUEST_REVERT` -reward; pending -> pending, không tạo transaction và `xpAwarded=0`.
+- Hoàn thành sau khi undo: ghi thêm một `QUEST_COMPLETE` *mới* với số cycle tăng lên. Duy trì khóa sự kiện duy nhất `(questId, cycle, eventType)` và mutation idempotent dưới DB lock.
+- Không bao giờ ghi đè ledger event; `SUM(xp_transactions.amount)` cho ra tổng XP thực. Từ chối tổng XP âm sau các compensation (điều này không thể xảy ra với các transition bình thường).
+- Idempotency được yêu cầu theo **trạng thái kết quả**, bao gồm cả các request trùng lặp đồng thời.
+- `xpAwarded` của API = delta của *request này*, không phải reward trong lịch sử.
 
-## Level formula
+## Công thức level
 ```
 level(0..399 XP) = 1
 level(n XP) = max(1, floor(sqrt(n / 100)))
@@ -25,28 +25,28 @@ level_start_xp(level 1) = 0
 level_start_xp(L>=2) = 100 * L^2
 next_level_xp(L) = 100 * (L+1)^2
 ```
-Examples: 400 XP -> Level 2; 900 -> L3; 1600 -> L4; 2500 -> L5. To get L5 from L4 needs 900 more XP. No hard threshold based on health/job performance.
+Ví dụ: 400 XP -> Level 2; 900 -> L3; 1600 -> L4; 2500 -> L5. Để lên L5 từ L4 cần thêm 900 XP. Không có ngưỡng cứng dựa trên sức khỏe hay hiệu suất công việc.
 
 ## Streak: scheduled-session streak
-For each habit, use schedule-effective dates, *not* calendar adjacency. Saturday/Sunday off do not break a Monday-Friday schedule. On today's scheduled pending task, retain yesterday's chain until the local day ends. Skip non-scheduled dates; break on first scheduled missed date. Completed dates count 1 each. Current dashboard streak = max per-habit current streak (demo definition), not union of habits.
+Với mỗi habit, dùng các ngày theo schedule hiệu lực, *không* dùng ngày lịch liền kề. Thứ Bảy/Chủ Nhật nghỉ không làm đứt streak của schedule Thứ Hai-Thứ Sáu. Với task đã lên lịch cho hôm nay còn pending, giữ chuỗi của hôm qua cho đến hết ngày local. Bỏ qua các ngày không có lịch; đứt tại ngày có lịch đầu tiên bị bỏ lỡ. Mỗi ngày hoàn thành tính 1. Streak trên dashboard hiện tại = max current streak theo từng habit (định nghĩa của demo), không phải hợp của các habit.
 
-Examples:
-- Mon-Fri habit, Thu+Fri+Mon completed, Tuesday pending today -> streak 3.
-- Mon-Fri habit, Thursday missed, Fri+Mon completed, Tuesday pending -> streak 2.
-- Daily habit, yesterday missed, today pending -> streak 0.
-- A paused day is not a scheduled required session if valid pause event started before it.
+Ví dụ:
+- Habit Thứ Hai-Thứ Sáu, hoàn thành Thứ Năm + Thứ Sáu + Thứ Hai, Thứ Ba hôm nay đang pending -> streak 3.
+- Habit Thứ Hai-Thứ Sáu, bỏ lỡ Thứ Năm, hoàn thành Thứ Sáu + Thứ Hai, Thứ Ba pending -> streak 2.
+- Habit hằng ngày, hôm qua bị bỏ lỡ, hôm nay pending -> streak 0.
+- Một ngày đang pause không phải là session bắt buộc nếu pause event có hiệu lực trước ngày đó.
 
-**Historical schedule contract**: edits only effective on next local date, immutable historical schedule versions. Pause/resume needs dated lifecycle event history. Real backend must preserve history even if goals/habits are archived now.
+**Historical schedule contract**: chỉnh sửa chỉ có hiệu lực từ ngày local kế tiếp, schedule version trong quá khứ là bất biến. Pause/resume cần lịch sử lifecycle event có ngày. Backend thật phải giữ lịch sử ngay cả khi goal/habit đã bị archive.
 
-## Journey 66 days
-`elapsedDays = clamp(today - startDate + 1, 0, durationDays)`. Journey's final date = startDate + durationDays - 1. Show timeline progress (`elapsedDays / durationDays`) separately from effort completion (`completed scheduled quests / scheduled quests to date`). Neither one proves a habit is permanently formed.
+## Journey 66 ngày
+`elapsedDays = clamp(today - startDate + 1, 0, durationDays)`. Ngày cuối của journey = startDate + durationDays - 1. Hiển thị tiến độ theo timeline (`elapsedDays / durationDays`) tách biệt với mức độ nỗ lực (`completed scheduled quests / scheduled quests to date`). Không cái nào chứng minh một habit đã hình thành vĩnh viễn.
 
 ## Analytics
-For period N=7 or 30 inclusive of today, each day returns `scheduled`, `completed`, `xpEarned` from ledger with matching quest local date. CompletionRate = round(100*sum(completed)/sum(scheduled)), or 0 if no scheduled tasks. Categories use the goal category snapshotted on quest creation to prevent old charts shifting after goal edits.
+Với kỳ N=7 hoặc 30 bao gồm cả hôm nay, mỗi ngày trả `scheduled`, `completed`, `xpEarned` từ ledger khớp với quest local date. CompletionRate = round(100*sum(completed)/sum(scheduled)), hoặc 0 nếu không có task nào được lên lịch. Category dùng goal category đã được snapshot lúc tạo quest để biểu đồ cũ không dịch chuyển khi goal bị sửa.
 
-## Security/invariants for backend
-- User cannot mutate another user's goal/habit/quest.
-- Unique `(user_id, habit_id, scheduled_date)` quest instance; DB transactions for state+ledger+projection.
-- `GET` read-only; no XP granted on GET or from schedule generation alone.
-- Prevent race conditions by row-level locking or equivalent conditional transition.
-- Do not allow bonus XP outside the ledger or negative XP reward inputs.
+## Bảo mật/bất biến cho backend
+- User không thể thay đổi goal/habit/quest của user khác.
+- `(user_id, habit_id, scheduled_date)` của quest instance là duy nhất; dùng DB transaction cho state+ledger+projection.
+- `GET` chỉ đọc; không cấp XP khi GET hoặc chỉ vì sinh schedule.
+- Ngăn race condition bằng row-level locking hoặc conditional transition tương đương.
+- Không cho phép bonus XP ngoài ledger hoặc input reward âm.

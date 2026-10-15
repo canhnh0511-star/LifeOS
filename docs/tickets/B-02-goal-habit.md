@@ -1,7 +1,7 @@
-# B-02 — Goals & Habits Vertical Slice
+# B-02 — Vertical slice Goals & Habits
 
-Goal: create/list/update Goals and Habits with real PostgreSQL persistence. Authenticated user owns every record.
+Mục tiêu: tạo/liệt kê/cập nhật Goals và Habits với persistence PostgreSQL thật. User đã xác thực sở hữu mọi record.
 
-Endpoints: GET/POST/PATCH `/goals`; GET/POST/PATCH `/habits`. Validation on title, category, target minutes, weekdays, XP, ownership.
+Endpoint: GET/POST/PATCH `/goals`; GET/POST/PATCH `/habits`. Validation cho title, category, target minutes, weekdays, XP, ownership.
 
-Acceptance: UI modal operations run against backend; persist on refresh; historical effective schedules start today and edits take effect tomorrow; 401/403 cross-user tests. Migration includes goals, habits, schedule version and lifecycle events.
+Tiêu chí chấp nhận: các thao tác modal của UI chạy trên backend; dữ liệu còn khi refresh; effective schedule lịch sử bắt đầu từ hôm nay và chỉnh sửa có hiệu lực từ ngày mai; test 401/403 giữa các user. Migration gồm goals, habits, schedule version và lifecycle event.

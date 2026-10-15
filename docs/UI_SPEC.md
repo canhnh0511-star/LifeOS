@@ -1,48 +1,48 @@
 # UI Spec — Life OS 0.1
 
-## Visual language
-- Dark productivity/RPG. Background `#0b1018`, cards `#151e2a`, accent lime `#c6fa55`, supporting cyan/blue/purple/emerald by category.
-- Desktop: left sidebar 253px, main header, primary/secondary dashboard columns. Narrow desktop: compact sidebar.
-- Mobile <690px: bottom 3-tab navigation, stacked Today, mobile-safe-area padding, installable PWA.
-- Typography system font stack; accessible focus ring, meaningful button labels, prefers-reduced-motion support.
+## Ngôn ngữ hình ảnh
+- Dark productivity/RPG. Nền `#0b1018`, card `#151e2a`, accent lime `#c6fa55`, bổ trợ bằng cyan/blue/purple/emerald theo category.
+- Desktop: sidebar trái 253px, header chính, hai cột dashboard chính/phụ. Desktop hẹp: sidebar thu gọn.
+- Mobile <690px: bottom navigation 3 tab, Today xếp chồng, padding theo safe-area của mobile, PWA cài đặt được.
+- Typography dùng system font stack; focus ring dễ tiếp cận, nhãn button có ý nghĩa, hỗ trợ prefers-reduced-motion.
 
 ## Today `/`
-**Header**: title, add habit button, mock mode, date.
-**Level hero**: XP and level progression, decorative electric symbol.
-**Metric row**: streak sessions, % quest completion, XP earned for selected date.
-**Daily quests**: previous/today/next date controls, progress, list, completion CTA, XP reward. Disable future navigation. Backend rejects >7-day history mutations.
-**Right column**: circular daily score, activity chart, 66-day journey teaser.
-Empty list includes action to create habit; network error offers reload.
+**Header**: tiêu đề, nút thêm habit, mock mode, ngày.
+**Level hero**: XP và tiến trình level, biểu tượng tia điện mang tính trang trí.
+**Hàng metric**: streak theo session, % hoàn thành quest, XP kiếm được trong ngày đã chọn.
+**Daily quests**: điều khiển ngày trước/hôm nay/ngày sau, tiến độ, danh sách, CTA hoàn thành, XP reward. Vô hiệu hóa điều hướng sang tương lai. Backend từ chối mutation quá 7 ngày lịch sử.
+**Cột phải**: điểm ngày dạng vòng tròn, biểu đồ hoạt động, teaser journey 66 ngày.
+Danh sách rỗng có hành động tạo habit; lỗi mạng có nút tải lại.
 
 ## Journey
-Dual metrics: (elapsed journey calendar days / duration) and (completed scheduled tasks / scheduled tasks to date). Goals grid: category, description, 7-day percentage, linked habits, pause/resume actions. Modal create goal. Modal create habit: select goal, time target, fixed XP presets, ISO weekday choices, starts today.
+Hai metric: (số ngày lịch đã trôi qua của journey / duration) và (task đã lên lịch được hoàn thành / task đã lên lịch tới nay). Lưới goal: category, mô tả, phần trăm 7 ngày, các habit liên kết, hành động pause/resume. Modal tạo goal. Modal tạo habit: chọn goal, mục tiêu thời gian, preset XP cố định, lựa chọn ISO weekday, bắt đầu từ hôm nay.
 
 ## Insights
-Period selector 7d/30d. Summary metrics, scheduled/completed chart, category bars, heuristic reflection (NOT an AI response). Data from `AnalyticsDto`.
+Bộ chọn kỳ 7d/30d. Metric tóm tắt, biểu đồ scheduled/completed, thanh theo category, reflection theo heuristic (KHÔNG phải phản hồi từ AI). Dữ liệu từ `AnalyticsDto`.
 
 ## Settings
-Show mock / real mode; timezone; export JSON; reset demo (confirm required). No claims of cloud sync.
+Hiển thị chế độ mock / real; timezone; export JSON; reset demo (bắt buộc xác nhận). Không khẳng định có cloud sync.
 
-## Interactive states
-- `loading`: initial spinner while Promise.all loads mock/HTTP data.
-- `error`: banner with retry.
-- `updating`: disable same quest while mutation is pending.
-- `success`: toast message; refetch dashboard/analytics.
-- `offline`: app shell can reopen after successful first load; mutation not guaranteed offline.
-- `modal`: cancel by Escape, close, or outside backdrop.
+## Trạng thái tương tác
+- `loading`: spinner ban đầu trong khi Promise.all tải dữ liệu mock/HTTP.
+- `error`: banner kèm nút thử lại.
+- `updating`: vô hiệu hóa đúng quest đang có mutation chờ xử lý.
+- `success`: toast; refetch dashboard/analytics.
+- `offline`: app shell mở lại được sau lần tải thành công đầu tiên; mutation không được đảm bảo khi offline.
+- `modal`: hủy bằng Escape, nút đóng, hoặc bấm backdrop.
 
-## Review script (UX acceptance)
-1. Open iPhone-sized viewport, navigate all 3 tabs, verify no horizontal scrolling.
-2. On Today, finish pending quest; verify XP, progress and chart update.
-3. Undo task then complete again, verify XP returns to same total.
-4. Create Career goal, then habit for today; verify task appears.
-5. Pause habit; verify it disappears from today's future scheduled view; resume.
-6. Reload; verify saved local state.
-7. Switch Insights 7d/30d and verify counts differ appropriately.
-8. Settings export mock JSON; then reset and verify sample restored.
-9. Run production build and verify manifest/icons present; install via Safari/Chrome.
+## Kịch bản review (UX acceptance)
+1. Mở viewport cỡ iPhone, điều hướng cả 3 tab, xác minh không có cuộn ngang.
+2. Ở Today, hoàn thành một quest pending; xác minh XP, tiến độ và biểu đồ cập nhật.
+3. Undo task rồi complete lại, xác minh XP trở về đúng tổng cũ.
+4. Tạo goal Career, rồi tạo habit cho hôm nay; xác minh task xuất hiện.
+5. Pause habit; xác minh nó biến mất khỏi chế độ xem scheduled tương lai của hôm nay; resume.
+6. Reload; xác minh trạng thái local đã lưu.
+7. Chuyển Insights 7d/30d và xác minh số liệu khác nhau phù hợp.
+8. Settings export mock JSON; sau đó reset và xác minh dữ liệu mẫu được khôi phục.
+9. Chạy production build và xác minh manifest/icon có mặt; cài qua Safari/Chrome.
 
-## Known demo deviations from final backend
-- Streak shown on Today is max current per-habit scheduled-session streak, not a global all-habits daily streak.
-- Pause/resume and schedule status may change historical aggregates; fix with schedule effective dates and quest instances at B-03.
-- Demo user is a seeded mock; sign-in screen is intentionally deferred to B-01.
+## Các điểm khác biệt đã biết của demo so với backend cuối cùng
+- Streak hiển thị ở Today là max current streak theo scheduled session của từng habit, không phải streak ngày toàn cục của mọi habit.
+- Pause/resume và schedule status có thể làm thay đổi số liệu tổng hợp lịch sử; sẽ sửa bằng schedule effective date và quest instance ở B-03.
+- Demo user là mock được seed; màn hình đăng nhập được cố ý hoãn sang B-01.

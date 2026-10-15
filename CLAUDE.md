@@ -1,3 +1,38 @@
-# Life OS development rules
+# Life OS — Hướng dẫn cho AI Coding Agent
 
-Follow `AGENTS.md` and `docs/agent/AGENT_PROMPT.md` exactly. Use contract-first small vertical slices, immutable XP ledger semantics, timezone-aware scheduled streaks, and test each behavior. Backend work is blocked until frontend approval.
+Bắt đầu với `docs/agent/AGENT_PROMPT.md`. Repository này phát triển theo hướng **contract-first, frontend-first**: các vertical slice nhỏ, ledger XP bất biến (immutable), streak theo scheduled session có xét timezone, và mỗi behavior đều có test.
+
+## Milestone hiện tại: chỉ UI-00
+
+**Không triển khai Spring Boot, PostgreSQL migration, authentication thật hoặc external API cho đến khi project owner duyệt rõ ràng giao diện frontend.** Backend bị chặn cho đến khi frontend được duyệt.
+
+- Mã nguồn frontend: `frontend/` (React, TypeScript, Vite PWA).
+- Mock backend: `frontend/src/api/mockClient.ts` (localStorage, không có tài khoản thật).
+- API contract: `docs/openapi.yaml` và `frontend/src/api/types.ts`. Khi đề xuất đổi contract, phải cập nhật CẢ HAI.
+- Quy tắc sản phẩm: `docs/DOMAIN_RULES.md`.
+- Ticket: `docs/tickets/00_FRONTEND_REVIEW.md`, sau đó `B-01` đến `B-06` chỉ sau khi được duyệt.
+- Ghi lại các đánh đổi kiến trúc trong `docs/agent/DECISIONS.md`.
+
+## Nguyên tắc làm việc
+
+1. Làm từng ticket một, báo cáo scope và các hạng mục loại trừ.
+2. Kiểm chứng các hành động người dùng thấy được; không giao control không hoạt động (inert).
+3. Ưu tiên automated test tái hiện bug trước khi sửa.
+4. Không có bonus XP ẩn, không đổi schedule hồi tố, không đưa production secret vào repository.
+5. Dữ liệu cấp ngày dùng timezone của người dùng đã xác thực; instant dùng UTC.
+6. Mock API chỉ là mô phỏng, **không** phải production authorization, offline sync hay database đồng thời (concurrent).
+7. Báo cáo các thay đổi đã hoàn thành, lệnh test và kết quả, known gaps và bước tiếp theo đề xuất.
+
+## Agent skills
+
+### Issue tracker
+
+Issue và spec là file markdown trong `.scratch/<feature>/`. Ticket của dự án vẫn nằm ở `docs/tickets/`; `.scratch/` chỉ dành cho spec và issue do các skill tạo ra, không đổi thứ tự ticket hay lệnh chặn backend. Xem `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Dùng bộ năm label mặc định (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). Xem `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: một `CONTEXT.md` và `docs/adr/` ở thư mục gốc repo. Xem `docs/agents/domain.md`.

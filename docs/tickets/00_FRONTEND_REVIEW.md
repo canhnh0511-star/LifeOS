@@ -1,19 +1,19 @@
-# UI-00 — Frontend build + approval gate
+# UI-00 — Build frontend + cổng duyệt
 
-## Objective
+## Mục tiêu
 
-Review and validate the supplied frontend (`frontend/`) on desktop and iPhone-sized browser. **Backend work is forbidden in this ticket.**
+Review và xác thực frontend được cung cấp (`frontend/`) trên browser cỡ desktop và iPhone. **Cấm làm backend trong ticket này.**
 
-## Acceptance
+## Tiêu chí chấp nhận
 
-1. `npm install`, `npm run build`, `npm test` all succeed.
-2. `npm run dev`: Today, Journey, Insights, Settings all render without console errors.
-3. Create goal, create habit, complete quest, undo, re-complete; reload and inspect state.
-4. Verify 7/30-day analytics and date navigation.
-5. PWA manifest, 192/512 icons and service worker in production build.
-6. Review at 1440x900 and 390x844, including modal scroll, keyboard, no horizontal overflow.
-7. Deliver screenshot or preview for owner sign-off; list issues and obtain explicit approval.
+1. `npm install`, `npm run build`, `npm test` đều thành công.
+2. `npm run dev`: Today, Journey, Insights, Settings render không có lỗi console.
+3. Tạo goal, tạo habit, complete quest, undo, complete lại; reload và kiểm tra trạng thái.
+4. Xác minh analytics 7/30 ngày và điều hướng theo ngày.
+5. PWA manifest, icon 192/512 và service worker có trong production build.
+6. Review ở 1440x900 và 390x844, gồm cuộn modal, bàn phím, không có horizontal overflow.
+7. Cung cấp screenshot hoặc preview để owner ký duyệt; liệt kê các vấn đề và xin duyệt rõ ràng.
 
-## Out of scope
+## Ngoài phạm vi
 
-Database, Spring Boot, login, AI coach, device sync, push notifications.
+Database, Spring Boot, login, AI coach, device sync, push notification.

@@ -1,7 +1,7 @@
-# B-06 — Analytics, Cutover & PWA Release
+# B-06 — Analytics, Cutover & phát hành PWA
 
-Goal: GET `/analytics/weekly` (7d) and `/analytics/monthly` (30d), real API integration, frontend states and deployment guide.
+Mục tiêu: GET `/analytics/weekly` (7d) và `/analytics/monthly` (30d), tích hợp API thật, các trạng thái frontend và hướng dẫn deploy.
 
-Acceptance: DTO parity with mock; archived/pause don't rewrite history; charts reflect fixtures; no cross-user info; HTTPS; build/manifest/install test; backup+restore drill; dev/prod env configuration; accessibility and Safari smoke test.
+Tiêu chí chấp nhận: DTO tương thích với mock; archive/pause không viết lại lịch sử; biểu đồ phản ánh fixture; không lộ thông tin giữa các user; HTTPS; kiểm tra build/manifest/cài đặt; diễn tập backup+restore; cấu hình env cho dev/prod; kiểm tra accessibility và smoke test Safari.
 
-Exclusions: push notifications, offline mutation sync, AI Coach.
+Loại trừ: push notification, offline mutation sync, AI Coach.

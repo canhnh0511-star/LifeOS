@@ -1,7 +1,7 @@
-# B-04 — Completion & XP Ledger Slice
+# B-04 — Vertical slice Completion & XP Ledger
 
-Goal: PUT/DELETE completion are idempotent, transactional, concurrency-safe and update XP projections.
+Mục tiêu: PUT/DELETE completion idempotent, transactional, an toàn với concurrency và cập nhật XP projection.
 
-Unique `(questId,cycle,eventType)` XP entry; state transition locking; immutable reward; recompute `progress` and `level` from ledger; protect from future/backdate>7.
+Bản ghi XP duy nhất `(questId,cycle,eventType)`; locking cho state transition; reward bất biến; tính lại `progress` và `level` từ ledger; chặn tương lai/backdate>7.
 
-Tests REQUIRED: two simultaneous PUTs, repeated PUT, undo repeated, complete-after-undo, rollback on injected DB error, cross-user mutation denied, level threshold boundary. API outputs `xpAwarded` delta of each call.
+Test BẮT BUỘC: hai PUT đồng thời, PUT lặp lại, undo lặp lại, complete-sau-undo, rollback khi inject lỗi DB, mutation chéo user bị từ chối, ranh giới ngưỡng level. API trả `xpAwarded` là delta của mỗi lần gọi.

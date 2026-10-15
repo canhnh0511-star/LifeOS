@@ -1,5 +1,5 @@
-# B-05 — Journey & Streak Slice
+# B-05 — Vertical slice Journey & Streak
 
-Goal: GET `/journeys/current` and `progress.currentStreak` calculate scheduled sessions and journey completion correctly.
+Mục tiêu: GET `/journeys/current` và `progress.currentStreak` tính đúng scheduled session và mức hoàn thành journey.
 
-Historical schedules/timezone required. Support pause/resume effective dates. Distinguish calendar elapsed from scheduled completion. Tests: Fri/Mon gap, today's pending, pause, missing session, changes effective tomorrow, start/end dates. Resolve open global-streak meaning in DECISIONS.md before implementing.
+Bắt buộc có historical schedule/timezone. Hỗ trợ pause/resume effective date. Phân biệt ngày lịch đã trôi qua với mức hoàn thành theo schedule. Test: khoảng trống Thứ Sáu/Thứ Hai, pending của hôm nay, pause, session bị bỏ lỡ, thay đổi có hiệu lực từ ngày mai, ngày bắt đầu/kết thúc. Giải quyết ý nghĩa còn mở của global-streak trong DECISIONS.md trước khi triển khai.

@@ -1,16 +1,16 @@
-# Life OS — Zero-dependency visual preview
+# Life OS — Bản xem trước trực quan không phụ thuộc
 
-This directory is an **additional lightweight preview**, not the React production source.
+Thư mục này là **bản xem trước nhẹ bổ sung**, không phải mã nguồn production React.
 
-It reuses compiled modules from `frontend/src/api/mockClient.ts` and `frontend/src/domain/rules.ts` so its interactive demo follows the *same mocked business engine*. UI is written with vanilla HTML and JavaScript to work without npm.
+Nó dùng lại các module đã biên dịch từ `frontend/src/api/mockClient.ts` và `frontend/src/domain/rules.ts`, nên bản demo tương tác chạy trên *cùng business engine mock*. UI viết bằng HTML và JavaScript thuần để chạy mà không cần npm.
 
-From repository root:
+Từ thư mục gốc repo:
 
 ```bash
 python -m http.server 4173
-# open http://localhost:4173/preview/
+# mở http://localhost:4173/preview/
 ```
 
-Complete/undo quests, create goals/habits, navigate Today/Journey/Insights, export and reset demo. Demo data is localStorage only. The installable manifest and simple app-shell service worker support standalone PWA preview over localhost or HTTPS.
+Complete/undo quest, tạo goal/habit, điều hướng Today/Journey/Insights, export và reset demo. Dữ liệu demo chỉ nằm trong localStorage. Manifest cài đặt được và service worker app-shell đơn giản hỗ trợ xem trước PWA ở chế độ standalone qua localhost hoặc HTTPS.
 
-For source implementation and backend handoff, use `frontend/` and `docs/` as source of truth. After changing mock rules, regenerate `preview/api/mockClient.js` and `preview/domain/rules.js` from the TypeScript sources.
+Với mã nguồn triển khai và bàn giao backend, dùng `frontend/` và `docs/` làm nguồn chuẩn. Sau khi đổi quy tắc mock, hãy tái tạo `preview/api/mockClient.js` và `preview/domain/rules.js` từ các nguồn TypeScript.

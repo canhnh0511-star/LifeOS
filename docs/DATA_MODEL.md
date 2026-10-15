@@ -1,22 +1,22 @@
-# Data model — PostgreSQL (backend proposal; NOT applied)
+# Data model — PostgreSQL (đề xuất cho backend; CHƯA áp dụng)
 
-**Do not migrate database before frontend approval.** Tables below are a target design. Implementation belongs in Flyway migrations during B-01 to B-05.
+**Không chạy database migration trước khi frontend được duyệt.** Các bảng dưới đây là thiết kế đích. Việc triển khai thuộc Flyway migration trong B-01 đến B-05.
 
-## Core entities
+## Entity chính
 
-| Entity | Important fields and constraints |
+| Entity | Field và ràng buộc quan trọng |
 |---|---|
-| `users` | UUID id PK, email UNIQUE, display_name, timezone, created_at. Password hash/auth identity if local auth selected |
+| `users` | UUID id PK, email UNIQUE, display_name, timezone, created_at. Password hash/auth identity nếu dùng local auth |
 | `goals` | UUID id PK, user_id FK, category, title, description, status, created_at |
 | `habits` | UUID id PK, user_id FK, goal_id FK, title, target_minutes, xp_reward, start_date, end_date, status |
-| `habit_schedule_versions` | UUID id PK, habit_id FK, effective_from DATE, effective_to DATE nullable, weekdays SMALLINT[]; no overlapping versions |
-| `habit_lifecycle_events` | UUID id PK, habit_id FK, effective_date, event_type=PAUSE/RESUME/ARCHIVE; event history |
+| `habit_schedule_versions` | UUID id PK, habit_id FK, effective_from DATE, effective_to DATE nullable, weekdays SMALLINT[]; không cho phép version chồng lấn |
+| `habit_lifecycle_events` | UUID id PK, habit_id FK, effective_date, event_type=PAUSE/RESUME/ARCHIVE; lịch sử sự kiện |
 | `journeys` | UUID id PK, user_id FK, title, start_date, duration_days, status |
 | `quest_instances` | UUID id PK, user_id FK, habit_id FK, scheduled_date DATE, status, reward_snapshot, category_snapshot, completed_at, cycle INTEGER, UNIQUE(user_id,habit_id,scheduled_date) |
 | `xp_transactions` | UUID id PK, user_id FK, quest_id FK, cycle INTEGER, event_type, amount (+/-), created_at, UNIQUE(quest_id,cycle,event_type) |
-| `user_progress` | user_id PK, total_xp, level, updated_at, derived cached projection; rebuildable from ledger |
+| `user_progress` | user_id PK, total_xp, level, updated_at; là projection được cache, có thể dựng lại từ ledger |
 
-## Sample tables (target Flyway design sketch)
+## Bảng mẫu (bản phác thảo Flyway đích)
 ```sql
 CREATE TABLE quest_instances (
   id UUID PRIMARY KEY,
@@ -43,20 +43,20 @@ CREATE TABLE xp_transactions (
   UNIQUE(quest_id,cycle,event_type)
 );
 ```
-`CREATE TABLE users/habits/goals/...` is intentionally deferred; an agent must author full migrations and integration tests in the appropriate ticket, not copy incomplete snippets into production.
+`CREATE TABLE users/habits/goals/...` được cố ý hoãn lại; agent phải tự viết migration đầy đủ và integration test trong ticket tương ứng, không sao chép các đoạn mã chưa hoàn chỉnh vào production.
 
-## Integrity design
-- User ownership: FK chain AND service-level authorization; do not trust user ID supplied by client.
-- Goal/habit user ownership check in service layer or composite FK.
-- Avoid date overlaps across schedule versions; use PostgreSQL exclusion constraints or transactionally validated intervals.
-- Every XP transition runs in a database transaction with quest row lock; update projection in same transaction.
-- Quest instance snapshots protect past reward/category from edits.
-- Never delete XP transaction history on undo.
-- Apply schedule changes effective tomorrow; current day's already-created instance stays unchanged.
-- Backup/restore required before production rollout.
+## Thiết kế toàn vẹn dữ liệu
+- Quyền sở hữu của user: chuỗi FK VÀ authorization ở service level; không tin user ID do client gửi.
+- Kiểm tra quyền sở hữu goal/habit ở service layer hoặc composite FK.
+- Tránh chồng lấn ngày giữa các schedule version; dùng exclusion constraint của PostgreSQL hoặc interval được kiểm tra trong transaction.
+- Mọi XP transition chạy trong một database transaction với quest row lock; cập nhật projection trong cùng transaction.
+- Snapshot của quest instance bảo vệ reward/category trong quá khứ khỏi bị sửa.
+- Không bao giờ xóa lịch sử XP transaction khi undo.
+- Thay đổi schedule có hiệu lực từ ngày mai; quest instance đã tạo cho hôm nay giữ nguyên.
+- Bắt buộc có backup/restore trước khi rollout production.
 
-## Queries to plan
-- Today by user/date with scheduled habit instances.
-- Completed vs planned counts by date and goal category.
-- XP aggregate by user's local quest date; not event UTC date.
-- Current streak by reading historic effective schedules and completions (optimized cache only after correctness).
+## Query cần lên kế hoạch
+- Today theo user/date với các habit instance đã lên lịch.
+- Số completed so với planned theo ngày và goal category.
+- Tổng hợp XP theo quest date theo timezone local của user; không dùng ngày UTC của event.
+- Current streak đọc từ schedule hiệu lực trong lịch sử và completion (chỉ tối ưu bằng cache sau khi đã đúng).

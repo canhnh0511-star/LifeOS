@@ -1,45 +1,45 @@
 # Life OS — PRD v1.0
 
-## Product goal
-Single-user-first PWA to convert long-term goals into scheduled, measurable daily actions. Motivation through experience points and a 66-day journey, with analytics that distinguish effort from merely passing days.
+## Mục tiêu sản phẩm
+PWA ưu tiên một người dùng (single-user-first), biến các mục tiêu dài hạn thành những hành động hằng ngày có lịch và đo lường được. Tạo động lực bằng experience point (XP) và một journey 66 ngày, kèm analytics phân biệt nỗ lực thực sự với việc chỉ để ngày trôi qua.
 
-## Personas and context
-Primary user: developer who learns Java/AI, practices piano, reads, and exercises. Uses laptop during work and iPhone throughout the day. UI defaults to Vietnamese with a few English RPG labels. Timezone: `Asia/Ho_Chi_Minh`.
+## Persona và bối cảnh
+Người dùng chính: lập trình viên học Java/AI, tập piano, đọc sách và tập thể dục. Dùng laptop khi làm việc và iPhone suốt cả ngày. UI mặc định tiếng Việt, kèm một số nhãn RPG tiếng Anh. Timezone: `Asia/Ho_Chi_Minh`.
 
-## MVP product scope
-| ID | Requirement | Acceptance |
+## Phạm vi MVP
+| ID | Yêu cầu | Tiêu chí chấp nhận |
 |---|---|---|
-| F01 | Personal account | Auth context always maps mutations to one user; demo uses mock identity |
-| F02 | Goals | Create / list / pause / resume, categorized by life area |
-| F03 | Habits | Attach to goal, schedule ISO weekdays, duration, XP reward |
-| F04 | Daily quests | Generate scheduled tasks for a selected local date |
-| F05 | Completion | Idempotent complete / undo; cannot complete future, allow 7-day backdate |
-| F06 | Gamification | XP ledger, calculated level, current per-habit scheduled streak |
-| F07 | Journey | Show elapsed days and separately the completion ratio |
-| F08 | Analytics | Last 7/30 daily counts, XP earned, categories |
-| F09 | PWA | Installable manifest, responsive, app shell cache, HTTPS in production |
+| F01 | Tài khoản cá nhân | Auth context luôn ánh xạ mutation về một user; demo dùng mock identity |
+| F02 | Goals | Tạo / liệt kê / pause / resume, phân loại theo lĩnh vực cuộc sống |
+| F03 | Habits | Gắn với goal, lên lịch theo ISO weekday, thời lượng, XP reward |
+| F04 | Daily quests | Sinh các task theo lịch cho một local date được chọn |
+| F05 | Completion | Complete / undo idempotent; không complete được ngày tương lai, cho phép backdate 7 ngày |
+| F06 | Gamification | XP ledger, level được tính, current streak theo scheduled session của từng habit |
+| F07 | Journey | Hiển thị số ngày đã trôi qua và tách riêng tỷ lệ hoàn thành |
+| F08 | Analytics | Số lượng theo ngày trong 7/30 ngày gần nhất, XP kiếm được, category |
+| F09 | PWA | Manifest cài đặt được, responsive, app shell cache, HTTPS trên production |
 
-## Exclusions
-AI Coach, native mobile, social leaderboard, payments, push, offline mutation queue, arbitrary schedule revisions, Apple Health integrations, achievements, multi-tenant enterprise accounts.
+## Hạng mục loại trừ
+AI Coach, native mobile, social leaderboard, thanh toán, push, offline mutation queue, chỉnh sửa schedule tùy ý, tích hợp Apple Health, achievements, tài khoản multi-tenant enterprise.
 
-## Screen acceptance
-- Today: selected day, level bar, XP, scheduled quests, progress, streak, weekly activity.
-- Journey: goal cards with associated habits, create goal and habit, pause/resume, dual 66-day metrics.
-- Insights: 7/30-day chart, category completion, XP total, reflection hint.
-- Settings: mock reset/export and mode awareness.
+## Tiêu chí chấp nhận theo màn hình
+- Today: ngày được chọn, level bar, XP, scheduled quests, tiến độ, streak, weekly activity.
+- Journey: goal card kèm các habit liên quan, tạo goal và habit, pause/resume, hai metric của 66 ngày.
+- Insights: biểu đồ 7/30 ngày, hoàn thành theo category, tổng XP, gợi ý reflection.
+- Settings: reset/export mock và hiển thị chế độ đang chạy.
 
-## UX behaviors
-- All primary actions are buttons with loading/error feedback.
-- Never display XP gain twice for the same completion; undo gives negative compensating XP.
-- Today's incomplete quest does not prematurely break streak; non-scheduled weekend cannot break a weekday streak.
-- Changing a tab does not discard saved data.
-- Do not treat journey elapsed time as achievement.
+## Hành vi UX
+- Mọi hành động chính là button có phản hồi loading/error.
+- Không bao giờ hiển thị XP tăng hai lần cho cùng một completion; undo trả XP âm bù trừ.
+- Quest chưa hoàn thành của hôm nay không được làm đứt streak sớm; cuối tuần không có lịch không thể làm đứt streak ngày làm việc.
+- Đổi tab không làm mất dữ liệu đã lưu.
+- Không coi thời gian journey trôi qua là thành tích.
 
-## Non-functional targets (targets, not verified metrics)
-- Responsive width 320px–1440px, keyboard navigable, touch-friendly.
-- API p95 goal <500 ms on ordinary personal-sized data (requires real backend load test).
-- Backend persistent state under atomic transaction, per-user authorization, backups, restore drill.
-- Production authentication, HTTPS, secure cookie configuration, CORS policy.
+## Mục tiêu phi chức năng (là mục tiêu, không phải số liệu đã kiểm chứng)
+- Responsive từ 320px đến 1440px, điều hướng được bằng bàn phím, thân thiện cảm ứng.
+- API p95 dưới 500 ms với dữ liệu cá nhân thông thường (cần load test trên backend thật).
+- Trạng thái backend lưu bền vững dưới atomic transaction, authorization theo từng user, backup, restore drill.
+- Production authentication, HTTPS, cấu hình secure cookie, CORS policy.
 
 ## Release gate
-Human review UI and flows before backend implementation. User feedback can change fields/status rules; update API contract and tickets before coding backend.
+Người thật review UI và các flow trước khi triển khai backend. Phản hồi của người dùng có thể đổi field/status rule; cập nhật API contract và ticket trước khi viết backend.

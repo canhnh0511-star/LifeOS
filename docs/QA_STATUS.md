@@ -1,18 +1,18 @@
-# QA / Verification Status — 2026-10-13
+# Trạng thái QA / Xác minh — 2026-10-13
 
-## Verified in this environment
-- `frontend/src/App.tsx`, API files, rules, main entry: TypeScript transpilation syntax check passed (with global TypeScript transpiler; this is NOT a complete typecheck).
-- Pure TS API/domain sources compiled to JS using globally available `tsc`.
-- Mock API runtime integration check passed: repeat PUT awards 0, repeat DELETE awards 0, complete-after-undo nets the expected XP; create Goal/Habit appears on Today; analytics returns 7 days.
-- Standalone preview HTML/JS/CSS/manifest/icon resources returned HTTP 200 from a local Python HTTP server.
-- Preview JS module `node --check` passed.
-- ZIP archive CRC integrity verified after packaging.
+## Đã xác minh trong môi trường này
+- `frontend/src/App.tsx`, các file API, rules, main entry: kiểm tra cú pháp bằng TypeScript transpilation đã đạt (dùng transpiler global; đây KHÔNG phải typecheck đầy đủ).
+- Các nguồn API/domain thuần TS được biên dịch sang JS bằng `tsc` global.
+- Kiểm tra tích hợp runtime của Mock API đã đạt: PUT lặp lại cộng 0, DELETE lặp lại cộng 0, complete-sau-undo cho kết quả net đúng như mong đợi; tạo Goal/Habit xuất hiện trên Today; analytics trả về 7 ngày.
+- HTML/JS/CSS/manifest/icon của bản preview độc lập trả HTTP 200 từ local Python HTTP server.
+- `node --check` cho JS module của preview đã đạt.
+- Đã xác minh CRC toàn vẹn của file ZIP sau khi đóng gói.
 
-## Not verified — must do on developer machine / coding agent
-- `npm install`, `npm run build` and `npm test` for the React frontend: npm registry was inaccessible in this sandbox. The app has not been fully typechecked/bundled here.
-- Interactive Chromium/Playwright visual checks: environment policy blocked browser navigation, even for local URLs.
-- iOS Safari `Add to Home Screen` installation and offline behavior.
-- Actual Spring Boot backend (not yet implemented by design).
+## Chưa xác minh — phải làm trên máy developer / coding agent
+- `npm install`, `npm run build` và `npm test` cho frontend React: npm registry không truy cập được trong sandbox này. App chưa được typecheck/bundle đầy đủ ở đây.
+- Kiểm tra trực quan tương tác bằng Chromium/Playwright: chính sách môi trường chặn điều hướng trình duyệt, kể cả URL local.
+- Cài `Add to Home Screen` trên iOS Safari và hành vi offline.
+- Backend Spring Boot thật (chưa triển khai, theo thiết kế).
 
-## Next action
-Run ticket `docs/tickets/00_FRONTEND_REVIEW.md`; fix any build/visual issues, then obtain explicit UI approval. Backend development remains blocked until that approval.
+## Hành động tiếp theo
+Chạy ticket `docs/tickets/00_FRONTEND_REVIEW.md`; sửa mọi lỗi build/visual, sau đó xin duyệt UI rõ ràng. Phát triển backend vẫn bị chặn cho đến khi được duyệt.

@@ -1,5 +1,5 @@
-# B-03 — Daily Quest Slice
+# B-03 — Vertical slice Daily Quest
 
-Goal: GET `/quests?date=...` and GET `/dashboard/today?date=...` produce correct persisted snapshot data for ISO user-local date.
+Mục tiêu: GET `/quests?date=...` và GET `/dashboard/today?date=...` tạo ra dữ liệu snapshot được lưu đúng cho ISO date theo local của user.
 
-Implement `quest_instances` with unique user/habit/date, snapshot XP and category; schedule history effective-date logic; no XP on GET; preserve past when habit paused or edited. Tests: weekly off, weekend, leap year, timezone boundary, status changes. Dashboard can initially return `progress` from placeholder/ledger query until B-04.
+Triển khai `quest_instances` với unique user/habit/date, snapshot XP và category; logic effective-date của schedule history; không cộng XP khi GET; giữ nguyên quá khứ khi habit bị pause hoặc chỉnh sửa. Test: ngày nghỉ hằng tuần, cuối tuần, năm nhuận, ranh giới timezone, thay đổi status. Dashboard ban đầu có thể trả `progress` từ placeholder/ledger query cho đến B-04.
