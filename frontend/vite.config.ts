@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // Real-API dev: same-origin proxy so the HttpOnly session and CSRF cookies work without CORS.
+  server: { proxy: { '/api': 'http://localhost:8080' } },
   plugins: [
     react(),
     VitePWA({

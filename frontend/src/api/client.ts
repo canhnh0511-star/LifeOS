@@ -1,6 +1,10 @@
-import type { AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalDto, HabitDto, JourneyDto, ProgressDto, QuestDto, AchievementDto, BossMutationDto, QuestMutationDto, UserDto } from './types';
+import type { AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalDto, HabitDto, JourneyDto, ProgressDto, QuestDto, AchievementDto, BossMutationDto, QuestMutationDto, UserDto, RegisterRequest, LoginRequest } from './types';
 export interface LifeOsApi {
   getMe(): Promise<UserDto>;
+  /** Real mode only; the mock has no accounts and always acts as the demo user. */
+  register(input: RegisterRequest): Promise<UserDto>;
+  login(input: LoginRequest): Promise<UserDto>;
+  logout(): Promise<void>;
   getDashboard(date?: string): Promise<DailyDashboardDto>;
   getGoals(): Promise<GoalDto[]>;
   createGoal(input: CreateGoalRequest): Promise<GoalDto>;

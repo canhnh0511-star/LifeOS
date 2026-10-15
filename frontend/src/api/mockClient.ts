@@ -324,6 +324,9 @@ async function mutateBoss(target:string,defeat:boolean):Promise<BossMutationDto>
 
 export const mockClient:LifeOsApi={
   async getMe(){await delay();return user;},
+  async register(){await delay();return user;},
+  async login(){await delay();return user;},
+  async logout(){await delay();},
   async getDashboard(date=todayInTimezone()):Promise<DailyDashboardDto>{
     await delay();assertLocalDate(date);const db=load();const list=quests(db,date);
     return {date,user,quests:list,progress:progress(db),completedCount:list.filter(q=>q.status==='COMPLETED').length,scheduledCount:list.length,earnedXpToday:db.xpTransactions.filter(e=>e.date===date).reduce((a,e)=>a+e.amount,0),journey:journey(db)};

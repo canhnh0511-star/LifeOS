@@ -105,3 +105,10 @@
 .gear-preview span{margin-right:4px}
 .gear-preview button{min-width:34px;height:28px;padding:0 10px;border-radius:8px;border:1px solid #2a3743;background:#151e2a;color:#cfd8e6;font-size:12px}
 .gear-preview button[aria-pressed=true]{border-color:#c6fa55;background:#243420;color:#e8ffb0}
+
+/* Auth gate (real API mode only) */
+.auth-screen{min-height:100vh;display:grid;place-items:center;padding:24px 16px;background:#0b1018}
+.auth-card{width:100%;max-width:400px;display:grid;gap:16px;padding:28px 24px;border-radius:20px;background:#141c2b;color:#e9eef6;border:1px solid #243049;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+.auth-card h1{margin:0;font-size:1.4rem}
+.auth-error{margin:0;color:#ff8a80;font-size:.9rem}
+.field-error{display:block;color:#ff8a80;margin-top:4px}

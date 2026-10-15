@@ -3,6 +3,9 @@ import type { ApiErrorDto, CreateGoalRequest, CreateHabitRequest, GoalDto, Habit
 import { ApiError, ErrorCode } from './errors';
 const base = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
 const TIMEOUT_MS = 15000;
+/** Double-submit CSRF: echo the readable XSRF-TOKEN cookie in a header on every mutation. The session cookie stays HttpOnly. */
+const csrfToken = () => typeof document === 'undefined' ? undefined : document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='))?.slice('XSRF-TOKEN='.length);
+const isMutation = (method?: string) => !!method && !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
 export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -10,7 +13,11 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   try {
     response = await fetch(`${base}${path}`, {
       ...init, credentials: 'include', signal: controller.signal,
-      headers: { ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...init.headers },
+      headers: {
+        ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(isMutation(init.method) && csrfToken() ? { 'X-XSRF-TOKEN': decodeURIComponent(csrfToken()!) } : {}),
+        ...init.headers,
+      },
     });
   } catch {
     throw controller.signal.aborted
@@ -29,6 +36,9 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
 }
 export const httpClient: LifeOsApi = {
   getMe: () => request('/me'),
+  register: input => request('/auth/register', { method: 'POST', body: JSON.stringify(input) }),
+  login: input => request('/auth/login', { method: 'POST', body: JSON.stringify(input) }),
+  logout: () => request('/auth/logout', { method: 'POST' }),
   getDashboard: date => request(`/dashboard/today${date ? `?date=${encodeURIComponent(date)}` : ''}`),
   getGoals: () => request('/goals'),
   createGoal: (input: CreateGoalRequest) => request('/goals', { method: 'POST', body: JSON.stringify(input) }),

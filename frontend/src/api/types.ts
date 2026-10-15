@@ -4,6 +4,8 @@ export type RecordStatus = 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
 export type QuestStatus = 'PENDING' | 'COMPLETED' | 'SKIPPED';
 export type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export interface UserDto { id: string; displayName: string; email: string; timezone: string; }
+export interface RegisterRequest { email: string; password: string; displayName: string; timezone?: string; }
+export interface LoginRequest { email: string; password: string; }
 export interface GoalDto { id: string; title: string; category: GoalCategory; description: string; status: RecordStatus; createdAt: string; }
 export interface HabitDto { id: string; goalId: string; title: string; targetMinutes: number; xpReward: number; weekdays: Weekday[]; startDate: string; endDate: string | null; status: RecordStatus; }
 export interface QuestDto { habitId: string; goalId: string; goalTitle: string; title: string; targetMinutes: number; xpReward: number; category: GoalCategory; date: string; status: QuestStatus; completedAt: string | null; }

@@ -28,6 +28,39 @@ paths:
       responses:
         '200': {description: User, content: {application/json: {schema: {$ref: '#/components/schemas/User'}}}}
         '401': {$ref: '#/components/responses/Unauthorized'}
+  /auth/register:
+    post:
+      tags: [Identity]
+      operationId: register
+      security: []
+      description: Creates an account and signs in (sets the LIFEOS_SESSION cookie). Requires the CSRF header like every mutation; load any GET first to receive the XSRF-TOKEN cookie.
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/Register'}}}}
+      responses:
+        '201': {description: Created and signed in, content: {application/json: {schema: {$ref: '#/components/schemas/User'}}}}
+        '403': {$ref: '#/components/responses/CsrfInvalid'}
+        '409': {description: 'EMAIL_TAKEN', content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /auth/login:
+    post:
+      tags: [Identity]
+      operationId: login
+      security: []
+      description: Starts a session and issues a new session id and CSRF token. Wrong password and unknown email return the identical 401 INVALID_CREDENTIALS.
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/Login'}}}}
+      responses:
+        '200': {description: Signed in, content: {application/json: {schema: {$ref: '#/components/schemas/User'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/CsrfInvalid'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /auth/logout:
+    post:
+      tags: [Identity]
+      operationId: logout
+      security: []
+      description: Invalidates the session. Idempotent.
+      responses:
+        '204': {description: Signed out}
+        '403': {$ref: '#/components/responses/CsrfInvalid'}
   /dashboard/today:
     get:
       tags: [Quests]
@@ -167,11 +200,12 @@ paths:
         '200': {description: 30 day analytics, content: {application/json: {schema: {$ref: '#/components/schemas/Analytics'}}}}
 components:
   securitySchemes:
-    sessionCookie: {type: apiKey, in: cookie, name: LIFEOS_SESSION, description: 'Production auth only; CSRF protection required on mutations.'}
+    sessionCookie: {type: apiKey, in: cookie, name: LIFEOS_SESSION, description: 'Production auth only. HttpOnly, Secure, SameSite=Lax. Mutations also need the X-XSRF-TOKEN header echoing the XSRF-TOKEN cookie (double-submit).'}
   parameters:
     Id: {name: id, in: path, required: true, schema: {type: string}}
   responses:
     Unauthorized: {description: Unauthenticated, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+    CsrfInvalid: {description: 'CSRF_INVALID - missing or mismatching X-XSRF-TOKEN header', content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
     NotFound: {description: Not found or not owned, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
     Conflict: {description: 'State conflict, e.g. QUEST_NOT_ACTIVE (habit or goal paused on that date)', content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
     ValidationError: {description: Input validation failed, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
@@ -413,6 +447,20 @@ components:
         scheduledCount: {type: integer, minimum: 0}
         earnedXp: {type: integer}
         categories: {type: array, items: {$ref: '#/components/schemas/CategoryStat'}}
+    Register:
+      type: object
+      required: [email, password, displayName]
+      properties:
+        email: {type: string, format: email, maxLength: 254, description: 'Case-insensitive; stored lower-cased'}
+        password: {type: string, minLength: 10, maxLength: 72, writeOnly: true}
+        displayName: {type: string, minLength: 1, maxLength: 60}
+        timezone: {type: string, maxLength: 64, description: 'IANA zone; defaults to Asia/Ho_Chi_Minh'}
+    Login:
+      type: object
+      required: [email, password]
+      properties:
+        email: {type: string}
+        password: {type: string, writeOnly: true}
     ApiError:
       type: object
       required: [code, message]

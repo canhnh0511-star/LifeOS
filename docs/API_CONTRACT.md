@@ -86,6 +86,11 @@ HTTP status chuẩn: 400 validation, 401 chưa xác thực, 403 không có quy�
 | HTTP | `code` | Khi nào |
 |---|---|---|
 | 401 | `UNAUTHENTICATED` | Chưa đăng nhập hoặc session hết hạn |
+| 401 | `INVALID_CREDENTIALS` | Đăng nhập sai; email không tồn tại và sai mật khẩu trả về y hệt nhau |
+| 403 | `CSRF_INVALID` | Mutation thiếu hoặc sai header `X-XSRF-TOKEN` |
+| 409 | `EMAIL_TAKEN` | Email đã đăng ký (không phân biệt hoa/thường) |
+| 400 | `BAD_REQUEST` | JSON không đọc được |
+| 500 | `INTERNAL_ERROR` | Lỗi không mong đợi; không lộ chi tiết |
 | 404 | `NOT_FOUND` | Không tìm thấy hoặc không thuộc về user |
 | 422 | `VALIDATION_FAILED` | Input sai; `fields` liệt kê từng field kèm thông báo (gồm cả ngày sai định dạng, patch rỗng hoặc có field không cho phép) |
 | 422 | `QUEST_IN_FUTURE` | Hoàn thành/hoàn tác quest của ngày tương lai |
@@ -105,4 +110,4 @@ Chỉ có `HTTP_ERROR`, `NETWORK_ERROR`, `REQUEST_TIMEOUT` (status 0) là mã ph
 - `frontend/src/api/httpClient.ts` = bản triển khai fetch.
 - `VITE_API_MODE=real` chuyển adapter tại thời điểm build.
 - API contract test phải so sánh mock với backend trên các ngày fixture đã biết.
-- Frontend hiện tại chưa có màn hình login hay CSRF header; phải tạo trong B-01 trước khi release.
+- Auth (ADR-008): `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `GET /me`. Cookie phiên `LIFEOS_SESSION` (HttpOnly, Secure, SameSite=Lax); CSRF double-submit: mọi response (kể cả 401) đặt cookie `XSRF-TOKEN`, mutation phải gửi lại giá trị đó qua header `X-XSRF-TOKEN`. Không lưu token trong localStorage. Mật khẩu 10–72 ký tự. Chế độ real của frontend hiển thị màn hình đăng nhập/đăng ký tối giản khi `getMe` trả 401.

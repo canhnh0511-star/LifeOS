@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: lifeos-backend
+  datasource:
+    url: ${LIFEOS_DB_URL:jdbc:postgresql://localhost:5432/lifeos}
+    username: ${LIFEOS_DB_USER:lifeos}
+    password: ${LIFEOS_DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+server:
+  servlet:
+    session:
+      cookie:
+        name: LIFEOS_SESSION
+        http-only: true
+        same-site: lax
+        # Secure by default; local plain-http runs set LIFEOS_COOKIE_SECURE=false (docker-compose does).
+        secure: ${LIFEOS_COOKIE_SECURE:true}
+      timeout: 14d
+  error:
+    include-message: never
+    include-stacktrace: never
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

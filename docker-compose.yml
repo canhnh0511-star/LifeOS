@@ -1,0 +1,34 @@
+# Local backend stack: PostgreSQL + API. No credentials are committed; copy .env.example to .env first.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: lifeos
+      POSTGRES_USER: lifeos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?copy .env.example to .env and set POSTGRES_PASSWORD}
+    volumes:
+      - lifeos-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lifeos -d lifeos"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  api:
+    build: ./backend
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      LIFEOS_DB_URL: jdbc:postgresql://db:5432/lifeos
+      LIFEOS_DB_USER: lifeos
+      LIFEOS_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # Plain http on localhost. Leave true (default) behind HTTPS in any real deployment.
+      LIFEOS_COOKIE_SECURE: ${LIFEOS_COOKIE_SECURE:-false}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8080 && printf \"GET /actuator/health HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q UP <&3'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+volumes:
+  lifeos-db:

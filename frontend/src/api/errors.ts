@@ -8,6 +8,9 @@ export const ErrorCode = {
   questNotActive: 'QUEST_NOT_ACTIVE',
   bossLocked: 'BOSS_LOCKED',
   unauthenticated: 'UNAUTHENTICATED',
+  invalidCredentials: 'INVALID_CREDENTIALS',
+  emailTaken: 'EMAIL_TAKEN',
+  csrfInvalid: 'CSRF_INVALID',
   http: 'HTTP_ERROR',
   network: 'NETWORK_ERROR',
   timeout: 'REQUEST_TIMEOUT'

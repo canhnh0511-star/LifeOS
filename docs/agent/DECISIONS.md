@@ -8,8 +8,8 @@
 | ADR-004 | Chấp nhận cho demo | Timezone Asia/Ho_Chi_Minh, ISO local date | Tính schedule của habit dễ dự đoán |
 | ADR-005 | Chấp nhận cho demo | XP event log và transition idempotent | Không vô tình cộng điểm hai lần |
 | ADR-006 | Đề xuất cho backend | Scheduled quest instance bất biến + schedule version | Toàn vẹn analytics lịch sử và XP |
-| ADR-007 | Đề xuất cho backend | Secure HTTP-only cookie + CSRF token | Tránh token trong localStorage và các bẫy CSRF của cookie |
-| ADR-008 | Mở | Nhà cung cấp credential (local password hay OAuth) | Quyết định trước B-01 |
+| ADR-007 | Chấp nhận (B-01) | Secure HTTP-only cookie + CSRF token | Tránh token trong localStorage và các bẫy CSRF của cookie |
+| ADR-008 | Chấp nhận (2026-10-15) | Credential nội bộ: email + mật khẩu (BCrypt), session cookie `LIFEOS_SESSION` + CSRF double-submit; OAuth để sau, thêm như một cách đăng nhập khác dùng chung session | Owner chọn "user nội bộ trước"; không phụ thuộc dịch vụ ngoài, dễ test |
 | ADR-009 | Mở | Ý nghĩa của Streak toàn cục: habit tốt nhất hay mọi ngày có lịch | Demo hiển thị max per-habit streak |
 | ADR-010 | Chấp nhận cho demo (thay đổi bởi ADR-018) | Goal bị pause ẩn các quest liên kết; pause habit riêng vẫn được giữ | Tránh complete quest của goal không hoạt động |
 | ADR-011 | Chấp nhận | Area stats: XP và level riêng cho mỗi lĩnh vực; `totalXp = Σ areaXp`; level tổng giữ công thức cũ | Chỉ số kiểu nhân vật RPG mà không đổi công thức level |
@@ -26,3 +26,4 @@
 ADR-009 (streak toàn cục) vẫn Mở; BALANCED và COMEBACK dùng định nghĩa streak theo từng habit, cần xác nhận lại khi ADR-009 được chốt. Spec chi tiết: `.scratch/rpg-campaign/spec.md`.
 
 Thay đổi các quyết định đã Chấp nhận cần thảo luận rõ ràng trước khi làm việc phá vỡ contract.
+| ADR-021 | Chấp nhận (B-01) | Auth: `register/login/logout` + `GET /me`; session Spring Security (HttpSession), cookie HttpOnly/Secure/SameSite=Lax, đổi session id và CSRF token khi đăng nhập; CSRF double-submit (`XSRF-TOKEN` → `X-XSRF-TOKEN`); BCrypt cost 12, mật khẩu 10–72 ký tự; email lowercase unique; request ẩn danh không tạo session; test chạy trên PostgreSQL thật (Testcontainers nếu có Docker, ngược lại embedded Postgres) | Không lưu token trong localStorage; không lộ email nào đã tồn tại qua login (đăng ký vẫn trả EMAIL_TAKEN) |

@@ -70,6 +70,7 @@ export default function App() {
   const toggleHabit = async (habit: HabitDto) => { try { await api.updateHabit(habit.id, { status: habit.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' }); setNotice('Đã cập nhật thói quen. Có hiệu lực từ ngày mai.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi.')); } };
   const goTo = (screen: Tab) => { setTab(screen); window.location.hash = screen; setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   const reset = () => { if (!isDemo) return; if (!window.confirm('Khôi phục dữ liệu mẫu? Các thay đổi trên máy này sẽ mất.')) return; resetDemoData(); setSelectedDate(todayInTimezone()); setModal(null); setNotice('Đã khôi phục dữ liệu mẫu.'); refresh(); };
+  const logout = async () => { try { await api.logout(); } catch (e) { setNotice(failure(e, 'Không đăng xuất được.')); return; } window.location.reload(); };
   const exportData = () => { if (!isDemo) return; const blob = new Blob([exportDemoData()], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `life-os-demo-${today}.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); };
 
   return <div className="app-shell">
@@ -102,7 +103,7 @@ export default function App() {
     {modal && <Modal title={MODAL_TITLES[modal]} onClose={() => setModal(null)}>
       {modal === 'goal' && <GoalForm onClose={() => setModal(null)} onSave={saveGoal}/>}
       {modal === 'habit' && <HabitForm goals={goals} onClose={() => setModal(null)} onSave={saveHabit}/>}
-      {modal === 'settings' && <SettingsPanel isDemo={isDemo} onExport={exportData} onReset={reset}/>}
+      {modal === 'settings' && <SettingsPanel isDemo={isDemo} onExport={exportData} onReset={reset} onLogout={logout}/>}
     </Modal>}
     {celebration && <Celebration data={celebration} onClose={() => setCelebration(null)}/>}
     {notice && <div role="status" className="toast"><Sparkles size={18}/>{notice}<button aria-label="Đóng thông báo" onClick={() => setNotice('')}><X size={15}/></button></div>}

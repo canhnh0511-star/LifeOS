@@ -66,3 +66,25 @@ describe('httpClient requests', () => {
     await expect(httpClient.getMe()).resolves.toBeUndefined();
   });
 });
+
+describe('httpClient CSRF', () => {
+  const cookie = (value: string) => vi.stubGlobal('document', { cookie: value });
+  const lastHeaders = (fetchMock: ReturnType<typeof vi.fn>) => fetchMock.mock.calls[0][1].headers as Record<string, string>;
+  it('echoes the XSRF-TOKEN cookie in X-XSRF-TOKEN on mutations only', async () => {
+    cookie('theme=dark; XSRF-TOKEN=abc%2B123');
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(json(200, {})));
+    vi.stubGlobal('fetch', fetchMock);
+    await httpClient.login({ email: 'a@b.co', password: 'x' });
+    expect(lastHeaders(fetchMock)['X-XSRF-TOKEN']).toBe('abc+123');
+    fetchMock.mockClear();
+    await httpClient.getMe();
+    expect(lastHeaders(fetchMock)['X-XSRF-TOKEN']).toBeUndefined();
+  });
+  it('sends no CSRF header when the cookie is absent, and logout works with a 204', async () => {
+    cookie('theme=dark');
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(httpClient.logout()).resolves.toBeUndefined();
+    expect(lastHeaders(fetchMock)['X-XSRF-TOKEN']).toBeUndefined();
+  });
+});
