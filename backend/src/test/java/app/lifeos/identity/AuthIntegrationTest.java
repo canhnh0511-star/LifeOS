@@ -62,6 +62,7 @@ class AuthIntegrationTest {
         String setCookie(String name) { return lastSetCookies.stream().filter(h -> h.startsWith(name + "=")).findFirst().orElse(null); }
     }
 
+    private static String stripRequestId(String body) { return body.replaceAll(",\"requestId\":\"[^\"]*\"", ""); }
     private static String email() { return "u" + UUID.randomUUID().toString().substring(0, 8) + "@example.com"; }
     private static String reg(String email, String password) {
         return "{\"email\":\"" + email + "\",\"password\":\"" + password + "\",\"displayName\":\"Cảnh\"}";
@@ -199,7 +200,7 @@ class AuthIntegrationTest {
         HttpResponse<String> wrong = visitor().post("/api/v1/auth/login", login(email, "wrong-password"));
         HttpResponse<String> unknown = visitor().post("/api/v1/auth/login", login(email(), "wrong-password"));
         assertThat(wrong.statusCode()).isEqualTo(401);
-        assertThat(wrong.body()).contains("\"code\":\"INVALID_CREDENTIALS\"").isEqualTo(unknown.body());
+        assertThat(wrong.body()).contains("\"code\":\"INVALID_CREDENTIALS\"").satisfies(w -> assertThat(stripRequestId(w)).isEqualTo(stripRequestId(unknown.body())));
     }
 
     @Test

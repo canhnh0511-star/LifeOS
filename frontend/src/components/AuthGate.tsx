@@ -40,7 +40,7 @@ function AuthForm({ onDone }: { onDone: () => void }) {
       else await api.login({ email: email.trim(), password });
       onDone();
     } catch (err) {
-      if (err instanceof ApiError) { const f = err.fields ?? {}; setFields(f); setError(Object.keys(f).length ? '' : err.message); }
+      if (err instanceof ApiError) { const f = err.fields ?? {}; setFields(f); setError(Object.keys(f).length ? '' : err.status >= 500 && err.requestId ? `${err.message} (mã theo dõi: ${err.requestId})` : err.message); }
       else setError('Có lỗi xảy ra. Vui lòng thử lại.');
     } finally { setBusy(false); }
   };

@@ -1,4 +1,4 @@
-package app.lifeos.identity;
+package app.lifeos.identity.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

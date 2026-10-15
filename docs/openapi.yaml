@@ -468,3 +468,4 @@ components:
         code: {type: string}
         message: {type: string}
         fields: {type: object, additionalProperties: {type: string}}
+        requestId: {type: string, description: 'Correlation id, also in the X-Request-Id response header; quote it when reporting a problem'}

@@ -29,7 +29,7 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   if (!response.ok) {
     const body = await response.json().catch(() => null) as Partial<ApiErrorDto> | null;
     const fallback = response.status === 401 ? ErrorCode.unauthenticated : ErrorCode.http;
-    throw new ApiError(response.status, body?.code ?? fallback, body?.message ?? `HTTP ${response.status}`, body?.fields);
+    throw new ApiError(response.status, body?.code ?? fallback, body?.message ?? `HTTP ${response.status}`, body?.fields, body?.requestId ?? response.headers.get('X-Request-Id') ?? undefined);
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;

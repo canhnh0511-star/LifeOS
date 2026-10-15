@@ -32,3 +32,20 @@ management:
   endpoint:
     health:
       show-details: never
+logging:
+  level:
+    root: INFO
+    app.lifeos: ${LIFEOS_LOG_LEVEL:INFO}   # DEBUG adds anonymous 401s and health checks
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN                # set to DEBUG to trace SQL; bound values stay hidden
+  # Every line carries the request correlation id and user id (see RequestLoggingFilter / LogContext).
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p [%X{requestId:-}] [u=%X{userId:--}] %-28.28logger{27} : %m%n%wEx"
+    file: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p [%X{requestId:-}] [u=%X{userId:--}] %-28.28logger{27} : %m%n%wEx"
+  # Set LOGGING_FILE_NAME=/var/log/lifeos/app.log to also write a size/time-rolled file (14 days kept).
+  file:
+    name: ${LOGGING_FILE_NAME:}
+  logback:
+    rollingpolicy:
+      max-history: 14
+      max-file-size: 20MB

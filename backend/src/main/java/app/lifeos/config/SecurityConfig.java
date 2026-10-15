@@ -1,6 +1,10 @@
 package app.lifeos.config;
 
-import app.lifeos.web.ApiError;
+import app.lifeos.common.error.ApiError;
+import app.lifeos.common.logging.MdcUserFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +26,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
 class SecurityConfig {
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
     static final String CSRF_COOKIE = "XSRF-TOKEN";
     static final String CSRF_HEADER = "X-XSRF-TOKEN";
 
@@ -43,6 +48,7 @@ class SecurityConfig {
     SecurityFilterChain api(HttpSecurity http, CsrfTokenRepository csrfRepo) throws Exception {
         http
             .csrf(c -> c.csrfTokenRepository(csrfRepo).csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+            .addFilterAfter(new MdcUserFilter(), SecurityContextHolderFilter.class)
             .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
             // An anonymous 401 must not allocate a server session (the default request cache would, to remember the URL).
             .requestCache(c -> c.requestCache(new org.springframework.security.web.savedrequest.NullRequestCache()))
@@ -56,8 +62,14 @@ class SecurityConfig {
             .logout(l -> l.disable())
             .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'none'; frame-ancestors 'none'")))
             .exceptionHandling(e -> e
-                .authenticationEntryPoint((req, res, ex) -> json(res, 401, ApiError.json("UNAUTHENTICATED", "Chưa đăng nhập hoặc phiên đã hết hạn.")))
-                .accessDeniedHandler((req, res, ex) -> json(res, 403, ApiError.json("CSRF_INVALID", "Yêu cầu bị từ chối. Tải lại trang và thử lại."))))
+                .authenticationEntryPoint((req, res, ex) -> {
+                    log.debug("auth.unauthenticated method={} path={}", req.getMethod(), req.getRequestURI());
+                    json(res, 401, ApiError.json("UNAUTHENTICATED", "Chưa đăng nhập hoặc phiên đã hết hạn."));
+                })
+                .accessDeniedHandler((req, res, ex) -> {
+                    log.warn("auth.csrf.rejected method={} path={} reason={}", req.getMethod(), req.getRequestURI(), ex.getClass().getSimpleName());
+                    json(res, 403, ApiError.json("CSRF_INVALID", "Yêu cầu bị từ chối. Tải lại trang và thử lại."));
+                }))
             .cors(Customizer.withDefaults());
         return http.build();
     }

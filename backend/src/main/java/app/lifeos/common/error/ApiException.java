@@ -1,4 +1,4 @@
-package app.lifeos.web;
+package app.lifeos.common.error;
 
 import java.util.Map;
 import org.springframework.http.HttpStatus;

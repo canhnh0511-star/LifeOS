@@ -1,4 +1,4 @@
-package app.lifeos.web;
+package app.lifeos.common.error;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -20,6 +20,7 @@ class ApiExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     ResponseEntity<ApiError> api(ApiException e) {
+        log.info("request.rejected status={} code={} fields={}", e.status().value(), e.code(), e.fields().keySet());
         return ResponseEntity.status(e.status()).body(new ApiError(e.code(), e.getMessage(), e.fields()));
     }
 
@@ -27,11 +28,13 @@ class ApiExceptionHandler {
     ResponseEntity<ApiError> validation(MethodArgumentNotValidException e) {
         Map<String, String> fields = new LinkedHashMap<>();
         e.getBindingResult().getFieldErrors().forEach(f -> fields.putIfAbsent(f.getField(), f.getDefaultMessage()));
+        log.info("request.rejected status=422 code=VALIDATION_FAILED fields={}", fields.keySet()); // field names only, never submitted values
         return ResponseEntity.unprocessableEntity().body(new ApiError("VALIDATION_FAILED", "Dữ liệu không hợp lệ.", fields));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ApiError> unreadable(HttpMessageNotReadableException e) {
+        log.warn("request.unreadable status=400 reason={}", e.getClass().getSimpleName());
         return ResponseEntity.badRequest().body(new ApiError("BAD_REQUEST", "Nội dung yêu cầu không đọc được.", Map.of()));
     }
 
@@ -47,7 +50,7 @@ class ApiExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> unexpected(Exception e) {
-        log.error("Unhandled error", e);
+        log.error("request.failed status=500 code=INTERNAL_ERROR", e);
         return ResponseEntity.internalServerError().body(new ApiError("INTERNAL_ERROR", "Đã có lỗi hệ thống. Vui lòng thử lại.", Map.of()));
     }
 }

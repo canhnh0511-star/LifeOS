@@ -1,7 +1,15 @@
-package app.lifeos.identity;
+package app.lifeos.identity.controller;
 
-import app.lifeos.web.ApiException;
+import app.lifeos.common.error.ApiException;
+import app.lifeos.identity.dto.AuthRequests;
+import app.lifeos.identity.dto.UserDto;
+import app.lifeos.identity.model.User;
+import app.lifeos.identity.repository.UserRepository;
+import app.lifeos.identity.service.AuthService;
+import app.lifeos.common.logging.LogContext;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -26,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1")
 class AuthController {
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
     private final AuthService auth;
     private final UserRepository users;
     private final CsrfTokenRepository csrf;
@@ -53,6 +62,7 @@ class AuthController {
     @PostMapping("/auth/logout")
     ResponseEntity<Void> logout(HttpServletRequest req, HttpServletResponse res) {
         var session = req.getSession(false);
+        log.info("auth.logout hadSession={}", session != null);
         if (session != null) session.invalidate();
         holder.clearContext();
         csrf.saveToken(null, req, res); // expire the CSRF cookie too
@@ -64,7 +74,7 @@ class AuthController {
         UUID id = UUID.fromString(authentication.getName());
         // The account may have been deleted since the session was created.
         return users.findById(id).map(UserDto::of)
-            .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "Phiên đăng nhập đã hết hạn."));
+            .orElseThrow(() -> { log.warn("auth.session.orphaned userId={}", id); return new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "Phiên đăng nhập đã hết hạn."); });
     }
 
     private void signIn(User user, HttpServletRequest req, HttpServletResponse res) {
@@ -76,5 +86,7 @@ class AuthController {
         holder.setContext(context);
         contexts.saveContext(context, req, res);
         csrf.saveToken(csrf.generateToken(req), req, res);
+        LogContext.user(req, user.getId().toString());
+        log.info("auth.signed_in userId={}", user.getId());
     }
 }

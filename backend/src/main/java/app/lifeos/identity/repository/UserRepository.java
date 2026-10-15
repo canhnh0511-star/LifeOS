@@ -1,4 +1,6 @@
-package app.lifeos.identity;
+package app.lifeos.identity.repository;
+
+import app.lifeos.identity.model.User;
 
 import java.util.Optional;
 import java.util.UUID;

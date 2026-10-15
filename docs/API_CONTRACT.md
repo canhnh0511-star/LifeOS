@@ -79,7 +79,7 @@ Mảng `days` phải có đúng 7 ngày theo thứ tự trên production (ví d�
 - Weekday từ 1 đến 7 (ISO).
 
 ## Lỗi
-Định dạng: `{"code":"QUEST_OUTSIDE_SCHEDULE","message":"Ngày không thuộc lịch thói quen.","fields":{}}`.
+Định dạng: `{"code":"QUEST_OUTSIDE_SCHEDULE","message":"Ngày không thuộc lịch thói quen.","fields":{},"requestId":"…"}`. `requestId` (backend thật) trùng header `X-Request-Id`; client có thể gửi `X-Request-Id` riêng (8–64 ký tự `A-Za-z0-9._-`) để nối log hai phía.
 HTTP status chuẩn: 400 validation, 401 chưa xác thực, 403 không có quyền, 404 không tìm thấy, 409 xung đột trạng thái, 422 domain validation, 429 rate limit, 500 lỗi không mong đợi. Không bao giờ trả raw exception hay stack trace.
 
 ### Bảng mã lỗi (mock và backend phải khớp)

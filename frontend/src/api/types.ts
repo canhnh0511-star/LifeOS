@@ -33,4 +33,4 @@ export interface QuestMutationDto { habitId: string; date: string; status: 'PEND
 export interface BossMutationDto { bossId: string; status: BossStatus; xpAwarded: number; totalXp: number; level: number; effects: RewardEffectDto[]; }
 export interface CreateGoalRequest { title: string; category: GoalCategory; description: string; }
 export interface CreateHabitRequest { title: string; goalId: string; targetMinutes: number; xpReward: number; weekdays: Weekday[]; startDate: string; }
-export interface ApiErrorDto { code: string; message: string; fields?: Record<string, string>; }
+export interface ApiErrorDto { requestId?: string; code: string; message: string; fields?: Record<string, string>; }

@@ -1,4 +1,4 @@
-package app.lifeos.identity;
+package app.lifeos.identity.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

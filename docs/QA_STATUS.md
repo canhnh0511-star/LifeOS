@@ -25,4 +25,4 @@
 2026-10-15: owner duyệt rõ ràng ticket UI-00 ("oke duyệt ticket 00"). Backend được mở khóa.
 
 ## Backend B-01
-15 integration test (HTTP thật, PostgreSQL thật) cho auth/CSRF/cookie; 112 test frontend. Chưa chạy: Docker Compose, Testcontainers, rate limit.
+21 integration test (HTTP thật, PostgreSQL thật) cho auth/CSRF/cookie; 112 test frontend. Chưa chạy: Docker Compose, Testcontainers, rate limit.

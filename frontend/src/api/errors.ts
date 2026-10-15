@@ -16,9 +16,9 @@ export const ErrorCode = {
   timeout: 'REQUEST_TIMEOUT'
 } as const;
 
-/** `status` is the HTTP status (0 when no response was received). `fields` maps request field names to messages. */
+/** `status` is the HTTP status (0 when no response was received). `fields` maps request field names to messages; `requestId` is the server correlation id to quote when reporting a problem. */
 export class ApiError extends Error {
-  constructor(readonly status: number, readonly code: string, message: string, readonly fields?: Record<string, string>) {
+  constructor(readonly status: number, readonly code: string, message: string, readonly fields?: Record<string, string>, readonly requestId?: string) {
     super(message);
     this.name = 'ApiError';
   }
