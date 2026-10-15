@@ -167,6 +167,17 @@ describe('bosses', () => {
       ['BOSS_COMPLETE', 1, boss.xpReward], ['BOSS_REVERT', 1, -boss.xpReward], ['BOSS_COMPLETE', 2, boss.xpReward]
     ]);
   });
+  it('gives each chapter a badge that follows the boss: earned on defeat, revoked on undo', async () => {
+    freezeAt(D0);
+    const badgeOf = async () => (await chaptersOf())[0].badge;
+    expect(await badgeOf()).toMatchObject({ code: 'CHAPTER_1', earned: false });
+    const boss = await bossOf('SLIME_OF_INERTIA');
+    await mockClient.defeatBoss(boss.id);
+    expect((await badgeOf()).earned).toBe(true);
+    await mockClient.undoBoss(boss.id);
+    expect((await badgeOf()).earned).toBe(false);
+    expect((await chaptersOf()).map(c => c.badge.name)).toHaveLength(4);
+  });
   it('rejects a locked boss with BOSS_LOCKED and an unknown boss with NOT_FOUND', async () => {
     freezeAt(D0);
     const locked = await bossOf('TROLL_OF_BURNOUT');

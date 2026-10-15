@@ -68,7 +68,7 @@ Với kỳ N=7 hoặc 30 bao gồm cả hôm nay, mỗi ngày trả `scheduled`,
 ## Boss
 - Mỗi chặng có đúng một boss lấy từ **danh mục boss** (dữ liệu cấu hình). Thuộc tính: `code`, `name`, `category`, `targetMinutes`, `xpReward` (1..100), `requiredLevel`, `tier` (1..5), `artKey`, `bossDate` (ngày cuối chặng).
 - **Trạng thái**: `LOCKED` (level lĩnh vực của boss < `requiredLevel`), `AVAILABLE`, `DEFEATED`. Boss có thể bị đánh lại cho đến hết campaign; thất bại không bị phạt.
-- **Hạ boss**: `PUT /bosses/{bossId}/completion` idempotent như quest. Lần đầu ghi `BOSS_COMPLETE` +`xpReward` và cấp huy hiệu chặng. Chỉ hạ được khi `AVAILABLE`; boss `LOCKED` trả lỗi `BOSS_LOCKED`.
+- **Hạ boss**: `PUT /bosses/{bossId}/completion` idempotent như quest. Lần đầu ghi `BOSS_COMPLETE` +`xpReward` và cấp huy hiệu chặng (huy hiệu chỉ mang tính trưng bày, không có XP riêng; trạng thái `earned` suy ra từ boss đang `DEFEATED`). Chỉ hạ được khi `AVAILABLE`; boss `LOCKED` trả lỗi `BOSS_LOCKED`.
 - **Undo**: `DELETE /bosses/{bossId}/completion` ghi `BOSS_REVERT` −`xpReward` và thu hồi huy hiệu. Hạ lại ghi event mới ở cycle tăng. Quy tắc backdate 7 ngày áp dụng cho ngày hạ.
 - **Level tụt sau khi thu hồi**: nếu level lĩnh vực không còn đạt `requiredLevel` của một boss đã hạ thì boss vẫn giữ trạng thái `DEFEATED` (điều kiện chỉ kiểm tra lúc bắt đầu đánh).
 - **Tier** suy ra từ `xpReward`: 1 Minion ≤40, 2 Elite 41–55, 3 Champion 56–70, 4 Legend 71–85, 5 Mythic 86–100. UI chọn kích thước, khung, hiệu ứng theo tier.

@@ -60,12 +60,13 @@
 .achievement-body p{margin:0;font-size:13px;color:#aab6c7}
 .achievement-body small{font-size:12px;color:#8d9ab0}
 .achievement.is-earned small{color:#e7c75a}
-.celebration{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(5,8,14,.78);cursor:pointer;animation:cel-fade .25s ease-out}
+.celebration{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(5,8,14,.78);animation:cel-fade .25s ease-out}
 .celebration-rays{position:absolute;width:140vmax;height:140vmax;background:repeating-conic-gradient(from 0deg,rgba(198,250,85,.14) 0 6deg,transparent 6deg 18deg);animation:cel-spin 24s linear infinite;mask-image:radial-gradient(circle,#000 0,transparent 55%)}
 .celebration.tier-4 .celebration-rays,.celebration.tier-5 .celebration-rays{background:repeating-conic-gradient(from 0deg,rgba(245,179,1,.22) 0 6deg,transparent 6deg 18deg)}
-.celebration-card{position:relative;display:grid;gap:8px;justify-items:center;text-align:center;padding:32px 40px;max-width:min(92vw,460px);border-radius:20px;border:1px solid #3a4a3a;background:#111a24;box-shadow:0 0 60px rgba(198,250,85,.25);animation:cel-pop .5s cubic-bezier(.2,1.4,.4,1)}
+.celebration-card{position:relative;display:grid;gap:8px;justify-items:center;text-align:center;padding:32px 40px;max-width:min(92vw,540px);border-radius:20px;border:1px solid #3a4a3a;background:#111a24;box-shadow:0 0 60px rgba(198,250,85,.25);animation:cel-pop .5s cubic-bezier(.2,1.4,.4,1)}
 .celebration.tier-4 .celebration-card,.celebration.tier-5 .celebration-card{border-color:#f5b301;box-shadow:0 0 80px rgba(245,179,1,.5)}
-.celebration-card h2{margin:0;display:flex;align-items:center;gap:8px;font-size:26px;color:#f4f8fd}
+.celebration-card h2{margin:0;text-wrap:balance;font-size:26px;line-height:1.25;color:#f4f8fd}
+.celebration-card h2 svg{vertical-align:-4px;margin-right:6px}
 .celebration-card p{margin:0;color:#aab6c7}
 .celebration-card .celebration-big{font-size:38px;font-weight:850;color:#c6fa55}
 .celebration-card small{margin-top:8px;color:#6f7d92}
@@ -76,3 +77,11 @@
 @keyframes cel-pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes cel-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.celebration,.celebration-card,.celebration-rays{animation:none}}
+
+.celebration-card .celebration-line{display:flex;align-items:center;gap:6px;font-size:15px;color:#e9eef6}
+.celebration-card .celebration-line svg{color:#f5c518}
+.celebration-close{margin-top:10px}
+
+.chapter-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid #2a3743;color:#6f7d92}
+.chapter-badge.is-earned{border-color:#7a6a1c;background:#2a2410;color:#f5c518}
+.page-content:focus{outline:none}

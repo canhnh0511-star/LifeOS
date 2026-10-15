@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Lock, Swords, Undo2 } from 'lucide-react';
+import { Award, Check, Lock, Swords, Undo2 } from 'lucide-react';
 import type { BossDto, ChapterDto } from '../api/types';
 import { categoryLabel, formatDate, todayInTimezone } from '../domain/rules';
 
@@ -18,11 +18,11 @@ interface Props { chapters: ChapterDto[]; busyBossId: string | null; onDefeat: (
 export function CampaignMap({ chapters, busyBossId, onDefeat, onUndo }: Props) {
   const today = todayInTimezone();
   return <ol className="campaign" aria-label="Bản đồ chiến dịch">{chapters.map(chapter => {
-    const { boss } = chapter;
+    const { boss, badge } = chapter;
     const phase = today > chapter.endDate ? 'past' : today >= chapter.startDate ? 'current' : 'future';
     const busy = busyBossId === boss.id;
     return <li key={chapter.index} className={`chapter chapter-${phase}`}>
-      <div className="chapter-head"><span className="chapter-index">Chặng {chapter.index}</span><h3>{chapter.title}</h3><small>{formatDate(chapter.startDate, { day: 'numeric', month: 'short' })} – {formatDate(chapter.endDate, { day: 'numeric', month: 'short' })}{phase === 'current' && ' · đang diễn ra'}</small></div>
+      <div className="chapter-head"><span className="chapter-index">Chặng {chapter.index}</span><h3>{chapter.title}</h3><span className={`chapter-badge ${badge.earned ? 'is-earned' : ''}`} title={badge.earned ? 'Đã nhận huy hiệu' : 'Hạ boss để nhận huy hiệu'}><Award size={14} aria-hidden="true"/> {badge.name}<span className="sr-only">{badge.earned ? ' (đã nhận)' : ' (chưa nhận)'}</span></span><small>{formatDate(chapter.startDate, { day: 'numeric', month: 'short' })} – {formatDate(chapter.endDate, { day: 'numeric', month: 'short' })}{phase === 'current' && ' · đang diễn ra'}</small></div>
       <article className={`boss-card status-${boss.status.toLowerCase()}`} aria-label={`Boss ${boss.name}`}>
         <BossArt boss={boss}/>
         <div className="boss-body">

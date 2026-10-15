@@ -291,13 +291,22 @@ components:
         chapters: {type: array, items: {$ref: '#/components/schemas/Chapter'}}
     Chapter:
       type: object
-      required: [index, title, startDate, endDate, boss]
+      required: [index, title, startDate, endDate, boss, badge]
       properties:
         index: {type: integer, minimum: 1}
         title: {type: string}
         startDate: {$ref: '#/components/schemas/LocalDate'}
         endDate: {$ref: '#/components/schemas/LocalDate'}
         boss: {$ref: '#/components/schemas/Boss'}
+        badge: {$ref: '#/components/schemas/ChapterBadge'}
+    ChapterBadge:
+      type: object
+      description: 'Cosmetic reward, earned exactly while the chapter boss is DEFEATED. Carries no XP.'
+      required: [code, name, earned]
+      properties:
+        code: {type: string}
+        name: {type: string}
+        earned: {type: boolean}
     Boss:
       type: object
       required: [id, code, name, category, targetMinutes, xpReward, tier, requiredLevel, currentAreaLevel, artKey, bossDate, status, defeatedDate, defeatedAt]

@@ -13,7 +13,9 @@ export interface DailyDashboardDto { date: string; user: UserDto; quests: QuestD
 export type BossStatus = 'LOCKED' | 'AVAILABLE' | 'DEFEATED';
 export type BossTier = 1 | 2 | 3 | 4 | 5;
 export interface BossDto { id: string; code: string; name: string; category: GoalCategory; targetMinutes: number; xpReward: number; tier: BossTier; requiredLevel: number; currentAreaLevel: number; artKey: string; bossDate: string; status: BossStatus; defeatedDate: string | null; defeatedAt: string | null; }
-export interface ChapterDto { index: number; title: string; startDate: string; endDate: string; boss: BossDto; }
+/** Cosmetic reward for a chapter; earned exactly while its boss is DEFEATED. Carries no XP (the boss reward does). */
+export interface ChapterBadgeDto { code: string; name: string; earned: boolean; }
+export interface ChapterDto { index: number; title: string; startDate: string; endDate: string; boss: BossDto; badge: ChapterBadgeDto; }
 export interface JourneyDto { id: string; title: string; startDate: string; durationDays: number; elapsedDays: number; totalScheduledToDate: number; completedToDate: number; status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED'; chapters: ChapterDto[]; }
 export type AchievementCode = 'STREAK_7' | 'BALANCED' | 'COMEBACK';
 export interface AchievementDto { code: AchievementCode; name: string; description: string; xpReward: number; status: 'LOCKED' | 'EARNED'; earnedAt: string | null; }

@@ -4,7 +4,8 @@ import { api, isDemo } from './api';
 import { exportDemoData, resetDemoData } from './api/mockClient';
 import type { BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, QuestDto } from './api/types';
 import { formatDate, todayInTimezone } from './domain/rules';
-import { Celebration, levelReached, type CelebrationData } from './components/Celebration';
+import { Celebration, hasCelebration, type CelebrationData } from './components/Celebration';
+import { levelUps } from './domain/levelUps';
 import { GoalForm, HabitForm } from './components/forms';
 import { Modal } from './components/Modal';
 import { Logo } from './components/primitives';
@@ -20,6 +21,8 @@ import './styles.css';
 type ModalKind = 'goal' | 'habit' | 'settings' | null;
 const MODAL_TITLES = { goal: 'Mục tiêu mới', habit: 'Thói quen mới', settings: 'Cài đặt hệ thống' } as const;
 const failure = (e: unknown, fallback: string) => e instanceof Error ? e.message : fallback;
+/** Fresh progress for level-up detection; a failure here must not hide that the action itself succeeded. */
+const latestProgress = () => api.getProgress().catch(() => undefined);
 
 export default function App() {
   const [tab, setTab] = useState<Tab>(tabFromHash);
@@ -45,7 +48,7 @@ export default function App() {
     if (busyId) return; setBusyId(quest.habitId);
     try {
       const r = quest.status === 'COMPLETED' ? await api.undoQuest(quest.habitId, selectedDate) : await api.completeQuest(quest.habitId, selectedDate);
-      const reached = levelReached(dashboard?.progress.level, r.level); if (reached !== null) setCelebration({ kind: 'level', level: reached });
+      const next = await latestProgress(); const ups = next ? levelUps(dashboard?.progress, next) : null; if (ups && hasCelebration(ups)) setCelebration(ups);
       setNotice(withEffects(r.xpAwarded > 0 ? `Hoàn thành! +${r.xpAwarded} XP` : r.xpAwarded < 0 ? `Đã hoàn tác ${r.xpAwarded} XP` : 'Đã cập nhật nhiệm vụ.', r.effects)); refresh();
     } catch (e) { setNotice(failure(e, 'Không thể cập nhật nhiệm vụ.')); }
     finally { setBusyId(null); }
@@ -54,7 +57,9 @@ export default function App() {
     if (busyBossId) return; setBusyBossId(boss.id);
     try {
       const r = defeat ? await api.defeatBoss(boss.id) : await api.undoBoss(boss.id);
-      if (defeat && r.status === 'DEFEATED' && r.xpAwarded > 0) setCelebration({ kind: 'boss', boss, xp: boss.xpReward, levelUp: levelReached(dashboard?.progress.level, r.level) });
+      const next = await latestProgress(); const ups = next ? levelUps(dashboard?.progress, next) : { level: null, areas: [] };
+      if (defeat && r.status === 'DEFEATED' && r.xpAwarded > 0) setCelebration({ ...ups, boss: { boss, xp: boss.xpReward, badgeName: dashboard?.journey?.chapters.find(c => c.boss.id === boss.id)?.badge.name ?? null } });
+      else if (hasCelebration(ups)) setCelebration(ups);
       setNotice(withEffects(r.xpAwarded > 0 ? `Đã hạ ${boss.name}! +${r.xpAwarded} XP` : r.xpAwarded < 0 ? `Đã hoàn tác ${boss.name}: ${r.xpAwarded} XP` : 'Đã cập nhật boss.', r.effects)); refresh();
     } catch (e) { setNotice(failure(e, 'Không thể cập nhật boss.')); }
     finally { setBusyBossId(null); }
@@ -83,7 +88,7 @@ export default function App() {
     {menuOpen && <button className="sidebar-scrim" aria-label="Đóng menu" onClick={() => setMenuOpen(false)}/>}
     <div className="main-area">
       <header className="topbar"><div className="topbar-left"><button className="mobile-menu icon-btn" aria-label="Mở menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><Menu size={21}/></button><span className="breadcrumb">Workspace</span><span className="slash">/</span><strong>{primaryNav.find(n => n.id === tab)?.title}</strong></div><div className="topbar-right"><span className="demo-pill"><span/> {isDemo ? 'DEMO MODE' : 'CONNECTED'}</span><span className="top-date"><CalendarDays size={16}/> {formatDate(today, { day: 'numeric', month: 'short', year: 'numeric' })}</span><button onClick={() => setModal('settings')} aria-label="Cài đặt" className="top-avatar">C</button></div></header>
-      <main className="page-content">
+      <main className="page-content" data-dialog-fallback tabIndex={-1}>
         {error && <div role="alert" className="error-banner">{error}<button onClick={refresh}>Thử lại <RotateCcw size={14}/></button></div>}
         {loading && !dashboard ? <div className="loading-shell"><div className="loader"/><p>Đang chuẩn bị hành trình của bạn...</p></div> : <>
           {tab === 'today' && <TodayPage dashboard={dashboard} weekly={weekly} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onNewHabit={() => setModal('habit')} goTo={goTo}/>}

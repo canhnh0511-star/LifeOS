@@ -2,9 +2,9 @@
 
 ## Đã xác minh
 - `npx tsc -b`: typecheck đầy đủ, không lỗi. `npx vite build`: build + PWA precache thành công.
-- `npm test` (vitest): 72 test đạt, gồm domain rules, insights, boss catalog, achievements, Mock API (ledger, pause/resume, boss, achievement, migration, validation), `httpClient`, và a11y của Modal (jsdom + Testing Library).
+- `npm test` (vitest): 83 test đạt, gồm domain rules, insights, boss catalog, achievements, Mock API (ledger, pause/resume, boss, achievement, migration, validation), `httpClient`, và a11y của Modal và overlay ăn mừng (jsdom + Testing Library, gồm StrictMode), level-up và huy hiệu chặng.
 - Chrome headless (CDP) trên bản dev: Today/Journey/Insights ở 1440×900, 390×844, 320×568 không tràn ngang; chụp màn hình đã xem.
-- Luồng tương tác thật trong Chrome: hoàn thành/hoàn tác quest (toast + effects), hạ/hoàn tác boss, thu hồi/cấp lại achievement, overlay level-up và hạ boss (đóng bằng Esc), modal (focus vào trong, trả focus về nút mở khi đóng), đổi kỳ 7d/30d. Không có lỗi JavaScript runtime.
+- Luồng tương tác thật trong Chrome: hoàn thành/hoàn tác quest (toast + effects), hạ/hoàn tác boss, thu hồi/cấp lại achievement, overlay level-up, level lĩnh vực và hạ boss kèm huy hiệu chặng (focus trap, Esc, trả focus; nếu nút mở đã bị thay thế thì về vùng nội dung chính), modal (focus vào trong, trả focus về nút mở khi đóng), đổi kỳ 7d/30d. Không có lỗi JavaScript runtime.
 - `docs/openapi.yaml`: cú pháp hợp lệ, mọi `$ref` đều tồn tại.
 
 ## Chưa xác minh

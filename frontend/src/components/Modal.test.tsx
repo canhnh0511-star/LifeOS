@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { StrictMode, useState } from 'react';
 import { Modal } from './Modal';
 
 afterEach(cleanup);
@@ -33,6 +33,13 @@ describe('Modal accessibility', () => {
   });
   it('still restores focus to the opener when a field inside uses autoFocus', async () => {
     render(<Harness autoFocus />); const opener = screen.getByText('open');
+    await userEvent.click(opener);
+    expect(document.activeElement).toBe(screen.getByLabelText('first'));
+    await userEvent.keyboard('{Escape}');
+    expect(document.activeElement).toBe(opener);
+  });
+  it('keeps focus on an autoFocus field under StrictMode (effects run twice in development)', async () => {
+    render(<StrictMode><Harness autoFocus /></StrictMode>); const opener = screen.getByText('open');
     await userEvent.click(opener);
     expect(document.activeElement).toBe(screen.getByLabelText('first'));
     await userEvent.keyboard('{Escape}');

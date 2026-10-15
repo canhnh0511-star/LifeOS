@@ -226,7 +226,7 @@ function chaptersOf(db:Db):ChapterDto[]{
     const currentAreaLevel=areas.find(a=>a.category===config.category)!.level;
     const status:BossDto['status']=state?.status==='DEFEATED'?'DEFEATED':currentAreaLevel>=config.requiredLevel?'AVAILABLE':'LOCKED';
     const boss:BossDto={id:key,code:config.code,name:config.name,category:config.category,targetMinutes:config.targetMinutes,xpReward:config.xpReward,tier:config.tier,requiredLevel:config.requiredLevel,currentAreaLevel,artKey:config.artKey,bossDate:endDate,status,defeatedDate:state?.defeatedDate??null,defeatedAt:state?.defeatedAt??null};
-    return {index:chapter.index,title:chapter.title,startDate,endDate,boss};
+    return {index:chapter.index,title:chapter.title,startDate,endDate,boss,badge:{code:`CHAPTER_${chapter.index}`,name:chapter.badgeName,earned:status==='DEFEATED'}};
   });
 }
 const bossId=(code:string)=>`boss-${code.toLowerCase().replace(/_/g,'-')}`;

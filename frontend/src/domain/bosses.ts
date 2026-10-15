@@ -5,15 +5,15 @@ export function tierForXp(xpReward: number): BossTier {
   return xpReward <= 40 ? 1 : xpReward <= 55 ? 2 : xpReward <= 70 ? 3 : xpReward <= 85 ? 4 : 5;
 }
 
-export interface ChapterConfig { index: number; title: string; fromDay: number; toDay: number; }
+export interface ChapterConfig { index: number; title: string; badgeName: string; fromDay: number; toDay: number; }
 export interface BossConfig { code: string; chapter: number; name: string; category: GoalCategory; targetMinutes: number; xpReward: number; tier: BossTier; requiredLevel: number; artKey: string; }
 
 /** Campaign chapters by day of the 66-day journey (1-based, inclusive). */
 export const CHAPTERS: ChapterConfig[] = [
-  { index: 1, title: 'Khởi động', fromDay: 1, toDay: 7 },
-  { index: 2, title: 'Vào nhịp', fromDay: 8, toDay: 21 },
-  { index: 3, title: 'Bền bỉ', fromDay: 22, toDay: 44 },
-  { index: 4, title: 'Chinh phục', fromDay: 45, toDay: 66 }
+  { index: 1, title: 'Khởi động', badgeName: 'Huy hiệu Người khởi hành', fromDay: 1, toDay: 7 },
+  { index: 2, title: 'Vào nhịp', badgeName: 'Huy hiệu Vào guồng', fromDay: 8, toDay: 21 },
+  { index: 3, title: 'Bền bỉ', badgeName: 'Huy hiệu Kiên cường', fromDay: 22, toDay: 44 },
+  { index: 4, title: 'Chinh phục', badgeName: 'Huy hiệu Kẻ chinh phục', fromDay: 45, toDay: 66 }
 ];
 
 /** Boss catalog is configuration: add a boss here without changing any rule. See .scratch/rpg-campaign/spec.md. */
