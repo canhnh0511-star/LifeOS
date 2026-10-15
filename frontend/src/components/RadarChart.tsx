@@ -14,7 +14,7 @@ const polygon = (values: (number | null)[], radius: number, cx: number, cy: numb
 /** Radar of completion rate per life area. A null value means "no data" and is drawn as an empty marker, never as 0%. */
 export function RadarChart({ axes, compact = false }: { axes: RadarAxis[]; compact?: boolean }) {
   const titleId = useId();
-  const width = compact ? 280 : 400, height = compact ? 250 : 340;
+  const width = compact ? 320 : 400, height = compact ? 250 : 340;
   const cx = width / 2, cy = height / 2 + (compact ? 4 : 6), radius = compact ? 78 : 112;
   const hasPrevious = axes.some(a => a.previous !== null);
   const current = axes.map(a => a.value);
