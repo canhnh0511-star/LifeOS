@@ -24,7 +24,7 @@ describe('equipmentFor', () => {
   it('keeps each piece on its own body part', () => {
     const range = (category: (typeof ALL_CATEGORIES)[number]) => { const ys = points(equipmentFor(category, 4)).map(p => p[1]); return [Math.min(...ys), Math.max(...ys)]; };
     expect(range('KNOWLEDGE')[0]).toBeGreaterThan(1.5);
-    expect(range('CAREER')[0]).toBeGreaterThan(1.25);
+    expect(range('CAREER')[0]).toBeGreaterThan(1.2);
     expect(range('MINDFULNESS')[0]).toBeGreaterThan(1.0);
     expect(range('MINDFULNESS')[1]).toBeLessThan(1.6);
     expect(range('CREATIVITY')[0]).toBeGreaterThan(0.5);

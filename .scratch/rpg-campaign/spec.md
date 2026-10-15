@@ -114,6 +114,7 @@ Các lỗi nền tảng đã nêu: ledger thiếu `cycle`/`questId`, lịch sử
 
 - Xong thêm (theo yêu cầu owner): thẻ "Chỉ số nhân vật" có mô hình người wireframe 3D xoay vòng (`domain/characterModel.ts`, `CharacterModel.tsx`); hover/focus chỉ số → bộ phận sáng + đường kẻ nối. Ánh xạ: đầu=Kiến thức, vai=Sự nghiệp, ngực=Tinh thần, tay=Sáng tạo, lõi/chân=Sức khỏe.
 - Xong thêm: mô hình dáng nam; trang bị theo level lĩnh vực (`domain/characterGear.ts`): mỗi lĩnh vực một món trên bộ phận của nó (đầu=mũ, vai=giáp vai, ngực=giáp ngực/mặt dây, tay=găng, chân=giày/giáp gối/đai), bậc = min(level, 4), phát sáng đúng màu lĩnh vực, bậc 3+ nhấp nháy.
+- Xong thêm: trang bị dựng lại thành giáp ôm sát (lớp vỏ có vòng + đường dọc), công cụ xem thử bậc trang bị (demo-only). **Mặc định xem thử đang ở bậc 4 để owner duyệt; đặt lại `useState<GearTier | 'real'>(4)` thành `'real'` trong `CharacterCard.tsx` khi chốt.**
 
 ## Hướng phát triển sau (owner, 2026-10-15)
 Owner review UI hiện tại: "ổn trước mắt". Sau này đi sâu vào từng chỉ số (lĩnh vực) để **sinh số lượng nhiệm vụ phù hợp nhằm tăng điểm** của chỉ số đó. Chưa có thiết kế; cần làm rõ khi bắt đầu (gợi ý nhiệm vụ heuristic hay tự sinh habit, giới hạn tải mỗi ngày, XP không được lạm phát).

@@ -99,3 +99,9 @@
 .stat-row{padding:6px 8px;border-radius:10px;transition:background .15s}
 .stat-row.is-active{background:#1b2735}
 @media (max-width:760px){.character-layout{grid-template-columns:1fr}.character-stage{max-width:420px;margin:0 auto;height:340px}}
+
+.character-left{display:grid;gap:10px;min-width:0}
+.gear-preview{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;color:#8d9ab0}
+.gear-preview span{margin-right:4px}
+.gear-preview button{min-width:34px;height:28px;padding:0 10px;border-radius:8px;border:1px solid #2a3743;background:#151e2a;color:#cfd8e6;font-size:12px}
+.gear-preview button[aria-pressed=true]{border-color:#c6fa55;background:#243420;color:#e8ffb0}

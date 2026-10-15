@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { AreaStatDto, GoalCategory } from '../api/types';
 import { categoryLabel } from '../domain/rules';
 import { ANCHORS, MODEL, project } from '../domain/characterModel';
-import { GEAR_NAMES, equipmentFor, gearTier } from '../domain/characterGear';
+import { GEAR_NAMES, equipmentFor, gearTier, type GearTier } from '../domain/characterGear';
 import { categoryColors, categoryIcons } from '../ui/categories';
 
 const RGB: Record<GoalCategory, string> = {
@@ -17,18 +17,19 @@ const SLOTS: Record<GoalCategory, { side: 'left' | 'right'; top: number }> = {
 const SPIN_PER_MS = 0.00042;
 const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-interface Props { areas: AreaStatDto[]; active: GoalCategory | null; onActive: (category: GoalCategory | null) => void; }
+interface Props { areas: AreaStatDto[]; active: GoalCategory | null; onActive: (category: GoalCategory | null) => void; /** Show this gear tier on every area instead of the real one (demo preview). */ tierOverride?: GearTier | null; }
 
 /** Rotating wireframe figure. Hover or focus a stat chip to light its body part and draw a leader line into it. */
-export function CharacterModel({ areas, active, onActive }: Props) {
+export function CharacterModel({ areas, active, onActive, tierOverride = null }: Props) {
+  const tierOf = (level: number): GearTier => tierOverride ?? gearTier(level);
   const stage = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const activeRef = useRef(active);
   activeRef.current = active;
   // Equipment follows each area's level; rebuilt only when a level changes.
-  const gearKey = areas.map(a => `${a.category}:${gearTier(a.level)}`).join('|');
+  const gearKey = areas.map(a => `${a.category}:${tierOf(a.level)}`).join('|');
   const gearRef = useRef<{ part: GoalCategory; tier: number; points: [number, number, number][] }[]>([]);
-  gearRef.current = areas.flatMap(a => equipmentFor(a.category, gearTier(a.level)).map(points => ({ part: a.category, tier: gearTier(a.level), points })));
+  gearRef.current = areas.flatMap(a => equipmentFor(a.category, tierOf(a.level)).map(points => ({ part: a.category, tier: tierOf(a.level), points })));
 
   useEffect(() => {
     const el = canvas.current, box = stage.current;
@@ -153,7 +154,7 @@ export function CharacterModel({ areas, active, onActive }: Props) {
       const Icon = categoryIcons[area.category]; const slot = SLOTS[area.category];
       return <button key={area.category} type="button" className={`stat-chip tone-${categoryColors[area.category]} ${active === area.category ? 'is-active' : ''}`}
         style={{ [slot.side]: 0, top: `${slot.top * 100}%`, width: CHIP_W, height: CHIP_H }}
-        title={gearTier(area.level) ? GEAR_NAMES[area.category][gearTier(area.level) as 1 | 2 | 3 | 4] : undefined}
+        title={tierOf(area.level) ? GEAR_NAMES[area.category][tierOf(area.level) as 1 | 2 | 3 | 4] : undefined}
         aria-label={`${categoryLabel(area.category)}, level ${area.level}`} aria-pressed={active === area.category}
         onMouseEnter={() => onActive(area.category)} onFocus={() => onActive(area.category)} onBlur={() => onActive(null)} onClick={() => onActive(area.category)}>
         <Icon size={18} aria-hidden="true"/><span><small>{categoryLabel(area.category)}</small><strong>Lv {area.level}</strong></span>
