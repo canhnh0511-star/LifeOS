@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_CATEGORIES } from './insights';
-import { ANCHORS, MODEL, project, type Vec3 } from './characterModel';
+import { ANCHORS, MODEL, PROPORTIONS, project, type Vec3 } from './characterModel';
 
 describe('character wireframe model', () => {
   it('has a body part and an anchor for each of the five areas', () => {
@@ -32,6 +32,27 @@ describe('mesh continuity', () => {
     const lengthwise = MODEL.filter(line => line.points.length === 2);
     expect(lengthwise.length).toBeGreaterThan(150);
     for (const category of ALL_CATEGORIES) expect(lengthwise.some(line => line.part === category)).toBe(true);
+  });
+});
+
+describe('joins between body parts', () => {
+  const ys = (part: string, test: (x: number) => boolean = () => true) => MODEL.filter(l => l.part === part).flatMap(l => l.points.filter(p => test(p[0])).map(p => p[1]));
+  it('seats the head on the neck: the head reaches below the top of the neck', () => {
+    const neckTop = Math.max(...MODEL.filter(l => l.part !== 'KNOWLEDGE').flatMap(l => l.points).filter(p => Math.abs(p[0]) < 0.08).map(p => p[1]));
+    expect(Math.min(...ys('KNOWLEDGE'))).toBeLessThan(neckTop - 0.02);
+    expect(PROPORTIONS.headBottom).toBeLessThan(PROPORTIONS.neckTop);
+  });
+  it('slopes from neck to shoulder through intermediate widths instead of one flat step', () => {
+    const widthsBetween = MODEL.filter(l => l.part === 'CAREER' && l.points.length > 3).map(l => Math.max(...l.points.map(p => Math.abs(p[0])))).filter(w => w > 0.09 && w < 0.2);
+    expect(widthsBetween.length).toBeGreaterThanOrEqual(2);
+  });
+  it('starts each arm inside the shoulder line so the arm is attached', () => {
+    expect(Math.abs(PROPORTIONS.armStartX - PROPORTIONS.shoulderHalfWidth)).toBeLessThanOrEqual(0.03);
+    expect(Math.max(...ys('CAREER', x => Math.abs(x) > PROPORTIONS.shoulderHalfWidth - 0.02))).toBeGreaterThan(1.3);
+  });
+  it('has hands and feet: the lowest and the arm-end rings are small and shaped, not stubs', () => {
+    expect(Math.min(...ys('HEALTH'))).toBeLessThan(0.02);
+    expect(Math.min(...ys('CREATIVITY'))).toBeLessThan(0.7);
   });
 });
 

@@ -15,25 +15,57 @@ const ring = (cx: number, y: number, cz: number, rx: number, rz: number): Vec3[]
 
 /** One cross-section of a tube: centre, radii and the area its surface belongs to. */
 interface Section { cx: number; y: number; cz: number; rx: number; rz: number; part: GoalCategory; }
-const sec = (cx: number, y: number, rx: number, rz: number, part: GoalCategory, cz = 0): Section => ({ cx, y, cz, rx, rz, part });
-const mirrorSections = (tube: Section[]): Section[] => tube.map(s => ({ ...s, cx: -s.cx }));
-const mid = (a: Section, b: Section): Section => ({ cx: (a.cx + b.cx) / 2, y: (a.y + b.y) / 2, cz: (a.cz + b.cz) / 2, rx: (a.rx + b.rx) / 2, rz: (a.rz + b.rz) / 2, part: a.part });
-/** Doubles the number of sections so the mesh looks smooth between key poses. */
-const subdivide = (tube: Section[]): Section[] => tube.flatMap((s, i) => i < tube.length - 1 ? [s, mid(s, tube[i + 1])] : [s]);
+/** Key pose: [y, rx, rz, cx, cz]. Poses are blended with a Catmull-Rom curve so outlines flow instead of stepping. */
+type Key = readonly [number, number, number, number, number];
+const CR = (p0: number, p1: number, p2: number, p3: number, t: number) =>
+  0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
+function smooth(keys: readonly Key[], per: number, partAt: (y: number) => GoalCategory): Section[] {
+  const out: Section[] = [];
+  for (let i = 0; i < keys.length - 1; i++) {
+    const k0 = keys[Math.max(0, i - 1)], k1 = keys[i], k2 = keys[i + 1], k3 = keys[Math.min(keys.length - 1, i + 2)];
+    for (let j = 0; j < per; j++) {
+      const t = j / per; const f = (n: number) => CR(k0[n], k1[n], k2[n], k3[n], t);
+      out.push({ y: f(0), rx: Math.max(0.004, f(1)), rz: Math.max(0.004, f(2)), cx: f(3), cz: f(4), part: partAt(f(0)) });
+    }
+  }
+  const last = keys[keys.length - 1];
+  out.push({ y: last[0], rx: last[1], rz: last[2], cx: last[3], cz: last[4], part: partAt(last[0]) });
+  return out;
+}
+const mirror = (tube: Section[]): Section[] => tube.map(s => ({ ...s, cx: -s.cx }));
+
+/** Landmarks the tests (and tuning) rely on: the head sits into the neck, the arm starts inside the shoulder line. */
+export const PROPORTIONS = { headBottom: 1.52, neckTop: 1.57, shoulderHalfWidth: 0.225, armStartX: 0.24 } as const;
 
 const torsoPart = (y: number): GoalCategory => y >= 1.38 ? 'CAREER' : y >= 1.15 ? 'MINDFULNESS' : 'HEALTH';
 const armPart = (y: number): GoalCategory => y >= 1.3 ? 'CAREER' : 'CREATIVITY';
+const arm = (r: number): [number, number] => [r, r];
 
 function tubes(): Section[][] {
-  const head: Section[] = [];
-  for (let i = -3; i <= 3; i++) { const t = i / 3.6; const r = Math.sqrt(1 - t * t); head.push(sec(0, 1.64 + t * 0.14, 0.1 * r, 0.115 * r, 'KNOWLEDGE', 0.01)); }
-  const torso = ([[1.5, 0.05, 0.05], [1.44, 0.07, 0.065], [1.4, 0.215, 0.1], [1.32, 0.21, 0.115], [1.22, 0.185, 0.11], [1.1, 0.155, 0.095], [1.0, 0.17, 0.1], [0.92, 0.18, 0.105]] as const)
-    .map(([y, rx, rz]) => sec(0, y, rx, rz, torsoPart(y)));
-  const leg = ([[0.9, 0.085], [0.72, 0.078], [0.52, 0.06], [0.36, 0.062], [0.16, 0.042], [0.03, 0.04]] as const)
-    .map(([y, r]) => sec(0.095, y, r, r * 1.05, 'HEALTH'));
-  const arm = ([[1.38, 0.255, 0.052], [1.2, 0.285, 0.046], [1.0, 0.31, 0.04], [0.85, 0.325, 0.034], [0.76, 0.33, 0.045], [0.7, 0.332, 0.03]] as const)
-    .map(([y, x, r]) => sec(x, y, r, r, armPart(y)));
-  return [head, torso, leg, mirrorSections(leg), arm, mirrorSections(arm)].map(subdivide);
+  const head = smooth([
+    [1.805, 0.012, 0.014, 0, 0.02], [1.785, 0.055, 0.065, 0, 0.02], [1.745, 0.086, 0.098, 0, 0.018], [1.69, 0.095, 0.108, 0, 0.015],
+    [1.63, 0.09, 0.104, 0, 0.018], [1.58, 0.072, 0.088, 0, 0.025], [1.545, 0.046, 0.062, 0, 0.03], [PROPORTIONS.headBottom, 0.03, 0.04, 0, 0.03]
+  ], 3, () => 'KNOWLEDGE');
+  // Neck rises into the head, then widens along the trapezius slope into the shoulders before tapering to the hips.
+  const torso = smooth([
+    [PROPORTIONS.neckTop, 0.043, 0.047, 0, 0], [1.5, 0.047, 0.05, 0, 0.005], [1.46, 0.055, 0.056, 0, 0.005], [1.435, 0.085, 0.07, 0, 0],
+    [1.415, 0.14, 0.083, 0, 0], [1.395, 0.195, 0.098, 0, 0], [1.37, PROPORTIONS.shoulderHalfWidth, 0.105, 0, 0], [1.33, 0.215, 0.112, 0, 0],
+    [1.28, 0.2, 0.115, 0, 0.005], [1.2, 0.18, 0.108, 0, 0.005], [1.12, 0.155, 0.098, 0, 0], [1.05, 0.152, 0.095, 0, 0],
+    [0.98, 0.17, 0.103, 0, 0], [0.92, 0.178, 0.108, 0, 0], [0.88, 0.17, 0.1, 0, 0]
+  ], 3, torsoPart);
+  // Leg: thigh, knee, calf, ankle, then a foot that points forward.
+  const leg = smooth([
+    [0.95, 0.088, 0.095, 0.095, 0], [0.86, 0.088, 0.097, 0.095, 0], [0.74, 0.078, 0.088, 0.095, 0], [0.6, 0.062, 0.07, 0.095, 0],
+    [0.5, 0.058, 0.066, 0.095, 0], [0.4, 0.06, 0.068, 0.095, 0], [0.28, 0.048, 0.056, 0.095, 0], [0.14, 0.04, 0.045, 0.095, 0],
+    [0.07, 0.036, 0.04, 0.095, 0], [0.045, 0.037, 0.055, 0.095, 0.02], [0.025, 0.04, 0.08, 0.095, 0.045], [0.008, 0.036, 0.09, 0.095, 0.05], [0.0, 0.03, 0.075, 0.095, 0.05]
+  ], 2, () => 'HEALTH');
+  // Arm: deltoid inside the shoulder, elbow, forearm, wrist, then a mitten-shaped hand.
+  const armKeys: [number, number, number][] = [
+    [1.39, 0.052, PROPORTIONS.armStartX], [1.35, 0.064, 0.255], [1.29, 0.056, 0.268], [1.2, 0.048, 0.28], [1.12, 0.044, 0.288], [1.04, 0.045, 0.3],
+    [0.95, 0.04, 0.312], [0.86, 0.032, 0.322], [0.8, 0.03, 0.326], [0.77, 0.036, 0.328], [0.73, 0.04, 0.33], [0.69, 0.036, 0.331], [0.65, 0.024, 0.331], [0.625, 0.008, 0.331]
+  ];
+  const armTube = smooth(armKeys.map(([y, r, x]) => [y, ...arm(r), x, 0] as const), 2, armPart);
+  return [head, torso, leg, mirror(leg), armTube, mirror(armTube)];
 }
 
 function buildModel(): ModelLine[] {
@@ -51,11 +83,11 @@ export const MODEL: ModelLine[] = buildModel();
 
 /** Where each stat's leader line lands on the body. */
 export const ANCHORS: Record<GoalCategory, Vec3> = {
-  KNOWLEDGE: [0, 1.68, 0.1],
-  CAREER: [-0.22, 1.4, 0.08],
-  MINDFULNESS: [0.05, 1.27, 0.11],
-  CREATIVITY: [0.332, 0.74, 0.03],
-  HEALTH: [-0.095, 0.52, 0.06]
+  KNOWLEDGE: [0, 1.68, 0.11],
+  CAREER: [-0.23, 1.37, 0.08],
+  MINDFULNESS: [0.04, 1.26, 0.115],
+  CREATIVITY: [0.33, 0.73, 0.04],
+  HEALTH: [-0.095, 0.5, 0.07]
 };
 
 const PITCH = 0.14;      // slight look-down so ring ellipses read as 3D

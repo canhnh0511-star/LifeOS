@@ -61,18 +61,27 @@ export function CharacterModel({ areas, active, onActive }: Props) {
         const pts = line.points.map(p => ({ s: project(p, angle), y: p[1] }));
         return { line, pts, depth: pts.reduce((a, p) => a + p.s.depth, 0) / pts.length };
       }).sort((a, b) => a.depth - b.depth);
+      // Thousands of short segments: batch them by colour and brightness so each frame costs a few dozen strokes.
+      const batches = new Map<string, { rgb: string; alpha: number; lit: boolean; paths: { x: number; y: number }[][] }>();
       for (const { line, pts, depth } of drawn) {
         const lit = current === line.part;
-        const rgb = lit ? RGB[line.part] : BASE;
         const nearness = Math.max(0, Math.min(1, (depth + 0.25) / 0.5));
         const sweep = Math.exp(-Math.pow((pts[0].y - scan) / 0.09, 2));
-        let alpha = 0.16 + 0.26 * nearness + 0.32 * sweep;
-        if (current) alpha = lit ? 0.55 + 0.4 * nearness : alpha * 0.45;
+        let alpha = 0.14 + 0.28 * nearness + 0.32 * sweep;
+        if (current) alpha = lit ? 0.55 + 0.4 * nearness : alpha * 0.4;
+        const bucket = Math.round(Math.min(1, alpha) * 10) / 10;
+        const rgb = lit ? RGB[line.part] : BASE;
+        const key = `${rgb}|${bucket}|${lit}`;
+        const batch = batches.get(key) ?? { rgb, alpha: bucket, lit, paths: [] };
+        batch.paths.push(pts.map(p => toScreen(p.s)));
+        batches.set(key, batch);
+      }
+      for (const batch of batches.values()) {
         ctx!.beginPath();
-        pts.forEach((p, i) => { const q = toScreen(p.s); i ? ctx!.lineTo(q.x, q.y) : ctx!.moveTo(q.x, q.y); });
-        ctx!.strokeStyle = `rgba(${rgb},${Math.min(1, alpha)})`;
-        ctx!.lineWidth = lit ? 1.7 : 1;
-        ctx!.shadowColor = lit ? `rgba(${rgb},0.9)` : 'transparent'; ctx!.shadowBlur = lit ? 8 : 0;
+        for (const path of batch.paths) path.forEach((q, i) => i ? ctx!.lineTo(q.x, q.y) : ctx!.moveTo(q.x, q.y));
+        ctx!.strokeStyle = `rgba(${batch.rgb},${batch.alpha})`;
+        ctx!.lineWidth = batch.lit ? 1.5 : 0.9;
+        ctx!.shadowColor = batch.lit ? `rgba(${batch.rgb},0.9)` : 'transparent'; ctx!.shadowBlur = batch.lit ? 8 : 0;
         ctx!.stroke();
       }
       ctx!.shadowBlur = 0;

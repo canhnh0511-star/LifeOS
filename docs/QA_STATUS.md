@@ -2,8 +2,8 @@
 
 ## Đã xác minh
 - `npx tsc -b`: typecheck đầy đủ, không lỗi. `npx vite build`: build + PWA precache thành công.
-- `npm test` (vitest): 97 test đạt, gồm domain rules, insights, boss catalog, achievements, Mock API (ledger, pause/resume, boss, achievement, migration, validation), `httpClient`, và a11y của Modal và overlay ăn mừng (jsdom + Testing Library, gồm StrictMode), level-up, huy hiệu chặng và hình học mô hình nhân vật.
-- Mô hình nhân vật wireframe 3D (canvas) trên Chrome: xoay, hover/focus một chỉ số làm sáng bộ phận và vẽ đường kẻ, chế độ `prefers-reduced-motion` (đứng yên, hover vẫn vẽ lại), 1440/390/320px.
+- `npm test` (vitest): 101 test đạt, gồm domain rules, insights, boss catalog, achievements, Mock API (ledger, pause/resume, boss, achievement, migration, validation), `httpClient`, và a11y của Modal và overlay ăn mừng (jsdom + Testing Library, gồm StrictMode), level-up, huy hiệu chặng và hình học mô hình nhân vật.
+- Mô hình nhân vật wireframe 3D (canvas) trên Chrome: xoay, hover/focus một chỉ số làm sáng bộ phận và vẽ đường kẻ, chế độ `prefers-reduced-motion` (đứng yên, hover vẫn vẽ lại), 1440/390/320px; thời gian vẽ ~1 ms/khung (trung vị) ở DPR 2.
 - Chrome headless (CDP) trên bản dev: Today/Journey/Insights ở 1440×900, 390×844, 320×568 không tràn ngang; chụp màn hình đã xem.
 - Luồng tương tác thật trong Chrome: hoàn thành/hoàn tác quest (toast + effects), hạ/hoàn tác boss, thu hồi/cấp lại achievement, overlay level-up, level lĩnh vực và hạ boss kèm huy hiệu chặng (focus trap, Esc, trả focus; nếu nút mở đã bị thay thế thì về vùng nội dung chính), modal (focus vào trong, trả focus về nút mở khi đóng), đổi kỳ 7d/30d. Không có lỗi JavaScript runtime.
 - `docs/openapi.yaml`: cú pháp hợp lệ, mọi `$ref` đều tồn tại.
