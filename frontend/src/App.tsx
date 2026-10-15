@@ -15,6 +15,7 @@ import { RadarChart } from './components/RadarChart';
 import { ACHIEVEMENT_CATALOG } from './domain/achievements';
 import { CampaignMap } from './components/CampaignMap';
 import { AchievementList } from './components/AchievementList';
+import { Celebration, levelReached, type CelebrationData } from './components/Celebration';
 import './styles.css';
 
 type Tab = 'today' | 'journey' | 'insights';
@@ -118,6 +119,7 @@ export default function App() {
   const [period, setPeriod] = useState<'7d'|'30d'>('7d');
   const [dashboard, setDashboard] = useState<DailyDashboardDto | null>(null);
   const [goals, setGoals] = useState<GoalDto[]>([]); const [habits, setHabits] = useState<HabitDto[]>([]);
+  const [celebration, setCelebration] = useState<CelebrationData | null>(null);
   const [achievements, setAchievements] = useState<AchievementDto[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsDto | null>(null); const [weekly, setWeekly] = useState<AnalyticsDto | null>(null);
   const [modal, setModal] = useState<Modal>(null); const [busyId, setBusyId] = useState<string | null>(null); const [busyBossId, setBusyBossId] = useState<string | null>(null);
@@ -144,14 +146,16 @@ export default function App() {
     if (busyId) return; setBusyId(quest.habitId);
     try {
       const r = quest.status === 'COMPLETED' ? await api.undoQuest(quest.habitId, selectedDate) : await api.completeQuest(quest.habitId, selectedDate);
+      const reached = levelReached(dashboard?.progress.level, r.level); if (reached !== null) setCelebration({ kind: 'level', level: reached });
       setNotice(withEffects(r.xpAwarded > 0 ? `Hoàn thành! +${r.xpAwarded} XP` : r.xpAwarded < 0 ? `Đã hoàn tác ${r.xpAwarded} XP` : 'Đã cập nhật nhiệm vụ.', r.effects)); refresh();
     } catch (e) { setNotice(e instanceof Error ? e.message : 'Không thể cập nhật nhiệm vụ.'); }
     finally { setBusyId(null); }
-  }, [busyId, selectedDate]);
+  }, [busyId, selectedDate, dashboard]);
   const bossAction = async (boss: BossDto, defeat: boolean) => {
     if (busyBossId) return; setBusyBossId(boss.id);
     try {
       const r = defeat ? await api.defeatBoss(boss.id) : await api.undoBoss(boss.id);
+      if (defeat && r.status === 'DEFEATED' && r.xpAwarded > 0) setCelebration({ kind: 'boss', boss, xp: boss.xpReward, levelUp: levelReached(dashboard?.progress.level, r.level) });
       setNotice(withEffects(r.xpAwarded > 0 ? `Đã hạ ${boss.name}! +${r.xpAwarded} XP` : r.xpAwarded < 0 ? `Đã hoàn tác ${boss.name}: ${r.xpAwarded} XP` : 'Đã cập nhật boss.', r.effects)); refresh();
     } catch (e) { setNotice(e instanceof Error ? e.message : 'Không thể cập nhật boss.'); }
     finally { setBusyBossId(null); }
@@ -230,6 +234,7 @@ export default function App() {
     </div>
     <nav className="bottom-nav" aria-label="Điều hướng mobile">{primaryNav.map(item => <button key={item.id} className={tab===item.id?'active':''} onClick={() => goTo(item.id)}><item.icon size={21}/><span>{item.title}</span></button>)}</nav>
     {modal && <div className="modal-backdrop" onMouseDown={e => {if (e.target === e.currentTarget) setModal(null);}}><section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div className="modal-heading"><div><span className="section-eyebrow">LIFE OS</span><h2 id="dialog-title">{modal === 'goal' ? 'Mục tiêu mới' : modal === 'habit' ? 'Thói quen mới' : 'Cài đặt hệ thống'}</h2></div><button onClick={() => setModal(null)} className="icon-btn" aria-label="Đóng"><X size={20}/></button></div>{modal === 'goal' && <GoalForm onClose={() => setModal(null)} onSave={saveGoal}/ >}{modal === 'habit' && <HabitForm goals={goals} onClose={() => setModal(null)} onSave={saveHabit}/ >}{modal === 'settings' && <div className="settings-content"><div className="setting-row"><div><strong>API mode</strong><span>{isDemo?'Local mock API (localStorage)':'Remote REST API'}</span></div><span className="setting-status">{isDemo?'DEMO':'LIVE'}</span></div><div className="setting-row"><div><strong>Múi giờ</strong><span>Áp dụng cho ngày và streak</span></div><span>Asia/Ho_Chi_Minh</span></div><div className="settings-actions"><button className="btn btn-secondary" disabled={!isDemo} onClick={exportData}><Download size={16}/> Xuất dữ liệu JSON</button><button className="btn btn-danger" disabled={!isDemo} onClick={reset}><RotateCcw size={16}/> Đặt lại dữ liệu mẫu</button></div><p className="form-note">Dữ liệu mock chỉ lưu trên trình duyệt hiện tại. Chưa đồng bộ thiết bị hoặc tài khoản, không nên dùng làm lưu trữ chính.</p></div>}</section></div>}
+    {celebration && <Celebration data={celebration} onClose={() => setCelebration(null)}/>}
     {notice && <div role="status" className="toast"><Sparkles size={18}/>{notice}<button aria-label="Đóng thông báo" onClick={() => setNotice('')}><X size={15}/></button></div>}
   </div>;
 }

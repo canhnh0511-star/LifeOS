@@ -60,3 +60,19 @@
 .achievement-body p{margin:0;font-size:13px;color:#aab6c7}
 .achievement-body small{font-size:12px;color:#8d9ab0}
 .achievement.is-earned small{color:#e7c75a}
+.celebration{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(5,8,14,.78);cursor:pointer;animation:cel-fade .25s ease-out}
+.celebration-rays{position:absolute;width:140vmax;height:140vmax;background:repeating-conic-gradient(from 0deg,rgba(198,250,85,.14) 0 6deg,transparent 6deg 18deg);animation:cel-spin 24s linear infinite;mask-image:radial-gradient(circle,#000 0,transparent 55%)}
+.celebration.tier-4 .celebration-rays,.celebration.tier-5 .celebration-rays{background:repeating-conic-gradient(from 0deg,rgba(245,179,1,.22) 0 6deg,transparent 6deg 18deg)}
+.celebration-card{position:relative;display:grid;gap:8px;justify-items:center;text-align:center;padding:32px 40px;max-width:min(92vw,460px);border-radius:20px;border:1px solid #3a4a3a;background:#111a24;box-shadow:0 0 60px rgba(198,250,85,.25);animation:cel-pop .5s cubic-bezier(.2,1.4,.4,1)}
+.celebration.tier-4 .celebration-card,.celebration.tier-5 .celebration-card{border-color:#f5b301;box-shadow:0 0 80px rgba(245,179,1,.5)}
+.celebration-card h2{margin:0;display:flex;align-items:center;gap:8px;font-size:26px;color:#f4f8fd}
+.celebration-card p{margin:0;color:#aab6c7}
+.celebration-card .celebration-big{font-size:38px;font-weight:850;color:#c6fa55}
+.celebration-card small{margin-top:8px;color:#6f7d92}
+.celebration-icon{display:grid;place-items:center;width:84px;height:84px;border-radius:50%;background:#26340f;color:#c6fa55}
+.celebration-boss{width:min(60vw,220px);aspect-ratio:1;object-fit:cover;border-radius:18px;box-shadow:0 0 36px rgba(124,92,255,.6)}
+.celebration.tier-5 .celebration-boss{width:min(70vw,280px);box-shadow:0 0 56px rgba(245,179,1,.8)}
+@keyframes cel-fade{from{opacity:0}to{opacity:1}}
+@keyframes cel-pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes cel-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.celebration,.celebration-card,.celebration-rays{animation:none}}

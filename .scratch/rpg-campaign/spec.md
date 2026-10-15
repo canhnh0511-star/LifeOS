@@ -108,4 +108,5 @@ Các lỗi nền tảng đã nêu: ledger thiếu `cycle`/`questId`, lịch sử
 ## Tiến độ triển khai (2026-10-15)
 - Xong: area stats; boss catalog (`frontend/src/domain/bosses.ts`), chapters trong `JourneyDto`, `defeatBoss`/`undoBoss` (mock + http), ledger `BOSS_*`, analytics tính boss, `BOSS_LOCKED` (409), UI bản đồ chiến dịch, 4 ảnh boss (`frontend/public/bosses/<artKey>.jpg`, tạo bằng Canva generate-image, cùng style guide: 2D digital painting, bảng màu tím–teal, nền navy #1b1740).
 - Xong thêm: achievements STREAK_7/BALANCED/COMEBACK (`frontend/src/domain/achievements.ts`), `effects[]`, `GET /achievements`, danh sách thành tựu + toast, ADR-020.
-- Chưa: hiệu ứng level-up/boss, huy hiệu chặng, kiểm tra trực quan trên trình duyệt (ảnh nền navy không trong suốt — UI dùng khung bo góc nền navy).
+- Xong thêm: hiệu ứng ăn mừng level-up và hạ boss (`Celebration.tsx`, tôn trọng reduced-motion).
+- Chưa: huy hiệu chặng, kiểm tra trực quan trên trình duyệt (ảnh nền navy không trong suốt — UI dùng khung bo góc nền navy).
