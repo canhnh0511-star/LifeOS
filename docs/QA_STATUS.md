@@ -2,7 +2,8 @@
 
 ## Đã xác minh
 - `npx tsc -b`: typecheck đầy đủ, không lỗi. `npx vite build`: build + PWA precache thành công.
-- `npm test` (vitest): 83 test đạt, gồm domain rules, insights, boss catalog, achievements, Mock API (ledger, pause/resume, boss, achievement, migration, validation), `httpClient`, và a11y của Modal và overlay ăn mừng (jsdom + Testing Library, gồm StrictMode), level-up và huy hiệu chặng.
+- `npm test` (vitest): 97 test đạt, gồm domain rules, insights, boss catalog, achievements, Mock API (ledger, pause/resume, boss, achievement, migration, validation), `httpClient`, và a11y của Modal và overlay ăn mừng (jsdom + Testing Library, gồm StrictMode), level-up, huy hiệu chặng và hình học mô hình nhân vật.
+- Mô hình nhân vật wireframe 3D (canvas) trên Chrome: xoay, hover/focus một chỉ số làm sáng bộ phận và vẽ đường kẻ, chế độ `prefers-reduced-motion` (đứng yên, hover vẫn vẽ lại), 1440/390/320px.
 - Chrome headless (CDP) trên bản dev: Today/Journey/Insights ở 1440×900, 390×844, 320×568 không tràn ngang; chụp màn hình đã xem.
 - Luồng tương tác thật trong Chrome: hoàn thành/hoàn tác quest (toast + effects), hạ/hoàn tác boss, thu hồi/cấp lại achievement, overlay level-up, level lĩnh vực và hạ boss kèm huy hiệu chặng (focus trap, Esc, trả focus; nếu nút mở đã bị thay thế thì về vùng nội dung chính), modal (focus vào trong, trả focus về nút mở khi đóng), đổi kỳ 7d/30d. Không có lỗi JavaScript runtime.
 - `docs/openapi.yaml`: cú pháp hợp lệ, mọi `$ref` đều tồn tại.
@@ -14,6 +15,7 @@
 - Không có contract test giữa `mockClient` và `httpClient`/OpenAPI (backend chưa tồn tại).
 
 ## Giới hạn đã biết
+- Mô hình nhân vật ở 320px khá chật (chip chỉ số chạm tay mô hình). Ảnh chụp headless có thể cũ khi không có animation frame (artifact công cụ, không phải lỗi app).
 - Mock API không phải authorization, offline sync hay cơ sở dữ liệu đồng thời (xem CLAUDE.md).
 - `QuestMutation.streak` vẫn là streak theo từng habit (ADR-009 mở).
 - Chuỗi giao diện còn trộn tiếng Việt và tiếng Anh theo phong cách thiết kế hiện tại.

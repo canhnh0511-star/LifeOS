@@ -85,3 +85,17 @@
 .chapter-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid #2a3743;color:#6f7d92}
 .chapter-badge.is-earned{border-color:#7a6a1c;background:#2a2410;color:#f5c518}
 .page-content:focus{outline:none}
+
+.character-layout{display:grid;grid-template-columns:minmax(260px,400px) 1fr;gap:20px;align-items:center}
+.character-stage{position:relative;height:380px;width:100%;border-radius:14px;background:radial-gradient(ellipse at 50% 60%,rgba(198,250,85,.07),transparent 65%),#0e151f;border:1px solid #1f2a38;overflow:hidden}
+.character-stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stat-chip{position:absolute;z-index:1;display:flex;align-items:center;gap:7px;padding:0 9px;border-radius:12px;border:1px solid #2a3743;background:rgba(21,30,42,.88);color:#cfd8e6;text-align:left;backdrop-filter:blur(2px);transition:border-color .15s,background .15s,transform .15s}
+.stat-chip span{display:grid;line-height:1.1;min-width:0}
+.stat-chip small{font-size:10px;color:#8d9ab0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-chip strong{font-size:14px;color:#f4f8fd}
+.stat-chip svg{flex:none}
+.stat-chip:hover,.stat-chip.is-active{border-color:#c6fa55;background:rgba(36,52,28,.95);transform:scale(1.04)}
+.stat-chip.tone-blue svg{color:#5aa2ff}.stat-chip.tone-purple svg{color:#a78bfa}.stat-chip.tone-orange svg{color:#ffa24d}.stat-chip.tone-green svg{color:#6ee7a0}.stat-chip.tone-pink svg{color:#ff7ac8}
+.stat-row{padding:6px 8px;border-radius:10px;transition:background .15s}
+.stat-row.is-active{background:#1b2735}
+@media (max-width:760px){.character-layout{grid-template-columns:1fr}.character-stage{max-width:420px;margin:0 auto;height:340px}}
