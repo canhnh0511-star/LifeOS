@@ -1,4 +1,4 @@
-import type { AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalDto, HabitDto, JourneyDto, ProgressDto, QuestDto, BossMutationDto, QuestMutationDto, UserDto } from './types';
+import type { AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalDto, HabitDto, JourneyDto, ProgressDto, QuestDto, AchievementDto, BossMutationDto, QuestMutationDto, UserDto } from './types';
 export interface LifeOsApi {
   getMe(): Promise<UserDto>;
   getDashboard(date?: string): Promise<DailyDashboardDto>;
@@ -13,6 +13,7 @@ export interface LifeOsApi {
   undoQuest(habitId: string, date: string): Promise<QuestMutationDto>;
   defeatBoss(bossId: string): Promise<BossMutationDto>;
   undoBoss(bossId: string): Promise<BossMutationDto>;
+  getAchievements(): Promise<AchievementDto[]>;
   getProgress(): Promise<ProgressDto>;
   getAnalytics(period: '7d'|'30d'): Promise<AnalyticsDto>;
   getCurrentJourney(): Promise<JourneyDto | null>;

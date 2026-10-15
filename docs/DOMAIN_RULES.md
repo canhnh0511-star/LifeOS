@@ -83,6 +83,7 @@ Cấp một lần mỗi campaign, có thưởng XP (10–30), ghi ledger `ACHIEV
 | `BALANCED` | Cả 5 lĩnh vực có ≥ 1 scheduled và hoàn thành ≥ 60% trong 7 ngày gần nhất | 30 |
 | `COMEBACK` | Sau khi một streak ≥ 3 bị đứt, đạt lại 3 scheduled session liên tiếp | 20 |
 - **Thu hồi**: sau mỗi mutation (complete/undo quest hoặc boss) hệ thống đánh giá lại các achievement trong cửa sổ có thể sửa (7 ngày). Nếu một achievement đã cấp không còn đúng điều kiện thì ghi `ACHIEVEMENT_REVOKE` bù trừ; đạt lại thì cấp lại ở cycle mới. Ngoài cửa sổ 7 ngày, achievement đã cấp được coi là khóa.
+- Ghi lĩnh vực: `STREAK_7` và `COMEBACK` ghi vào lĩnh vực của habit gây ra; `BALANCED` chia đều cho 5 lĩnh vực (30 XP = 5 × 6, mỗi lĩnh vực một event). Đánh giá lại chỉ chạy khi mutation thực sự đổi trạng thái (không chạy cho lần gọi idempotent).
 - Mọi cấp/thu hồi nằm trong cùng transaction với mutation gây ra và được trả trong `effects[]`.
 
 ## Radar (analytics)

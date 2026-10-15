@@ -21,6 +21,7 @@
 | ADR-017 | Chấp nhận | Ledger event có `category`, `sourceType`, `sourceId`; habit `xpReward=0` không ghi transaction | Hỗ trợ area stats và nhiều nguồn XP; giải quyết mâu thuẫn `amount <> 0` |
 | ADR-018 | Chấp nhận | Pause/resume goal và habit có hiệu lực từ ngày local kế tiếp, ghi bằng lifecycle event; một hàm duy nhất quyết định quest hợp lệ cho mọi đọc/ghi; cửa sổ sửa là hôm nay và lùi 7 ngày | Lịch sử bất biến (không viết lại analytics/journey/streak), khớp DOMAIN_RULES |
 | ADR-019 | Chấp nhận | Mã lỗi thống nhất mock/HTTP (`ApiError` với `status`, `code`, `fields`); 422 cho sai dữ liệu hoặc ngày, 409 cho quest không hoạt động | Frontend xử lý lỗi giống nhau ở cả hai adapter |
+| ADR-020 | Chấp nhận | Achievement được đánh giá lại sau mỗi mutation làm đổi trạng thái (quest/boss), không phải sau lần gọi idempotent. STREAK_7 và COMEBACK ghi XP vào lĩnh vực của habit; BALANCED chia đều 6 XP cho mỗi trong 5 lĩnh vực (mỗi lĩnh vực một event ledger) để `totalXp = Σ areaXp` luôn đúng. Thu hồi chỉ khi `earnedDate` còn trong cửa sổ 7 ngày | Không có XP ẩn; undo luôn đối soát được từng event |
 
 ADR-009 (streak toàn cục) vẫn Mở; BALANCED và COMEBACK dùng định nghĩa streak theo từng habit, cần xác nhận lại khi ADR-009 được chốt. Spec chi tiết: `.scratch/rpg-campaign/spec.md`.
 

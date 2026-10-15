@@ -25,7 +25,7 @@ async function rejection(promise: Promise<unknown>): Promise<ApiError> {
   try { await promise; } catch (e) { return e as ApiError; }
   throw new Error('expected promise to reject');
 }
-const ledger = () => (JSON.parse(exportDemoData()) as { xpTransactions: { habitId: string; date: string; type: string; cycle: number; amount: number }[] }).xpTransactions;
+const ledger = () => (JSON.parse(exportDemoData()) as { xpTransactions: { habitId?: string; achievementCode?: string; category: string; date: string; type: string; cycle: number; amount: number }[] }).xpTransactions;
 
 describe('mock API contracts', () => {
   it('PUT/DELETE completion are idempotent and re-completing works', async () => {
@@ -99,10 +99,11 @@ describe('XP ledger', () => {
     const habit = await mockClient.createHabit({ title: 'Breathe', goalId: goal.id, targetMinutes: 5, xpReward: 0, weekdays: [1,2,3,4,5,6,7], startDate: D0 });
     const size = ledger().length;
     const done = await mockClient.completeQuest(habit.id, D0);
-    expect(done.status).toBe('COMPLETED'); expect(done.xpAwarded).toBe(0);
+    expect(done.status).toBe('COMPLETED');
+    expect(done.xpAwarded).toBe(done.effects!.reduce((a, e) => a + e.xpDelta, 0)); // only side effects (achievements) can pay
     expect((await mockClient.completeQuest(habit.id, D0)).status).toBe('COMPLETED');
     expect((await mockClient.undoQuest(habit.id, D0)).status).toBe('PENDING');
-    expect(ledger()).toHaveLength(size);
+    expect(ledger().slice(size).filter(e => e.type.startsWith('QUEST_'))).toEqual([]);
   });
   it('does not write anything on GET', async () => {
     freezeAt(D0);
@@ -152,16 +153,17 @@ describe('bosses', () => {
     const before = await area(boss.category);
     const sizeBefore = ledger().length;
     const win = await mockClient.defeatBoss(boss.id);
-    expect(win).toMatchObject({ bossId: boss.id, status: 'DEFEATED', xpAwarded: boss.xpReward, effects: [] });
-    expect(await area(boss.category)).toBe(before + boss.xpReward);
+    const bonus = win.effects.reduce((a, e) => a + e.xpDelta, 0); // the boss may also complete the BALANCED achievement
+    expect(win).toMatchObject({ bossId: boss.id, status: 'DEFEATED', xpAwarded: boss.xpReward + bonus });
+    expect(await area(boss.category)).toBeGreaterThanOrEqual(before + boss.xpReward);
     expect((await mockClient.defeatBoss(boss.id)).xpAwarded).toBe(0);
     const defeated = await bossOf('SLIME_OF_INERTIA');
     expect([defeated.status, defeated.defeatedDate]).toEqual(['DEFEATED', D0]);
-    expect((await mockClient.undoBoss(boss.id)).xpAwarded).toBe(-boss.xpReward);
+    expect((await mockClient.undoBoss(boss.id)).xpAwarded).toBe(-(boss.xpReward + bonus));
     expect((await mockClient.undoBoss(boss.id)).xpAwarded).toBe(0);
     expect(await area(boss.category)).toBe(before);
     await mockClient.defeatBoss(boss.id);
-    expect(ledger().slice(sizeBefore).map(e => [e.type, e.cycle, e.amount])).toEqual([
+    expect(ledger().slice(sizeBefore).filter(e => e.type.startsWith('BOSS_')).map(e => [e.type, e.cycle, e.amount])).toEqual([
       ['BOSS_COMPLETE', 1, boss.xpReward], ['BOSS_REVERT', 1, -boss.xpReward], ['BOSS_COMPLETE', 2, boss.xpReward]
     ]);
   });
@@ -191,6 +193,54 @@ describe('bosses', () => {
     const after = await dayStats();
     expect([after.scheduled, after.completed]).toEqual([before.scheduled, before.completed + 1]);
     expect((await mockClient.getDashboard(D0)).progress.currentStreak).toBe(dash.progress.currentStreak);
+  });
+});
+
+describe('achievements', () => {
+  const statuses = async () => Object.fromEntries((await mockClient.getAchievements()).map(a => [a.code, a.status]));
+  const achievementEvents = (since: number) => ledger().slice(since).filter(e => e.type.startsWith('ACHIEVEMENT_')).map(e => [e.achievementCode, e.type, e.cycle, e.amount]);
+
+  it('starts with the achievements the seed history already earned, each backed by a ledger event', async () => {
+    freezeAt(D0);
+    expect(await statuses()).toEqual({ STREAK_7: 'EARNED', BALANCED: 'LOCKED', COMEBACK: 'EARNED' });
+    const grants = achievementEvents(0);
+    expect(grants.map(g => g[0]).sort()).toEqual(['COMEBACK', 'STREAK_7']);
+    const { progress } = await mockClient.getDashboard(D0);
+    expect(progress.areas.reduce((a, x) => a + x.xp, 0)).toBe(progress.totalXp);
+  });
+  it('revokes an achievement when an undo breaks it inside the window and grants it again on redo (new cycle)', async () => {
+    freezeAt(D0);
+    const size = ledger().length;
+    const undo = await mockClient.undoQuest('habit-code', D0); // streak 7 -> 6
+    expect(undo.effects).toEqual([{ type: 'ACHIEVEMENT_REVOKED', code: 'STREAK_7', xpDelta: -20 }]);
+    expect(undo.xpAwarded).toBe(-50 - 20);
+    expect((await statuses()).STREAK_7).toBe('LOCKED');
+    const redo = await mockClient.completeQuest('habit-code', D0);
+    expect(redo.effects).toEqual([{ type: 'ACHIEVEMENT_GRANTED', code: 'STREAK_7', xpDelta: 20 }]);
+    expect(redo.xpAwarded).toBe(50 + 20);
+    expect(achievementEvents(size)).toEqual([['STREAK_7', 'ACHIEVEMENT_REVOKE', 1, -20], ['STREAK_7', 'ACHIEVEMENT_GRANT', 2, 20]]);
+  });
+  it('never grants twice while the condition keeps holding, and an idempotent retry reports no effects', async () => {
+    freezeAt(D0);
+    const size = ledger().length;
+    const again = await mockClient.completeQuest('habit-code', D0); // already completed in the seed
+    expect(again).toMatchObject({ xpAwarded: 0, effects: [] });
+    await mockClient.completeQuest('habit-piano', D0);
+    expect(achievementEvents(size)).toEqual([]);
+  });
+  it('spreads BALANCED evenly over the five areas and takes it all back on undo', async () => {
+    freezeAt(D0);
+    const boss = (await mockClient.getCurrentJourney())!.chapters.map(c => c.boss).find(b => b.code === 'SLIME_OF_INERTIA')!;
+    const size = ledger().length;
+    const win = await mockClient.defeatBoss(boss.id);
+    expect(win.effects).toEqual([{ type: 'ACHIEVEMENT_GRANTED', code: 'BALANCED', xpDelta: 30 }]);
+    const grants = ledger().slice(size).filter(e => e.achievementCode === 'BALANCED');
+    expect(grants.map(g => [g.category, g.amount])).toEqual(ALL_CATEGORIES.map(c => [c, 6]));
+    const undo = await mockClient.undoBoss(boss.id);
+    expect(undo.effects).toEqual([{ type: 'ACHIEVEMENT_REVOKED', code: 'BALANCED', xpDelta: -30 }]);
+    expect((await statuses()).BALANCED).toBe('LOCKED');
+    const { progress } = await mockClient.getDashboard(D0);
+    expect(progress.areas.reduce((a, x) => a + x.xp, 0)).toBe(progress.totalXp);
   });
 });
 

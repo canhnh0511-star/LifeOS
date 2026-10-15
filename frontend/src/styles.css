@@ -49,3 +49,14 @@
 .character-card .panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:18px}
 .character-card .panel-head h3{margin:0;font-size:18px}
 @media (max-width:380px){.breadcrumb,.topbar-left .slash{display:none}.topbar-right{gap:8px}}
+.achievement-section{margin-bottom:34px}
+.achievements{list-style:none;margin:0;padding:0;display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.achievement{display:flex;gap:14px;padding:16px;border-radius:14px;border:1px solid #2a3743;background:#151e2a}
+.achievement.is-earned{border-color:#7a6a1c;background:#1f2118}
+.achievement-icon{flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:#232d3b;color:#7d8aa0}
+.achievement.is-earned .achievement-icon{background:#3a3210;color:#f5c518}
+.achievement-body{display:grid;gap:4px;min-width:0}
+.achievement-body strong{color:#f4f8fd}
+.achievement-body p{margin:0;font-size:13px;color:#aab6c7}
+.achievement-body small{font-size:12px;color:#8d9ab0}
+.achievement.is-earned small{color:#e7c75a}
