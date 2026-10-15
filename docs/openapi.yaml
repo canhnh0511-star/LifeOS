@@ -265,8 +265,8 @@ components:
         nextLevelXp: {type: integer, minimum: 0}
     Progress:
       type: object
-      required: [totalXp, level, levelStartXp, nextLevelXp, currentStreak, longestStreak]
-      description: 'areas is optional until the RPG layer is implemented, then required. totalXp = sum of areas[].xp.'
+      required: [totalXp, level, levelStartXp, nextLevelXp, currentStreak, longestStreak, areas]
+      description: 'areas luôn có đủ 5 lĩnh vực. totalXp = tổng areas[].xp.'
       properties:
         areas: {type: array, items: {$ref: '#/components/schemas/AreaStat'}}
         totalXp: {type: integer, minimum: 0}

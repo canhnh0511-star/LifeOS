@@ -67,10 +67,10 @@ Tên, nhiệm vụ, lĩnh vực và tier được chấp nhận làm giá trị 
 | Boss | tier | xpReward | requiredLevel (level lĩnh vực) |
 |---|---|---|---|
 | Slime of Inertia | 1 | 40 | 1 |
-| Gargoyle of Distraction | 2 | 50 | 2 |
-| Troll of Burnout | 3 | 65 | 3 |
-| Dragon of Procrastination | 5 | 100 | 4 |
-Lưu ý: level lĩnh vực tính bằng `floor(sqrt(areaXp/100))`, nên level 4 cần 1.600 XP trong riêng lĩnh vực đó. Với dữ liệu mẫu (mỗi lĩnh vực chỉ vài trăm XP sau 3 tuần) ngưỡng này sẽ khó đạt trước chặng 4; cần kiểm tra bằng mock và chỉnh `requiredLevel` hoặc hệ số.
+| Gargoyle of Distraction | 2 | 50 | 1 |
+| Troll of Burnout | 3 | 65 | 2 |
+| Dragon of Procrastination | 5 | 100 | 3 |
+**Đã chỉnh (owner chấp nhận 2026-10-15):** requiredLevel = 1, 1, 2, 3 vì seed chỉ cho ~30 XP/ngày/lĩnh vực; seed thêm habit Mindfulness. Ghi chú gốc: level lĩnh vực tính bằng `floor(sqrt(areaXp/100))`, nên level 4 cần 1.600 XP trong riêng lĩnh vực đó. Với dữ liệu mẫu (mỗi lĩnh vực chỉ vài trăm XP sau 3 tuần) ngưỡng này sẽ khó đạt trước chặng 4; cần kiểm tra bằng mock và chỉnh `requiredLevel` hoặc hệ số.
 
 ### Achievements (có XP)
 Mỗi achievement có `code`, `xpReward` nhỏ (10–30), cấp một lần mỗi campaign. Cấp và thu hồi đều ghi ledger.

@@ -1,5 +1,5 @@
 import type { LifeOsApi } from './client';
-import type { AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalCategory, GoalDto, HabitDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, UserDto } from './types';
+import type { AnalyticsDto, AreaStatDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalCategory, GoalDto, HabitDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, UserDto } from './types';
 import { ApiError, ErrorCode } from './errors';
 import { ALL_CATEGORIES } from '../domain/insights';
 import { categoryLabel, diffDays, isScheduled, levelProgress, longestStreakForHabit, moveDate, streakForHabit, todayInTimezone } from '../domain/rules';
@@ -76,13 +76,15 @@ function seed(): Db {
     { id: 'goal-career', title: 'Mastering my craft', category: 'CAREER', description: 'Phát triển chuyên môn backend, architecture và AI engineering.', status:'ACTIVE', createdAt: now() },
     { id: 'goal-creativity', title: 'Play with confidence', category:'CREATIVITY', description: 'Luyện piano để đệm hát tự nhiên và giàu cảm xúc.', status:'ACTIVE', createdAt:now() },
     { id: 'goal-health', title: 'Stronger every day', category:'HEALTH', description:'Xây dựng thể lực, năng lượng và lối sống bền vững.', status:'ACTIVE', createdAt:now() },
-    { id: 'goal-knowledge', title: 'Stay curious', category:'KNOWLEDGE', description:'Đọc và khám phá kiến thức mới mỗi ngày.', status:'ACTIVE', createdAt:now() }
+    { id: 'goal-knowledge', title: 'Stay curious', category:'KNOWLEDGE', description:'Đọc và khám phá kiến thức mới mỗi ngày.', status:'ACTIVE', createdAt:now() },
+    { id:'goal-mindfulness', title:'Calm mind', category:'MINDFULNESS', description:'Giữ đầu óc tĩnh và tập trung qua thiền và nghỉ không màn hình.', status:'ACTIVE', createdAt:now() }
   ];
   const habits: HabitDto[] = [
     { id:'habit-code', goalId:'goal-career', title:'Deep work · Java & AI', targetMinutes:45, xpReward:50, weekdays:[1,2,3,4,5], startDate:start, endDate:null, status:'ACTIVE' },
     { id:'habit-piano', goalId:'goal-creativity', title:'Practice piano', targetMinutes:30, xpReward:35, weekdays:[1,2,3,4,5,6,7], startDate:start, endDate:null, status:'ACTIVE' },
     { id:'habit-reading', goalId:'goal-knowledge', title:'Read & reflect', targetMinutes:15, xpReward:20, weekdays:[1,2,3,4,5,6,7], startDate:start, endDate:null, status:'ACTIVE' },
-    { id:'habit-workout', goalId:'goal-health', title:'Move your body', targetMinutes:30, xpReward:40, weekdays:[2,4,6], startDate:start, endDate:null, status:'ACTIVE' }
+    { id:'habit-workout', goalId:'goal-health', title:'Move your body', targetMinutes:30, xpReward:40, weekdays:[2,4,6], startDate:start, endDate:null, status:'ACTIVE' },
+    { id:'habit-meditate', goalId:'goal-mindfulness', title:'Meditate', targetMinutes:10, xpReward:20, weekdays:[1,2,3,4,5,6,7], startDate:start, endDate:null, status:'ACTIVE' }
   ];
   const questStates: QuestState[] = []; const xpTransactions: XpEvent[] = [];
   for (let x=0; x<=20; x++) {
@@ -132,14 +134,20 @@ function save(db:Db){ localStorage.setItem(DB_KEY,JSON.stringify(db)); }
 function requireHabit(db:Db,habitId:string){const habit=db.habits.find(h=>h.id===habitId);if(!habit)throw notFound('thói quen');return habit;}
 function stateOf(db:Db,habitId:string,date:string){return db.questStates.find(s=>s.habitId===habitId&&s.date===date);}
 function completedDates(db:Db,habitId:string){return new Set(db.questStates.filter(s=>s.habitId===habitId&&s.status==='COMPLETED').map(s=>s.date));}
-function totalXp(db:Db){return Math.max(0,db.xpTransactions.reduce((sum,e)=>sum+e.amount,0));}
+function totalXp(db:Db){return areaStats(db).reduce((sum,a)=>sum+a.xp,0);}
+function areaStats(db:Db):AreaStatDto[]{
+  return ALL_CATEGORIES.map(category=>{
+    const xp=Math.max(0,db.xpTransactions.filter(e=>e.category===category).reduce((sum,e)=>sum+e.amount,0));
+    return {category,xp,...levelProgress(xp)};
+  });
+}
 function progress(db:Db,date=todayInTimezone()):ProgressDto {
   const xp=totalXp(db);
   // Paused days are not required sessions, so they neither extend nor break a streak.
   const required=(habit:HabitDto)=>(d:string)=>isQuestOn(db,habit,d);
   const current=db.habits.filter(h=>lifecycleActive(db,h,date)).map(h=>streakForHabit(h,completedDates(db,h.id),date,required(h)));
   const historical=db.habits.map(h=>longestStreakForHabit(h,completedDates(db,h.id),date,required(h)));
-  return {totalXp:xp,...levelProgress(xp), currentStreak:Math.max(0,...current),longestStreak:Math.max(0,...historical)};
+  return {totalXp:xp,...levelProgress(xp),areas:areaStats(db), currentStreak:Math.max(0,...current),longestStreak:Math.max(0,...historical)};
 }
 function quests(db:Db,date:string):QuestDto[]{
   return db.habits.filter(h=>isQuestOn(db,h,date)).map(h=>{

@@ -18,6 +18,9 @@ export function isScheduled(habit: HabitDto, date: string): boolean {
 }
 export function levelAtXp(xp: number): number { return Math.max(1, Math.floor(Math.sqrt(Math.max(0, xp) / 100))); }
 export function xpForLevel(level: number): number { return level <= 1 ? 0 : 100 * level * level; }
+const TITLES = ['Người khởi hành', 'Người tập sự', 'Người kiên trì', 'Chiến binh', 'Người dẫn đường', 'Bậc thầy'];
+/** Danh hiệu theo level (level 1 → danh hiệu đầu tiên, level >= 6 → danh hiệu cuối). */
+export function titleForLevel(level: number): string { return TITLES[Math.min(TITLES.length, Math.max(1, level)) - 1]; }
 export function levelProgress(xp: number) {
   const level = levelAtXp(xp); return { level, levelStartXp: xpForLevel(level), nextLevelXp: xpForLevel(level + 1) };
 }

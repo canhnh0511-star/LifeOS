@@ -8,8 +8,7 @@ export interface GoalDto { id: string; title: string; category: GoalCategory; de
 export interface HabitDto { id: string; goalId: string; title: string; targetMinutes: number; xpReward: number; weekdays: Weekday[]; startDate: string; endDate: string | null; status: RecordStatus; }
 export interface QuestDto { habitId: string; goalId: string; goalTitle: string; title: string; targetMinutes: number; xpReward: number; category: GoalCategory; date: string; status: QuestStatus; completedAt: string | null; }
 export interface AreaStatDto { category: GoalCategory; xp: number; level: number; levelStartXp: number; nextLevelXp: number; }
-/** `areas` is optional until the mock/backend implement the RPG layer (see .scratch/rpg-campaign/spec.md); then it becomes required. */
-export interface ProgressDto { totalXp: number; level: number; levelStartXp: number; nextLevelXp: number; currentStreak: number; longestStreak: number; areas?: AreaStatDto[]; }
+export interface ProgressDto { totalXp: number; level: number; levelStartXp: number; nextLevelXp: number; currentStreak: number; longestStreak: number; areas: AreaStatDto[]; }
 export interface DailyDashboardDto { date: string; user: UserDto; quests: QuestDto[]; progress: ProgressDto; completedCount: number; scheduledCount: number; earnedXpToday: number; journey: JourneyDto | null; }
 export type BossStatus = 'LOCKED' | 'AVAILABLE' | 'DEFEATED';
 export type BossTier = 1 | 2 | 3 | 4 | 5;

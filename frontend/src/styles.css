@@ -15,3 +15,9 @@
 .analytics-days{margin-top:18px}
 .insight-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}.insight-item{padding:14px 16px;border-radius:14px;background:#0f1722;border:1px solid #242c39;border-left-width:3px}.insight-item strong{display:block;font-size:14px;margin-bottom:5px;color:#f4f8fd}.insight-item p{margin:0;font-size:13px;line-height:1.55;color:#94a2b6}
 .insight-item.tone-positive{border-left-color:#c6fa55}.insight-item.tone-warning{border-left-color:#ffb454}.insight-item.tone-neutral{border-left-color:#5aa9ff}
+
+.character-card .stat-list{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.stat-row{display:flex;gap:12px;align-items:center}
+.stat-body{flex:1;min-width:0;display:grid;gap:4px}
+.stat-top{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.stat-top span,.stat-body small{color:var(--muted,#6b7280);font-size:12px}

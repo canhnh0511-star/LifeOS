@@ -1,5 +1,5 @@
 import { describe,expect,it } from 'vitest';
-import { isScheduled, levelAtXp, levelProgress, longestStreakForHabit, moveDate, streakForHabit } from './rules';
+import { isScheduled, levelAtXp, levelProgress, longestStreakForHabit, moveDate, streakForHabit, titleForLevel } from './rules';
 import type { HabitDto } from '../api/types';
 const habit:HabitDto={id:'h',goalId:'g',title:'Work',targetMinutes:30,xpReward:35,weekdays:[1,2,3,4,5],startDate:'2026-10-05',endDate:null,status:'ACTIVE'};
 describe('Level progression',()=>{
@@ -32,4 +32,12 @@ describe('streaks with paused days',()=>{
    expect(longestStreakForHabit(habit,done,'2026-10-13',notPaused)).toBe(3);
    expect(longestStreakForHabit(habit,done,'2026-10-13')).toBe(2);
  });
+});
+
+describe('titleForLevel', () => {
+  it('maps levels to titles and clamps both ends', () => {
+    expect(titleForLevel(1)).toBe('Người khởi hành');
+    expect(titleForLevel(0)).toBe('Người khởi hành');
+    expect(titleForLevel(99)).toBe('Bậc thầy');
+  });
 });

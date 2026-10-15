@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { exportDemoData, mockClient, resetDemoData } from './mockClient';
 import { ApiError } from './errors';
 import type { Weekday } from './types';
-import { moveDate, todayInTimezone } from '../domain/rules';
+import { levelProgress, moveDate, todayInTimezone } from '../domain/rules';
+import { ALL_CATEGORIES } from '../domain/insights';
 
 const store = new Map<string, string>();
 Object.defineProperty(globalThis, 'localStorage', {
@@ -108,6 +109,25 @@ describe('XP ledger', () => {
     const before = exportDemoData();
     await mockClient.getDashboard(D0); await mockClient.getQuests(D0); await mockClient.getAnalytics('30d'); await mockClient.getCurrentJourney();
     expect(exportDemoData()).toBe(before);
+  });
+});
+
+describe('area stats', () => {
+  it('reports one entry per category and totalXp equals the sum of area XP', async () => {
+    freezeAt(D0);
+    const { progress } = await mockClient.getDashboard(D0);
+    expect(progress.areas.map(a => a.category)).toEqual(ALL_CATEGORIES);
+    expect(progress.areas.reduce((a, x) => a + x.xp, 0)).toBe(progress.totalXp);
+    for (const a of progress.areas) expect(a.level).toBe(levelProgress(a.xp).level);
+  });
+  it('credits a quest to its own area and takes it back on undo', async () => {
+    freezeAt(D0);
+    const area = async () => (await mockClient.getDashboard(D0)).progress.areas.find(a => a.category === 'CREATIVITY')!.xp;
+    const before = await area();
+    await mockClient.completeQuest('habit-piano', D0);
+    expect(await area()).toBe(before + 35);
+    await mockClient.undoQuest('habit-piano', D0);
+    expect(await area()).toBe(before);
   });
 });
 
