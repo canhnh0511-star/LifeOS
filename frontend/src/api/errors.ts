@@ -6,6 +6,7 @@ export const ErrorCode = {
   questTooOld: 'QUEST_TOO_OLD',
   questOutsideSchedule: 'QUEST_OUTSIDE_SCHEDULE',
   questNotActive: 'QUEST_NOT_ACTIVE',
+  bossLocked: 'BOSS_LOCKED',
   unauthenticated: 'UNAUTHENTICATED',
   http: 'HTTP_ERROR',
   network: 'NETWORK_ERROR',

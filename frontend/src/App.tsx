@@ -8,10 +8,11 @@ import {
 } from 'lucide-react';
 import { api, isDemo } from './api';
 import { exportDemoData, resetDemoData } from './api/mockClient';
-import type { AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalCategory, GoalDto, HabitDto, QuestDto, Weekday } from './api/types';
+import type { AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalCategory, GoalDto, HabitDto, BossDto, QuestDto, Weekday } from './api/types';
 import { categoryLabel, formatDate, moveDate, titleForLevel, todayInTimezone } from './domain/rules';
 import { buildInsights, radarAxes } from './domain/insights';
 import { RadarChart } from './components/RadarChart';
+import { CampaignMap } from './components/CampaignMap';
 import './styles.css';
 
 type Tab = 'today' | 'journey' | 'insights';
@@ -109,7 +110,7 @@ export default function App() {
   const [dashboard, setDashboard] = useState<DailyDashboardDto | null>(null);
   const [goals, setGoals] = useState<GoalDto[]>([]); const [habits, setHabits] = useState<HabitDto[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsDto | null>(null); const [weekly, setWeekly] = useState<AnalyticsDto | null>(null);
-  const [modal, setModal] = useState<Modal>(null); const [busyId, setBusyId] = useState<string | null>(null);
+  const [modal, setModal] = useState<Modal>(null); const [busyId, setBusyId] = useState<string | null>(null); const [busyBossId, setBusyBossId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true); const [error, setError] = useState('');
   const [notice, setNotice] = useState(''); const [menuOpen, setMenuOpen] = useState(false);
   const [revision, setRevision] = useState(0); const today = todayInTimezone();
@@ -137,6 +138,14 @@ export default function App() {
     } catch (e) { setNotice(e instanceof Error ? e.message : 'Không thể cập nhật nhiệm vụ.'); }
     finally { setBusyId(null); }
   }, [busyId, selectedDate]);
+  const bossAction = async (boss: BossDto, defeat: boolean) => {
+    if (busyBossId) return; setBusyBossId(boss.id);
+    try {
+      const r = defeat ? await api.defeatBoss(boss.id) : await api.undoBoss(boss.id);
+      setNotice(r.xpAwarded > 0 ? `Đã hạ ${boss.name}! +${r.xpAwarded} XP` : r.xpAwarded < 0 ? `Đã hoàn tác ${boss.name}: ${r.xpAwarded} XP` : 'Đã cập nhật boss.'); refresh();
+    } catch (e) { setNotice(e instanceof Error ? e.message : 'Không thể cập nhật boss.'); }
+    finally { setBusyBossId(null); }
+  };
   const saveGoal = async (v: CreateGoalRequest) => { try { await api.createGoal(v); setModal(null); setNotice('Đã tạo mục tiêu mới.'); refresh(); } catch (e) { setNotice(e instanceof Error ? e.message : 'Có lỗi xảy ra.'); } };
   const saveHabit = async (v: CreateHabitRequest) => { try { await api.createHabit(v); setModal(null); setNotice('Đã tạo thói quen mới.'); refresh(); } catch (e) { setNotice(e instanceof Error ? e.message : 'Có lỗi xảy ra.'); } };
   const toggleGoal = async (goal: GoalDto) => { try { await api.updateGoal(goal.id, { status: goal.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' }); setNotice('Đã cập nhật mục tiêu. Có hiệu lực từ ngày mai.'); refresh(); } catch (e) { setNotice(e instanceof Error ? e.message : 'Có lỗi.'); } };
@@ -194,6 +203,7 @@ export default function App() {
           {tab === 'journey' && <>
             <div className="page-header"><div><div className="eyebrow"><span className="eyebrow-dash"/> PLAN WITH PURPOSE</div><h1>Build your <span className="text-gradient">journey.</span></h1><p>Chuyển mục tiêu lớn thành những thói quen nhỏ có thể duy trì.</p></div><button className="btn btn-primary" onClick={() => setModal('goal')}><Plus size={18}/> Mục tiêu mới</button></div>
             <article className="journey-banner"><div><span className="section-eyebrow">YOUR TRANSFORMATION</span><h2>{journey?.title || '66-Day Transformation'}</h2><p>Thời gian trôi qua không đồng nghĩa với tiến bộ. Mình theo dõi cả hai.</p></div><div className="journey-stats"><div><strong>{journey?.elapsedDays || 0}<small> / {journey?.durationDays || 66}</small></strong><span>Ngày hành trình</span><ProgressBar value={journeyPct} variant="blue" size="slim"/></div><div><strong>{journeyDonePct}<small>%</small></strong><span>Hoàn thành nhiệm vụ</span><ProgressBar value={journeyDonePct} variant="green" size="slim"/></div></div></article>
+            {journey && <section className="campaign-section" aria-label="Chiến dịch"><div className="section-header"><div><div className="section-eyebrow">CAMPAIGN</div><h2>Bản đồ chiến dịch</h2></div></div><CampaignMap chapters={journey.chapters} busyBossId={busyBossId} onDefeat={b => bossAction(b, true)} onUndo={b => bossAction(b, false)}/></section>}
             <div className="section-header"><div><div className="section-eyebrow">LIFE AREAS</div><h2>My goals <span className="count-pill">{goals.length}</span></h2></div><button className="btn btn-outlined" onClick={() => setModal('habit')}><Plus size={17}/> Thói quen mới</button></div>
             {goals.length===0 ? <EmptyState icon={Target} title="Chưa có mục tiêu" details="Tạo mục tiêu đầu tiên để bắt đầu hành trình." action={<button className="btn btn-primary" onClick={() => setModal('goal')}>Thêm mục tiêu</button>}/> : <div className="goals-grid">{goals.map(goal => {const Icon=categoryIcons[goal.category]; const ownHabits=habits.filter(h=>h.goalId===goal.id);const stats=categoryStats[goal.category]; const progress=pct(stats?.completed || 0,stats?.scheduled || 0);return <article className={`goal-card ${goal.status !== 'ACTIVE' ? 'goal-paused' : ''}`} key={goal.id}><div className="goal-card-head"><IconBubble icon={Icon} tone={categoryColors[goal.category]}/><button className="goal-pause" onClick={() => toggleGoal(goal)} title={goal.status === 'ACTIVE' ? 'Tạm dừng' : 'Kích hoạt'}>{goal.status === 'ACTIVE' ? 'Tạm dừng' : 'Tiếp tục'}</button></div><span className="category-label">{categoryLabel(goal.category)}</span><h3>{goal.title}</h3><p>{goal.description || 'Một bước nhỏ mỗi ngày.'}</p><div className="goal-progress-row"><span>Hoàn thành tuần này</span><strong>{progress}%</strong></div><ProgressBar value={progress} variant="green" size="slim"/><div className="goal-habits"><strong>{ownHabits.length} thói quen</strong>{ownHabits.length===0 && <span className="subtle-text">Chưa có thói quen</span>}{ownHabits.map(h => <div className="goal-habit" key={h.id}><span className={`small-status-dot ${h.status === 'ACTIVE' ? '' : 'paused'}`}/><span>{h.title}</span><button onClick={() => toggleHabit(h)} title={h.status === 'ACTIVE' ? 'Tạm dừng' : 'Tiếp tục'}>{h.status === 'ACTIVE' ? 'Pause' : 'Resume'}</button></div>)}</div></article>;})}</div>}
           </>}

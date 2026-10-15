@@ -29,7 +29,7 @@ Spec: `.scratch/rpg-campaign/spec.md`. Các field mới trên DTO hiện có (`P
 | DELETE | `/bosses/{bossId}/completion` | rỗng | `BossMutationDto` (hoàn tác, thu hồi thưởng) |
 | GET | `/achievements` | — | `AchievementDto[]` (campaign hiện tại) |
 
-`xpAwarded` là delta ròng của cả request (gồm các thay đổi phụ); `effects[]` liệt kê từng thay đổi phụ (`BOSS_REVERTED`, `ACHIEVEMENT_GRANTED`, `ACHIEVEMENT_REVOKED`). Mã HTTP của `BOSS_LOCKED` là tạm thời (409) và sẽ thống nhất trong bảng mã lỗi ở bước chốt contract.
+`xpAwarded` là delta ròng của cả request (gồm các thay đổi phụ); `effects[]` liệt kê từng thay đổi phụ (`BOSS_REVERTED`, `ACHIEVEMENT_GRANTED`, `ACHIEVEMENT_REVOKED`).
 
 ## Ví dụ DTO
 ### `GET /dashboard/today?date=2026-10-13`
@@ -89,9 +89,10 @@ HTTP status chuẩn: 400 validation, 401 chưa xác thực, 403 không có quy�
 | 404 | `NOT_FOUND` | Không tìm thấy hoặc không thuộc về user |
 | 422 | `VALIDATION_FAILED` | Input sai; `fields` liệt kê từng field kèm thông báo (gồm cả ngày sai định dạng, patch rỗng hoặc có field không cho phép) |
 | 422 | `QUEST_IN_FUTURE` | Hoàn thành/hoàn tác quest của ngày tương lai |
-| 422 | `QUEST_TOO_OLD` | Quest cũ hơn 7 ngày so với hôm nay (hôm nay và lùi 7 ngày vẫn được) |
+| 422 | `QUEST_TOO_OLD` | Quest cũ hơn 7 ngày so với hôm nay (hôm nay và lùi 7 ngày vẫn được); với boss: undo boss đã hạ quá 7 ngày |
 | 422 | `QUEST_OUTSIDE_SCHEDULE` | Ngày không thuộc weekday hoặc khoảng ngày của habit |
 | 409 | `QUEST_NOT_ACTIVE` | Habit hoặc goal đang tạm dừng vào ngày đó |
+| 409 | `BOSS_LOCKED` | Level lĩnh vực của boss chưa đạt `requiredLevel` |
 
 Chỉ có `HTTP_ERROR`, `NETWORK_ERROR`, `REQUEST_TIMEOUT` (status 0) là mã phía client, khi không có response hợp lệ từ server.
 

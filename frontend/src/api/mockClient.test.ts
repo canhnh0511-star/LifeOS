@@ -131,6 +131,69 @@ describe('area stats', () => {
   });
 });
 
+describe('bosses', () => {
+  const chaptersOf = async () => (await mockClient.getCurrentJourney())!.chapters!;
+  const bossOf = async (code: string) => (await chaptersOf()).map(c => c.boss).find(b => b.code === code)!;
+  const area = async (category: string) => (await mockClient.getProgress()).areas.find(a => a.category === category)!.xp;
+
+  it('exposes four chapters with their boss, locked or available by area level', async () => {
+    freezeAt(D0);
+    const chapters = await chaptersOf();
+    expect(chapters.map(c => [c.startDate, c.endDate])).toEqual([
+      [moveDate(D0, -20), moveDate(D0, -14)], [moveDate(D0, -13), D0], [moveDate(D0, 1), moveDate(D0, 23)], [moveDate(D0, 24), moveDate(D0, 45)]
+    ]);
+    expect(chapters.map(c => c.boss.bossDate)).toEqual(chapters.map(c => c.endDate));
+    expect(chapters.map(c => c.boss.status)).toEqual(['AVAILABLE', 'AVAILABLE', 'LOCKED', 'LOCKED']);
+    expect(chapters[2].boss.currentAreaLevel).toBeLessThan(chapters[2].boss.requiredLevel);
+  });
+  it('defeating a boss pays XP into its area, is idempotent and undo takes it back', async () => {
+    freezeAt(D0);
+    const boss = await bossOf('SLIME_OF_INERTIA');
+    const before = await area(boss.category);
+    const sizeBefore = ledger().length;
+    const win = await mockClient.defeatBoss(boss.id);
+    expect(win).toMatchObject({ bossId: boss.id, status: 'DEFEATED', xpAwarded: boss.xpReward, effects: [] });
+    expect(await area(boss.category)).toBe(before + boss.xpReward);
+    expect((await mockClient.defeatBoss(boss.id)).xpAwarded).toBe(0);
+    const defeated = await bossOf('SLIME_OF_INERTIA');
+    expect([defeated.status, defeated.defeatedDate]).toEqual(['DEFEATED', D0]);
+    expect((await mockClient.undoBoss(boss.id)).xpAwarded).toBe(-boss.xpReward);
+    expect((await mockClient.undoBoss(boss.id)).xpAwarded).toBe(0);
+    expect(await area(boss.category)).toBe(before);
+    await mockClient.defeatBoss(boss.id);
+    expect(ledger().slice(sizeBefore).map(e => [e.type, e.cycle, e.amount])).toEqual([
+      ['BOSS_COMPLETE', 1, boss.xpReward], ['BOSS_REVERT', 1, -boss.xpReward], ['BOSS_COMPLETE', 2, boss.xpReward]
+    ]);
+  });
+  it('rejects a locked boss with BOSS_LOCKED and an unknown boss with NOT_FOUND', async () => {
+    freezeAt(D0);
+    const locked = await bossOf('TROLL_OF_BURNOUT');
+    expect(await rejection(mockClient.defeatBoss(locked.id))).toMatchObject({ status: 409, code: 'BOSS_LOCKED' });
+    expect(await rejection(mockClient.defeatBoss('nope'))).toMatchObject({ status: 404, code: 'NOT_FOUND' });
+    expect(await rejection(mockClient.undoBoss('nope'))).toMatchObject({ status: 404 });
+  });
+  it('refuses to undo a boss defeated more than 7 days ago', async () => {
+    freezeAt(D0);
+    const boss = await bossOf('SLIME_OF_INERTIA');
+    await mockClient.defeatBoss(boss.id);
+    freezeAt(moveDate(D0, 8));
+    expect(await rejection(mockClient.undoBoss(boss.id))).toMatchObject({ status: 422, code: 'QUEST_TOO_OLD' });
+  });
+  it('counts a boss as scheduled on bossDate and completed on the defeat date, without touching the streak', async () => {
+    freezeAt(D0);
+    const dayStats = async () => (await mockClient.getAnalytics('7d')).days.find(d => d.date === D0)!;
+    const dash = await mockClient.getDashboard(D0);
+    const before = await dayStats();
+    // Gargoyle's bossDate is D0, so it is one extra scheduled item today even before it is defeated.
+    expect(before.scheduled).toBe(dash.scheduledCount + 1);
+    const boss = await bossOf('GARGOYLE_OF_DISTRACTION');
+    await mockClient.defeatBoss(boss.id);
+    const after = await dayStats();
+    expect([after.scheduled, after.completed]).toEqual([before.scheduled, before.completed + 1]);
+    expect((await mockClient.getDashboard(D0)).progress.currentStreak).toBe(dash.progress.currentStreak);
+  });
+});
+
 describe('quest errors', () => {
   it('rejects the future with QUEST_IN_FUTURE (422)', async () => {
     freezeAt(D0);

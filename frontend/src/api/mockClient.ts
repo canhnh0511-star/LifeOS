@@ -1,11 +1,12 @@
 import type { LifeOsApi } from './client';
-import type { AnalyticsDto, AreaStatDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalCategory, GoalDto, HabitDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, UserDto } from './types';
+import type { AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalCategory, GoalDto, HabitDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, UserDto } from './types';
 import { ApiError, ErrorCode } from './errors';
 import { ALL_CATEGORIES } from '../domain/insights';
+import { BOSS_CATALOG, CHAPTERS } from '../domain/bosses';
 import { categoryLabel, diffDays, isScheduled, levelProgress, longestStreakForHabit, moveDate, streakForHabit, todayInTimezone } from '../domain/rules';
 
 const DB_KEY = 'life-os.mock.v1';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const MAX_BACKDATE_DAYS = 7;
 const user: UserDto = { id: 'demo-user-001', displayName: 'Cảnh', email: 'demo@lifeos.local', timezone: 'Asia/Ho_Chi_Minh' };
 
@@ -14,9 +15,12 @@ type LifecycleEvent = { effectiveDate: string; status: RecordStatus };
 /** Mutable state of one materialized quest (habit + local date). `cycle` counts completions, as in docs/DATA_MODEL.md. */
 type QuestState = { habitId: string; date: string; status: 'PENDING' | 'COMPLETED'; cycle: number; completedAt: string | null };
 /** Append-only ledger entry. Never edited or removed. `date` is the quest's local date. */
-type XpEvent = { id: string; habitId: string; date: string; category: GoalCategory; type: 'QUEST_COMPLETE' | 'QUEST_REVERT'; cycle: number; amount: number; createdAt: string };
+type XpEvent = { id: string; habitId?: string; bossId?: string; date: string; category: GoalCategory; type: 'QUEST_COMPLETE' | 'QUEST_REVERT' | 'BOSS_COMPLETE' | 'BOSS_REVERT'; cycle: number; amount: number; createdAt: string };
+/** Mutable state of one boss. `cycle` counts defeats; `defeatedDate` is the local date of the current defeat. */
+type BossState = { bossId: string; status: 'AVAILABLE' | 'DEFEATED'; cycle: number; defeatedDate: string | null; defeatedAt: string | null };
+type StoredJourney = Omit<JourneyDto, 'chapters'>;
 type Lifecycle = { goals: Record<string, LifecycleEvent[]>; habits: Record<string, LifecycleEvent[]> };
-type Db = { version: typeof DB_VERSION; goals: GoalDto[]; habits: HabitDto[]; lifecycle: Lifecycle; questStates: QuestState[]; xpTransactions: XpEvent[]; journey: JourneyDto };
+type Db = { version: typeof DB_VERSION; goals: GoalDto[]; habits: HabitDto[]; lifecycle: Lifecycle; questStates: QuestState[]; xpTransactions: XpEvent[]; bossStates: BossState[]; journey: StoredJourney };
 
 const id = () => typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `mock-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const now = () => new Date().toISOString();
@@ -99,10 +103,11 @@ function seed(): Db {
       xpTransactions.push({id:id(),habitId:habit.id,date:day,category,type:'QUEST_COMPLETE',cycle:1,amount:habit.xpReward,createdAt:now()});
     }
   }
-  return {version:DB_VERSION,goals,habits,lifecycle:{goals:{},habits:{}},questStates,xpTransactions,journey:{id:'journey-66',title:'The 66-Day Reset',startDate:start,durationDays:66,status:'ACTIVE',elapsedDays:21,totalScheduledToDate:0,completedToDate:0}};
+  return {version:DB_VERSION,goals,habits,lifecycle:{goals:{},habits:{}},questStates,xpTransactions,bossStates:[],journey:{id:'journey-66',title:'The 66-Day Reset',startDate:start,durationDays:66,status:'ACTIVE',elapsedDays:21,totalScheduledToDate:0,completedToDate:0}};
 }
 /** Version 1 stored completions without cycles and kept paused records hidden for all time. */
-type DbV1 = { version: 1; goals: GoalDto[]; habits: HabitDto[]; completions: { habitId: string; date: string; completedAt: string }[]; xpTransactions: { id: string; habitId: string; date: string; type: 'QUEST_COMPLETE' | 'QUEST_REVERT'; amount: number; createdAt: string }[]; journey: JourneyDto };
+type DbV2 = Omit<Db, 'version' | 'bossStates'> & { version: 2 };
+type DbV1 = { version: 1; goals: GoalDto[]; habits: HabitDto[]; completions: { habitId: string; date: string; completedAt: string }[]; xpTransactions: { id: string; habitId: string; date: string; type: 'QUEST_COMPLETE' | 'QUEST_REVERT'; amount: number; createdAt: string }[]; journey: StoredJourney };
 function migrateV1(old: DbV1): Db {
   const lifecycle: Lifecycle = { goals: {}, habits: {} };
   const tomorrow = moveDate(todayInTimezone(), 1);
@@ -118,11 +123,12 @@ function migrateV1(old: DbV1): Db {
     return { id: event.id, habitId: event.habitId, date: event.date, category, type: event.type, cycle, amount: event.amount, createdAt: event.createdAt };
   });
   const questStates: QuestState[] = old.completions.map(c => ({ habitId: c.habitId, date: c.date, status: 'COMPLETED', cycle: cycles.get(`${c.habitId}|${c.date}`) ?? 1, completedAt: c.completedAt }));
-  return { version: DB_VERSION, goals: old.goals, habits: old.habits, lifecycle, questStates, xpTransactions, journey: old.journey };
+  return { version: DB_VERSION, goals: old.goals, habits: old.habits, lifecycle, questStates, xpTransactions, bossStates: [], journey: old.journey };
 }
 function load():Db {
   try { const stored=localStorage.getItem(DB_KEY); if (stored) {
-    const parsed=JSON.parse(stored) as Db | DbV1;
+    const parsed=JSON.parse(stored) as Db | DbV1 | DbV2;
+    if (parsed.version===2 && Array.isArray(parsed.goals) && Array.isArray(parsed.xpTransactions) && Array.isArray(parsed.questStates)) { const migrated:Db={...parsed,version:DB_VERSION,bossStates:[]}; save(migrated); return migrated; }
     if (parsed.version===DB_VERSION && Array.isArray(parsed.goals) && Array.isArray(parsed.xpTransactions) && Array.isArray((parsed as Db).questStates)) return parsed as Db;
     if (parsed.version===1 && Array.isArray(parsed.goals) && Array.isArray(parsed.habits) && Array.isArray(parsed.completions) && Array.isArray(parsed.xpTransactions)) { const migrated=migrateV1(parsed); save(migrated); return migrated; }
   }} catch { /* damaged demo state resets to sample */ }
@@ -156,6 +162,20 @@ function quests(db:Db,date:string):QuestDto[]{
     return {habitId:h.id,goalId:h.goalId,goalTitle:goal?.title??'',title:h.title,targetMinutes:h.targetMinutes,xpReward:h.xpReward,category:goal?.category??'CAREER',date,status:state?.status??'PENDING',completedAt:state?.completedAt??null};
   });
 }
+function bossStateOf(db:Db,bossId:string){return db.bossStates.find(s=>s.bossId===bossId);}
+function chaptersOf(db:Db):ChapterDto[]{
+  const areas=areaStats(db);
+  return CHAPTERS.map(chapter=>{
+    const config=BOSS_CATALOG.find(b=>b.chapter===chapter.index)!;
+    const key=bossId(config.code);const state=bossStateOf(db,key);
+    const startDate=moveDate(db.journey.startDate,chapter.fromDay-1);const endDate=moveDate(db.journey.startDate,chapter.toDay-1);
+    const currentAreaLevel=areas.find(a=>a.category===config.category)!.level;
+    const status:BossDto['status']=state?.status==='DEFEATED'?'DEFEATED':currentAreaLevel>=config.requiredLevel?'AVAILABLE':'LOCKED';
+    const boss:BossDto={id:key,code:config.code,name:config.name,category:config.category,targetMinutes:config.targetMinutes,xpReward:config.xpReward,tier:config.tier,requiredLevel:config.requiredLevel,currentAreaLevel,artKey:config.artKey,bossDate:endDate,status,defeatedDate:state?.defeatedDate??null,defeatedAt:state?.defeatedAt??null};
+    return {index:chapter.index,title:chapter.title,startDate,endDate,boss};
+  });
+}
+const bossId=(code:string)=>`boss-${code.toLowerCase().replace(/_/g,'-')}`;
 function journey(db:Db):JourneyDto {
   const today=todayInTimezone(); const final=moveDate(db.journey.startDate,db.journey.durationDays-1);
   const last=today>final?final:today; const elapsed=Math.max(0,Math.min(db.journey.durationDays,diffDays(db.journey.startDate,today)+1));
@@ -163,7 +183,7 @@ function journey(db:Db):JourneyDto {
   for(let d=db.journey.startDate;d<=last;d=moveDate(d,1)){
     const todays=quests(db,d);scheduled+=todays.length;completed+=todays.filter(q=>q.status==='COMPLETED').length;
   }
-  return {...db.journey,elapsedDays:elapsed,totalScheduledToDate:scheduled,completedToDate:completed};
+  return {...db.journey,elapsedDays:elapsed,totalScheduledToDate:scheduled,completedToDate:completed,chapters:chaptersOf(db)};
 }
 function periodStats(db:Db,endDate:string,length:number){
   const days:AnalyticsDto['days']=[];const categoryMap=new Map<string,{scheduled:number;completed:number}>();
@@ -171,6 +191,14 @@ function periodStats(db:Db,endDate:string,length:number){
     const date=moveDate(endDate,-offset); const daily=quests(db,date);const completed=daily.filter(q=>q.status==='COMPLETED');
     days.push({date,scheduled:daily.length,completed:completed.length,xpEarned:db.xpTransactions.filter(t=>t.date===date).reduce((a,t)=>a+t.amount,0)});
     for(const q of daily){const stat=categoryMap.get(q.category)??{scheduled:0,completed:0};stat.scheduled++;if(q.status==='COMPLETED')stat.completed++;categoryMap.set(q.category,stat);}
+    // A boss is scheduled on its bossDate and completed on the date it was defeated (they can differ).
+    const today=days[days.length-1];
+    for(const boss of chaptersOf(db).map(c=>c.boss)){
+      const stat=categoryMap.get(boss.category)??{scheduled:0,completed:0};
+      if(boss.bossDate===date){today.scheduled++;stat.scheduled++;}
+      if(boss.status==='DEFEATED'&&boss.defeatedDate===date){today.completed++;stat.completed++;}
+      categoryMap.set(boss.category,stat);
+    }
   }
   const scheduledCount=days.reduce((a,d)=>a+d.scheduled,0);const completedCount=days.reduce((a,d)=>a+d.completed,0);
   return {days,scheduledCount,completedCount,completionRate:scheduledCount?Math.round(completedCount/scheduledCount*100):0,earnedXp:days.reduce((a,d)=>a+d.xpEarned,0),categories:[...categoryMap].map(([category,values])=>({category:category as AnalyticsDto['categories'][number]['category'],...values}))};
@@ -211,6 +239,31 @@ async function mutateQuest(habitId:string,date:string,complete:boolean):Promise<
   }
   save(db);const p=progress(db);
   return {habitId,date,status:state.status,xpAwarded,totalXp:p.totalXp,level:p.level,streak:streakForHabit(habit,completedDates(db,habitId),todayInTimezone(),d=>isQuestOn(db,habit,d))};
+}
+
+async function mutateBoss(target:string,defeat:boolean):Promise<BossMutationDto>{
+  await delay();const db=load();
+  const boss=chaptersOf(db).map(c=>c.boss).find(b=>b.id===target);
+  if(!boss)throw notFound('boss');
+  const today=todayInTimezone();
+  let state=bossStateOf(db,target);
+  if(!state){state={bossId:target,status:'AVAILABLE',cycle:0,defeatedDate:null,defeatedAt:null};db.bossStates.push(state);}
+  let xpAwarded=0;
+  if(defeat&&state.status!=='DEFEATED'){
+    if(boss.status==='LOCKED')throw new ApiError(409,ErrorCode.bossLocked,`Boss chưa mở khóa: cần ${boss.requiredLevel} level ở lĩnh vực ${categoryLabel(boss.category)}.`);
+    state.status='DEFEATED';state.cycle++;state.defeatedDate=today;state.defeatedAt=now();
+    xpAwarded=boss.xpReward;
+    db.xpTransactions.push({id:id(),bossId:target,date:today,category:boss.category,type:'BOSS_COMPLETE',cycle:state.cycle,amount:xpAwarded,createdAt:now()});
+  } else if(!defeat&&state.status==='DEFEATED'){
+    assertEditableDate(state.defeatedDate!);
+    const awarded=db.xpTransactions.find(e=>e.bossId===target&&e.cycle===state.cycle&&e.type==='BOSS_COMPLETE');
+    xpAwarded=-(awarded?.amount??0);
+    if(awarded)db.xpTransactions.push({id:id(),bossId:target,date:awarded.date,category:boss.category,type:'BOSS_REVERT',cycle:state.cycle,amount:xpAwarded,createdAt:now()});
+    state.status='AVAILABLE';state.defeatedDate=null;state.defeatedAt=null;
+  }
+  save(db);const p=progress(db);
+  const status=chaptersOf(db).map(c=>c.boss).find(b=>b.id===target)!.status;
+  return {bossId:target,status,xpAwarded,totalXp:p.totalXp,level:p.level,effects:[]};
 }
 
 export const mockClient:LifeOsApi={
@@ -266,6 +319,8 @@ export const mockClient:LifeOsApi={
   async getQuests(date){await delay();assertLocalDate(date);return quests(load(),date);},
   completeQuest:(habitId,date)=>mutateQuest(habitId,date,true),
   undoQuest:(habitId,date)=>mutateQuest(habitId,date,false),
+  defeatBoss:bossId=>mutateBoss(bossId,true),
+  undoBoss:bossId=>mutateBoss(bossId,false),
   async getProgress(){await delay();return progress(load());},
   async getAnalytics(period){await delay();return analytics(load(),period);},
   async getCurrentJourney(){await delay();return journey(load());}

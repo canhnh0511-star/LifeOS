@@ -104,3 +104,7 @@ Các lỗi nền tảng đã nêu: ledger thiếu `cycle`/`questId`, lịch sử
 1. Ngưỡng `requiredLevel` có đạt được trong thực tế không (xem lưu ý trên); cần thử với mock.
 2. Chất lượng và tính đồng nhất của ảnh AI chỉ biết sau khi tạo thử một boss.
 3. Bỏ lỡ boss không đứt streak (giữ nguyên đề xuất, chưa có phản đối).
+
+## Tiến độ triển khai (2026-10-15)
+- Xong: area stats; boss catalog (`frontend/src/domain/bosses.ts`), chapters trong `JourneyDto`, `defeatBoss`/`undoBoss` (mock + http), ledger `BOSS_*`, analytics tính boss, `BOSS_LOCKED` (409), UI bản đồ chiến dịch, 4 ảnh boss (`frontend/public/bosses/<artKey>.jpg`, tạo bằng Canva generate-image, cùng style guide: 2D digital painting, bảng màu tím–teal, nền navy #1b1740).
+- Chưa: achievements (STREAK_7/BALANCED/COMEBACK) + `effects[]`, hiệu ứng level-up/boss, huy hiệu chặng, kiểm tra trực quan trên trình duyệt (ảnh nền navy không trong suốt — UI dùng khung bo góc nền navy).

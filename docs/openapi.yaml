@@ -138,6 +138,7 @@ paths:
       responses:
         '200': {description: Mutation result, content: {application/json: {schema: {$ref: '#/components/schemas/BossMutation'}}}}
         '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError', description: 'QUEST_TOO_OLD when the boss was defeated more than 7 days ago'}
         '409': {$ref: '#/components/responses/Conflict'}
   /achievements:
     get:
@@ -277,7 +278,7 @@ components:
         longestStreak: {type: integer, minimum: 0}
     Journey:
       type: object
-      required: [id, title, startDate, durationDays, elapsedDays, totalScheduledToDate, completedToDate, status]
+      required: [id, title, startDate, durationDays, elapsedDays, totalScheduledToDate, completedToDate, status, chapters]
       properties:
         id: {type: string}
         title: {type: string}
@@ -287,7 +288,7 @@ components:
         totalScheduledToDate: {type: integer, minimum: 0}
         completedToDate: {type: integer, minimum: 0}
         status: {type: string, enum: [ACTIVE, COMPLETED, CANCELLED]}
-        chapters: {type: array, items: {$ref: '#/components/schemas/Chapter'}, description: 'Optional until the RPG layer is implemented, then required.'}
+        chapters: {type: array, items: {$ref: '#/components/schemas/Chapter'}}
     Chapter:
       type: object
       required: [index, title, startDate, endDate, boss]
