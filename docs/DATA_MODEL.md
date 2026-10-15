@@ -13,7 +13,11 @@
 | `habit_lifecycle_events` | UUID id PK, habit_id FK, effective_date, event_type=PAUSE/RESUME/ARCHIVE; lịch sử sự kiện |
 | `journeys` | UUID id PK, user_id FK, title, start_date, duration_days, status |
 | `quest_instances` | UUID id PK, user_id FK, habit_id FK, scheduled_date DATE, status, reward_snapshot, category_snapshot, completed_at, cycle INTEGER, UNIQUE(user_id,habit_id,scheduled_date) |
-| `xp_transactions` | UUID id PK, user_id FK, quest_id FK, cycle INTEGER, event_type, amount (+/-), created_at, UNIQUE(quest_id,cycle,event_type) |
+| `xp_transactions` | UUID id PK, user_id FK, source_type (QUEST/BOSS/ACHIEVEMENT), source_id UUID, category, cycle INTEGER, event_type, amount (+/-, khác 0), created_at, UNIQUE(source_type,source_id,cycle,event_type) |
+| `chapters` | UUID id PK, journey_id FK, idx, start_date, end_date |
+| `boss_definitions` | code PK, name, category, target_minutes, xp_reward 1..100, tier 1..5, required_level, art_key (dữ liệu seed/cấu hình) |
+| `campaign_bosses` | UUID id PK, user_id FK, journey_id FK, chapter_id FK, definition_code FK, boss_date, status, defeated_date, cycle; UNIQUE(chapter_id) |
+| `achievement_grants` | UUID id PK, user_id FK, journey_id FK, code, status (EARNED/REVOKED), cycle, earned_at; UNIQUE(journey_id, code, cycle) |
 | `user_progress` | user_id PK, total_xp, level, updated_at; là projection được cache, có thể dựng lại từ ledger |
 
 ## Bảng mẫu (bản phác thảo Flyway đích)
@@ -35,12 +39,15 @@ CREATE INDEX idx_quest_user_date ON quest_instances(user_id,scheduled_date);
 CREATE TABLE xp_transactions (
   id UUID PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES users(id),
-  quest_id UUID NOT NULL REFERENCES quest_instances(id),
+  source_type VARCHAR(20) NOT NULL CHECK(source_type IN ('QUEST','BOSS','ACHIEVEMENT')),
+  source_id UUID NOT NULL,
+  category VARCHAR(30) NOT NULL,
   cycle INTEGER NOT NULL CHECK(cycle > 0),
-  event_type VARCHAR(20) NOT NULL CHECK(event_type IN ('QUEST_COMPLETE','QUEST_REVERT')),
+  event_type VARCHAR(30) NOT NULL CHECK(event_type IN
+    ('QUEST_COMPLETE','QUEST_REVERT','BOSS_COMPLETE','BOSS_REVERT','ACHIEVEMENT_GRANT','ACHIEVEMENT_REVOKE')),
   amount INTEGER NOT NULL CHECK(amount <> 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE(quest_id,cycle,event_type)
+  UNIQUE(source_type, source_id, cycle, event_type)
 );
 ```
 `CREATE TABLE users/habits/goals/...` được cố ý hoãn lại; agent phải tự viết migration đầy đủ và integration test trong ticket tương ứng, không sao chép các đoạn mã chưa hoàn chỉnh vào production.
@@ -52,6 +59,9 @@ CREATE TABLE xp_transactions (
 - Mọi XP transition chạy trong một database transaction với quest row lock; cập nhật projection trong cùng transaction.
 - Snapshot của quest instance bảo vệ reward/category trong quá khứ khỏi bị sửa.
 - Không bao giờ xóa lịch sử XP transaction khi undo.
+- `source_id` là khóa tham chiếu đa hình (quest_instances / campaign_bosses / achievement_grants); toàn vẹn kiểm tra ở service layer hoặc qua trigger/constraint riêng, không có FK trực tiếp.
+- Habit có `xp_reward = 0` không ghi transaction (vì `amount <> 0`).
+- `user_progress` bổ sung `area_xp` theo category (hoặc bảng `user_area_progress`) như projection, dựng lại được từ ledger.
 - Thay đổi schedule có hiệu lực từ ngày mai; quest instance đã tạo cho hôm nay giữ nguyên.
 - Bắt buộc có backup/restore trước khi rollout production.
 

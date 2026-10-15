@@ -21,6 +21,16 @@ DTO nguồn: `frontend/src/api/types.ts`. OpenAPI 3.1 dạng máy đọc đượ
 | GET | `/analytics/monthly` | — | `AnalyticsDto` period 30d |
 | GET | `/journeys/current` | — | `JourneyDto | null` |
 
+### Endpoint của lớp RPG (kế hoạch; chưa có trong mock)
+Spec: `.scratch/rpg-campaign/spec.md`. Các field mới trên DTO hiện có (`ProgressDto.areas`, `JourneyDto.chapters`, `AnalyticsDto.previous`, `QuestMutationDto.effects`) đang **tùy chọn** trong `types.ts` và OpenAPI; chuyển thành bắt buộc khi mock/backend triển khai.
+| Verb | Path | Request | Response |
+|---|---|---|---|
+| PUT | `/bosses/{bossId}/completion` | rỗng | `BossMutationDto` (409 `BOSS_LOCKED` nếu boss chưa mở khóa) |
+| DELETE | `/bosses/{bossId}/completion` | rỗng | `BossMutationDto` (hoàn tác, thu hồi thưởng) |
+| GET | `/achievements` | — | `AchievementDto[]` (campaign hiện tại) |
+
+`xpAwarded` là delta ròng của cả request (gồm các thay đổi phụ); `effects[]` liệt kê từng thay đổi phụ (`BOSS_REVERTED`, `ACHIEVEMENT_GRANTED`, `ACHIEVEMENT_REVOKED`). Mã HTTP của `BOSS_LOCKED` là tạm thời (409) và sẽ thống nhất trong bảng mã lỗi ở bước chốt contract.
+
 ## Ví dụ DTO
 ### `GET /dashboard/today?date=2026-10-13`
 ```json

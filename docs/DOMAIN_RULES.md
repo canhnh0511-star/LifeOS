@@ -15,7 +15,8 @@ Reward cố định mặc định: Easy 20; Medium 35; Medium+ 40; Hard 50; tố
 - Hoàn thành sau khi undo: ghi thêm một `QUEST_COMPLETE` *mới* với số cycle tăng lên. Duy trì khóa sự kiện duy nhất `(questId, cycle, eventType)` và mutation idempotent dưới DB lock.
 - Không bao giờ ghi đè ledger event; `SUM(xp_transactions.amount)` cho ra tổng XP thực. Từ chối tổng XP âm sau các compensation (điều này không thể xảy ra với các transition bình thường).
 - Idempotency được yêu cầu theo **trạng thái kết quả**, bao gồm cả các request trùng lặp đồng thời.
-- `xpAwarded` của API = delta của *request này*, không phải reward trong lịch sử.
+- `xpAwarded` của API = delta ròng của *request này* (gồm cả thay đổi phụ như boss/achievement bị thu hồi hoặc được cấp), không phải reward trong lịch sử. Các thay đổi phụ được liệt kê riêng trong `effects[]`.
+- Habit có `xpReward = 0` vẫn đổi được trạng thái nhưng không ghi transaction (ledger không chứa amount 0).
 
 ## Công thức level
 ```
@@ -50,3 +51,41 @@ Với kỳ N=7 hoặc 30 bao gồm cả hôm nay, mỗi ngày trả `scheduled`,
 - `GET` chỉ đọc; không cấp XP khi GET hoặc chỉ vì sinh schedule.
 - Ngăn race condition bằng row-level locking hoặc conditional transition tương đương.
 - Không cho phép bonus XP ngoài ledger hoặc input reward âm.
+
+## Ledger: loại event
+`QUEST_COMPLETE` / `QUEST_REVERT`, `BOSS_COMPLETE` / `BOSS_REVERT`, `ACHIEVEMENT_GRANT` / `ACHIEVEMENT_REVOKE`. Mỗi event ghi `category` (snapshot), nguồn (`sourceType`, `sourceId`), `cycle`, `amount`. Không có XP nào được cộng ngoài ledger. Mọi event revoke/revert là event mới, không sửa hay xóa event cũ.
+
+## Area stats (chỉ số theo lĩnh vực)
+- `areaXp[c]` = tổng `amount` của các ledger event có `category = c`.
+- `totalXp = Σ areaXp[c]` trên 5 lĩnh vực; level tổng dùng công thức level ở trên với `totalXp`.
+- `areaLevel[c] = max(1, floor(sqrt(areaXp[c] / 100)))`, `levelStartXp` và `nextLevelXp` tính cùng cách. Level lĩnh vực thường thấp hơn level tổng vì mỗi lĩnh vực chỉ giữ một phần XP; đây là chủ ý.
+- Level có thể giảm khi undo (vì được tính lại từ ledger).
+
+## Campaign và chặng
+- Campaign là journey hiện có (mặc định 66 ngày). Chia 4 chặng: ngày 1–7, 8–21, 22–44, 45–66 (tính từ `startDate`).
+- Chặng chỉ là mốc hiển thị và chứa boss; không thay đổi lịch quest thường.
+
+## Boss
+- Mỗi chặng có đúng một boss lấy từ **danh mục boss** (dữ liệu cấu hình). Thuộc tính: `code`, `name`, `category`, `targetMinutes`, `xpReward` (1..100), `requiredLevel`, `tier` (1..5), `artKey`, `bossDate` (ngày cuối chặng).
+- **Trạng thái**: `LOCKED` (level lĩnh vực của boss < `requiredLevel`), `AVAILABLE`, `DEFEATED`. Boss có thể bị đánh lại cho đến hết campaign; thất bại không bị phạt.
+- **Hạ boss**: `PUT /bosses/{bossId}/completion` idempotent như quest. Lần đầu ghi `BOSS_COMPLETE` +`xpReward` và cấp huy hiệu chặng. Chỉ hạ được khi `AVAILABLE`; boss `LOCKED` trả lỗi `BOSS_LOCKED`.
+- **Undo**: `DELETE /bosses/{bossId}/completion` ghi `BOSS_REVERT` −`xpReward` và thu hồi huy hiệu. Hạ lại ghi event mới ở cycle tăng. Quy tắc backdate 7 ngày áp dụng cho ngày hạ.
+- **Level tụt sau khi thu hồi**: nếu level lĩnh vực không còn đạt `requiredLevel` của một boss đã hạ thì boss vẫn giữ trạng thái `DEFEATED` (điều kiện chỉ kiểm tra lúc bắt đầu đánh).
+- **Tier** suy ra từ `xpReward`: 1 Minion ≤40, 2 Elite 41–55, 3 Champion 56–70, 4 Legend 71–85, 5 Mythic 86–100. UI chọn kích thước, khung, hiệu ứng theo tier.
+- **Thống kê**: boss tính 1 `scheduled` vào `bossDate`; `completed` tính vào ngày hạ (`defeatedDate`, local date). Có thể khiến một ngày có `completed > scheduled`. Boss tính vào analytics và radar theo `category` của boss.
+- **Streak**: boss không thuộc habit nào nên không làm đứt hay kéo dài streak.
+
+## Achievements
+Cấp một lần mỗi campaign, có thưởng XP (10–30), ghi ledger `ACHIEVEMENT_GRANT`.
+| code | Điều kiện | XP đề xuất |
+|---|---|---|
+| `STREAK_7` | Current streak của một habit ≥ 7 scheduled session | 20 |
+| `BALANCED` | Cả 5 lĩnh vực có ≥ 1 scheduled và hoàn thành ≥ 60% trong 7 ngày gần nhất | 30 |
+| `COMEBACK` | Sau khi một streak ≥ 3 bị đứt, đạt lại 3 scheduled session liên tiếp | 20 |
+- **Thu hồi**: sau mỗi mutation (complete/undo quest hoặc boss) hệ thống đánh giá lại các achievement trong cửa sổ có thể sửa (7 ngày). Nếu một achievement đã cấp không còn đúng điều kiện thì ghi `ACHIEVEMENT_REVOKE` bù trừ; đạt lại thì cấp lại ở cycle mới. Ngoài cửa sổ 7 ngày, achievement đã cấp được coi là khóa.
+- Mọi cấp/thu hồi nằm trong cùng transaction với mutation gây ra và được trả trong `effects[]`.
+
+## Radar (analytics)
+- Trục = 5 lĩnh vực; giá trị = `completed / scheduled` của lĩnh vực trong kỳ (7d hoặc 30d), gồm cả boss.
+- Lĩnh vực có `scheduled = 0` trong kỳ là "chưa có dữ liệu" (khác 0%).
+- `AnalyticsDto.previous` chứa cùng số liệu của kỳ liền trước (cùng độ dài) để phủ so sánh.

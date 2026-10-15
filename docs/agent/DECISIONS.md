@@ -12,5 +12,14 @@
 | ADR-008 | Mở | Nhà cung cấp credential (local password hay OAuth) | Quyết định trước B-01 |
 | ADR-009 | Mở | Ý nghĩa của Streak toàn cục: habit tốt nhất hay mọi ngày có lịch | Demo hiển thị max per-habit streak |
 | ADR-010 | Chấp nhận cho demo | Goal bị pause ẩn các quest liên kết; pause habit riêng vẫn được giữ | Tránh complete quest của goal không hoạt động. Lịch sử trong mock chưa bất biến |
+| ADR-011 | Chấp nhận | Area stats: XP và level riêng cho mỗi lĩnh vực; `totalXp = Σ areaXp`; level tổng giữ công thức cũ | Chỉ số kiểu nhân vật RPG mà không đổi công thức level |
+| ADR-012 | Chấp nhận | Campaign = journey chia 4 chặng; boss lấy từ danh mục cấu hình | Thêm boss mới không cần đổi luật |
+| ADR-013 | Chấp nhận | Boss mở khóa theo level của lĩnh vực của boss; đánh lại được; undo thu hồi thưởng | Thử thách rõ ràng, thưởng nhất quán với ledger bất biến |
+| ADR-014 | Chấp nhận | Achievement STREAK_7, BALANCED, COMEBACK có thưởng XP, cấp một lần mỗi campaign, thu hồi được trong cửa sổ 7 ngày | Động lực dài hạn; giới hạn thu hồi bằng cửa sổ có thể sửa |
+| ADR-015 | Chấp nhận | Boss tính vào thống kê: scheduled ở `bossDate`, completed ở ngày hạ; không ảnh hưởng streak | Số liệu phản ánh nỗ lực mà không làm đứt thói quen vì boss |
+| ADR-016 | Chấp nhận | Hình boss là asset tĩnh tạo bằng công cụ AI, theo `artKey`; kích thước/hiệu ứng theo tier | Hình quái vật thực thụ, độ hoành tráng tỷ lệ với độ khó |
+| ADR-017 | Chấp nhận | Ledger event có `category`, `sourceType`, `sourceId`; habit `xpReward=0` không ghi transaction | Hỗ trợ area stats và nhiều nguồn XP; giải quyết mâu thuẫn `amount <> 0` |
+
+ADR-009 (streak toàn cục) vẫn Mở; BALANCED và COMEBACK dùng định nghĩa streak theo từng habit, cần xác nhận lại khi ADR-009 được chốt. Spec chi tiết: `.scratch/rpg-campaign/spec.md`.
 
 Thay đổi các quyết định đã Chấp nhận cần thảo luận rõ ràng trước khi làm việc phá vỡ contract.

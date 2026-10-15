@@ -18,6 +18,8 @@ tags:
   - name: Progress
   - name: Journey
   - name: Analytics
+  - name: Bosses
+  - name: Achievements
 paths:
   /me:
     get:
@@ -109,6 +111,32 @@ paths:
       operationId: getProgress
       responses:
         '200': {description: Experience and streak, content: {application/json: {schema: {$ref: '#/components/schemas/Progress'}}}}
+  /bosses/{bossId}/completion:
+    parameters:
+      - {name: bossId, in: path, required: true, schema: {type: string}}
+    put:
+      tags: [Bosses]
+      operationId: defeatBoss
+      description: Idempotent transition to DEFEATED. Allowed only when the boss is AVAILABLE (area level >= requiredLevel); otherwise BOSS_LOCKED. Duplicate call returns xpAwarded=0. The date used for backdating rules is the current local date.
+      responses:
+        '200': {description: Mutation result, content: {application/json: {schema: {$ref: '#/components/schemas/BossMutation'}}}}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+    delete:
+      tags: [Bosses]
+      operationId: undoBoss
+      description: Idempotent transition back to AVAILABLE. Appends a compensating BOSS_REVERT event and may revoke achievements. A repeated undo returns xpAwarded=0.
+      responses:
+        '200': {description: Mutation result, content: {application/json: {schema: {$ref: '#/components/schemas/BossMutation'}}}}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /achievements:
+    get:
+      tags: [Achievements]
+      operationId: getAchievements
+      description: Achievements of the current campaign (granted once per campaign).
+      responses:
+        '200': {description: Achievements, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Achievement'}}}}}
   /journeys/current:
     get:
       tags: [Journey]
@@ -217,10 +245,21 @@ components:
         date: {$ref: '#/components/schemas/LocalDate'}
         status: {type: string, enum: [PENDING, COMPLETED, SKIPPED]}
         completedAt: {oneOf: [{$ref: '#/components/schemas/Instant'}, {type: 'null'}]}
+    AreaStat:
+      type: object
+      required: [category, xp, level, levelStartXp, nextLevelXp]
+      properties:
+        category: {$ref: '#/components/schemas/Category'}
+        xp: {type: integer, minimum: 0}
+        level: {type: integer, minimum: 1}
+        levelStartXp: {type: integer, minimum: 0}
+        nextLevelXp: {type: integer, minimum: 0}
     Progress:
       type: object
       required: [totalXp, level, levelStartXp, nextLevelXp, currentStreak, longestStreak]
+      description: 'areas is optional until the RPG layer is implemented, then required. totalXp = sum of areas[].xp.'
       properties:
+        areas: {type: array, items: {$ref: '#/components/schemas/AreaStat'}}
         totalXp: {type: integer, minimum: 0}
         level: {type: integer, minimum: 1}
         levelStartXp: {type: integer, minimum: 0}
@@ -239,6 +278,61 @@ components:
         totalScheduledToDate: {type: integer, minimum: 0}
         completedToDate: {type: integer, minimum: 0}
         status: {type: string, enum: [ACTIVE, COMPLETED, CANCELLED]}
+        chapters: {type: array, items: {$ref: '#/components/schemas/Chapter'}, description: 'Optional until the RPG layer is implemented, then required.'}
+    Chapter:
+      type: object
+      required: [index, title, startDate, endDate, boss]
+      properties:
+        index: {type: integer, minimum: 1}
+        title: {type: string}
+        startDate: {$ref: '#/components/schemas/LocalDate'}
+        endDate: {$ref: '#/components/schemas/LocalDate'}
+        boss: {$ref: '#/components/schemas/Boss'}
+    Boss:
+      type: object
+      required: [id, code, name, category, targetMinutes, xpReward, tier, requiredLevel, currentAreaLevel, artKey, bossDate, status, defeatedDate, defeatedAt]
+      properties:
+        id: {type: string}
+        code: {type: string}
+        name: {type: string}
+        category: {$ref: '#/components/schemas/Category'}
+        targetMinutes: {type: integer, minimum: 1}
+        xpReward: {type: integer, minimum: 1, maximum: 100}
+        tier: {type: integer, minimum: 1, maximum: 5, description: '1 Minion <=40 XP, 2 Elite 41-55, 3 Champion 56-70, 4 Legend 71-85, 5 Mythic 86-100'}
+        requiredLevel: {type: integer, minimum: 1}
+        currentAreaLevel: {type: integer, minimum: 1}
+        artKey: {type: string}
+        bossDate: {$ref: '#/components/schemas/LocalDate'}
+        status: {type: string, enum: [LOCKED, AVAILABLE, DEFEATED]}
+        defeatedDate: {oneOf: [{$ref: '#/components/schemas/LocalDate'}, {type: 'null'}]}
+        defeatedAt: {oneOf: [{$ref: '#/components/schemas/Instant'}, {type: 'null'}]}
+    Achievement:
+      type: object
+      required: [code, name, description, xpReward, status, earnedAt]
+      properties:
+        code: {type: string, enum: [STREAK_7, BALANCED, COMEBACK]}
+        name: {type: string}
+        description: {type: string}
+        xpReward: {type: integer, minimum: 1}
+        status: {type: string, enum: [LOCKED, EARNED]}
+        earnedAt: {oneOf: [{$ref: '#/components/schemas/Instant'}, {type: 'null'}]}
+    RewardEffect:
+      type: object
+      required: [type, code, xpDelta]
+      properties:
+        type: {type: string, enum: [BOSS_REVERTED, ACHIEVEMENT_GRANTED, ACHIEVEMENT_REVOKED]}
+        code: {type: string}
+        xpDelta: {type: integer}
+    BossMutation:
+      type: object
+      required: [bossId, status, xpAwarded, totalXp, level, effects]
+      properties:
+        bossId: {type: string}
+        status: {type: string, enum: [LOCKED, AVAILABLE, DEFEATED]}
+        xpAwarded: {type: integer, description: 'Net signed XP delta of this request, including effects; zero for idempotent retry.'}
+        totalXp: {type: integer, minimum: 0}
+        level: {type: integer, minimum: 1}
+        effects: {type: array, items: {$ref: '#/components/schemas/RewardEffect'}}
     DailyDashboard:
       type: object
       required: [date, user, quests, progress, completedCount, scheduledCount, earnedXpToday, journey]
@@ -258,10 +352,11 @@ components:
         habitId: {type: string}
         date: {$ref: '#/components/schemas/LocalDate'}
         status: {type: string, enum: [PENDING, COMPLETED]}
-        xpAwarded: {type: integer, description: 'Signed XP delta of this request; zero for idempotent retry.'}
+        xpAwarded: {type: integer, description: 'Net signed XP delta of this request, including effects; zero for idempotent retry.'}
         totalXp: {type: integer, minimum: 0}
         level: {type: integer, minimum: 1}
         streak: {type: integer, minimum: 0}
+        effects: {type: array, items: {$ref: '#/components/schemas/RewardEffect'}, description: 'Optional until the RPG layer is implemented, then required.'}
     DayStat:
       type: object
       required: [date, scheduled, completed, xpEarned]
@@ -277,10 +372,21 @@ components:
         category: {$ref: '#/components/schemas/Category'}
         scheduled: {type: integer, minimum: 0}
         completed: {type: integer, minimum: 0}
+    PreviousPeriod:
+      type: object
+      required: [completionRate, completedCount, scheduledCount, earnedXp, categories]
+      properties:
+        completionRate: {type: integer, minimum: 0, maximum: 100}
+        completedCount: {type: integer, minimum: 0}
+        scheduledCount: {type: integer, minimum: 0}
+        earnedXp: {type: integer}
+        categories: {type: array, items: {$ref: '#/components/schemas/CategoryStat'}}
     Analytics:
       type: object
       required: [period, days, completionRate, completedCount, scheduledCount, earnedXp, categories]
+      description: 'categories includes bosses. A category with scheduled=0 means no data (not 0%). previous is optional until the radar chart is implemented, then required.'
       properties:
+        previous: {$ref: '#/components/schemas/PreviousPeriod'}
         period: {type: string, enum: [7d, 30d]}
         days: {type: array, items: {$ref: '#/components/schemas/DayStat'}}
         completionRate: {type: integer, minimum: 0, maximum: 100}

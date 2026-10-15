@@ -18,14 +18,18 @@ Người dùng chính: lập trình viên học Java/AI, tập piano, đọc sá
 | F07 | Journey | Hiển thị số ngày đã trôi qua và tách riêng tỷ lệ hoàn thành |
 | F08 | Analytics | Số lượng theo ngày trong 7/30 ngày gần nhất, XP kiếm được, category |
 | F09 | PWA | Manifest cài đặt được, responsive, app shell cache, HTTPS trên production |
+| F10 | Area stats | Mỗi lĩnh vực có XP và level riêng; tổng XP = tổng XP 5 lĩnh vực; level tổng tính từ tổng XP |
+| F11 | Campaign và Boss | Journey chia chặng; mỗi chặng có boss (nhiệm vụ khó), mở khóa theo level lĩnh vực, đánh lại được, thưởng XP + huy hiệu, undo thu hồi thưởng |
+| F12 | Achievements | STREAK_7, BALANCED, COMEBACK; có thưởng XP, cấp một lần mỗi campaign, thu hồi được khi undo trong cửa sổ 7 ngày |
+| F13 | Radar chart | Radar 5 lĩnh vực theo tỷ lệ hoàn thành 7/30 ngày, so sánh kỳ trước |
 
 ## Hạng mục loại trừ
-AI Coach, native mobile, social leaderboard, thanh toán, push, offline mutation queue, chỉnh sửa schedule tùy ý, tích hợp Apple Health, achievements, tài khoản multi-tenant enterprise.
+AI Coach, native mobile, social leaderboard, thanh toán, push, offline mutation queue, chỉnh sửa schedule tùy ý, tích hợp Apple Health, tài khoản multi-tenant enterprise.
 
 ## Tiêu chí chấp nhận theo màn hình
-- Today: ngày được chọn, level bar, XP, scheduled quests, tiến độ, streak, weekly activity.
-- Journey: goal card kèm các habit liên quan, tạo goal và habit, pause/resume, hai metric của 66 ngày.
-- Insights: biểu đồ 7/30 ngày, hoàn thành theo category, tổng XP, gợi ý reflection.
+- Today: ngày được chọn, level bar, XP, scheduled quests, tiến độ, streak, radar thu nhỏ, thẻ nhân vật (level tổng + chỉ số 5 lĩnh vực).
+- Journey: bản đồ campaign 66 ngày chia chặng, boss khóa/mở/đã hạ kèm hình quái vật, huy hiệu, goal card kèm habit, tạo goal và habit, pause/resume, hai metric của 66 ngày.
+- Insights: radar 5 lĩnh vực 7/30 ngày kèm kỳ trước, biểu đồ theo ngày, tổng XP, gợi ý hành động theo heuristic (lĩnh vực yếu nhất, ngày hay bỏ lỡ, so với kỳ trước). Không có phản hồi từ AI.
 - Settings: reset/export mock và hiển thị chế độ đang chạy.
 
 ## Hành vi UX
@@ -34,6 +38,8 @@ AI Coach, native mobile, social leaderboard, thanh toán, push, offline mutation
 - Quest chưa hoàn thành của hôm nay không được làm đứt streak sớm; cuối tuần không có lịch không thể làm đứt streak ngày làm việc.
 - Đổi tab không làm mất dữ liệu đã lưu.
 - Không coi thời gian journey trôi qua là thành tích.
+- Mọi XP đều hiển thị được từ một ledger event; không có bonus XP ẩn. Mỗi lần hạ boss hoặc đạt/mất achievement phải hiển thị rõ thay đổi XP.
+- Độ hoành tráng của hình boss tỷ lệ với độ khó (tier) của nhiệm vụ.
 
 ## Mục tiêu phi chức năng (là mục tiêu, không phải số liệu đã kiểm chứng)
 - Responsive từ 320px đến 1440px, điều hướng được bằng bàn phím, thân thiện cảm ứng.
