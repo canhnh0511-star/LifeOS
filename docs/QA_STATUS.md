@@ -1,18 +1,19 @@
-# Trạng thái QA / Xác minh — 2026-10-13
+# Trạng thái QA / Xác minh — 2026-10-15
 
-## Đã xác minh trong môi trường này
-- `frontend/src/App.tsx`, các file API, rules, main entry: kiểm tra cú pháp bằng TypeScript transpilation đã đạt (dùng transpiler global; đây KHÔNG phải typecheck đầy đủ).
-- Các nguồn API/domain thuần TS được biên dịch sang JS bằng `tsc` global.
-- Kiểm tra tích hợp runtime của Mock API đã đạt: PUT lặp lại cộng 0, DELETE lặp lại cộng 0, complete-sau-undo cho kết quả net đúng như mong đợi; tạo Goal/Habit xuất hiện trên Today; analytics trả về 7 ngày.
-- HTML/JS/CSS/manifest/icon của bản preview độc lập trả HTTP 200 từ local Python HTTP server.
-- `node --check` cho JS module của preview đã đạt.
-- Đã xác minh CRC toàn vẹn của file ZIP sau khi đóng gói.
+## Đã xác minh
+- `npx tsc -b`: typecheck đầy đủ, không lỗi. `npx vite build`: build + PWA precache thành công.
+- `npm test` (vitest): 72 test đạt, gồm domain rules, insights, boss catalog, achievements, Mock API (ledger, pause/resume, boss, achievement, migration, validation), `httpClient`, và a11y của Modal (jsdom + Testing Library).
+- Chrome headless (CDP) trên bản dev: Today/Journey/Insights ở 1440×900, 390×844, 320×568 không tràn ngang; chụp màn hình đã xem.
+- Luồng tương tác thật trong Chrome: hoàn thành/hoàn tác quest (toast + effects), hạ/hoàn tác boss, thu hồi/cấp lại achievement, overlay level-up và hạ boss (đóng bằng Esc), modal (focus vào trong, trả focus về nút mở khi đóng), đổi kỳ 7d/30d. Không có lỗi JavaScript runtime.
+- `docs/openapi.yaml`: cú pháp hợp lệ, mọi `$ref` đều tồn tại.
 
-## Chưa xác minh — phải làm trên máy developer / coding agent
-- `npm install`, `npm run build` và `npm test` cho frontend React: npm registry không truy cập được trong sandbox này. App chưa được typecheck/bundle đầy đủ ở đây.
-- Kiểm tra trực quan tương tác bằng Chromium/Playwright: chính sách môi trường chặn điều hướng trình duyệt, kể cả URL local.
-- Cài `Add to Home Screen` trên iOS Safari và hành vi offline.
-- Backend Spring Boot thật (chưa triển khai, theo thiết kế).
+## Chưa xác minh
+- Cài PWA ("Add to Home Screen"), hành vi offline và service worker trên thiết bị thật (iOS Safari, Android Chrome).
+- Screen reader thật (VoiceOver/NVDA); mới có test tự động cho modal và `aria-*` cơ bản.
+- Bố cục tablet (768–1024px), trình duyệt khác ngoài Chrome, Lighthouse/performance.
+- Không có contract test giữa `mockClient` và `httpClient`/OpenAPI (backend chưa tồn tại).
 
-## Hành động tiếp theo
-Chạy ticket `docs/tickets/00_FRONTEND_REVIEW.md`; sửa mọi lỗi build/visual, sau đó xin duyệt UI rõ ràng. Phát triển backend vẫn bị chặn cho đến khi được duyệt.
+## Giới hạn đã biết
+- Mock API không phải authorization, offline sync hay cơ sở dữ liệu đồng thời (xem CLAUDE.md).
+- `QuestMutation.streak` vẫn là streak theo từng habit (ADR-009 mở).
+- Chuỗi giao diện còn trộn tiếng Việt và tiếng Anh theo phong cách thiết kế hiện tại.

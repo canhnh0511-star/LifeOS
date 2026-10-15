@@ -9,6 +9,6 @@
 
 **Giai đoạn hiện tại:** review UI, ticket `00_FRONTEND_REVIEW.md`. KHÔNG triển khai backend cho đến khi owner duyệt UI rõ ràng.
 
-Bắt đầu bằng cách chạy `cd frontend && npm install && npm run test && npm run build && npm run dev`. Nếu không có npm, có thể chạy bản preview không phụ thuộc trong `preview/` bằng `python -m http.server 4173`. Xác minh lệnh và kết quả thực tế một cách trung thực.
+Bắt đầu bằng cách chạy `cd frontend && npm install && npm run test && npm run build && npm run dev`. Để xem bản build tĩnh: `npm run build && npm run preview`. Xác minh lệnh và kết quả thực tế một cách trung thực.
 
 Triển khai đúng một ticket/vertical slice mỗi lần. Nêu rõ các giả định, sửa code tối thiểu, thêm test, tự review độ tương thích API và race condition của XP/Streak, sau đó tóm tắt các file đã đổi, test đã chạy, rủi ro và hành động tiếp theo. Không bao giờ deploy hoặc chạy SQL phá hủy khi chưa được duyệt rõ ràng.
