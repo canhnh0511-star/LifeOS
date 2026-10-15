@@ -3,7 +3,7 @@
 ## Đã xác minh
 - `npx tsc -b`: typecheck đầy đủ, không lỗi. `npx vite build`: build + PWA precache thành công.
 - `npm test` (vitest): 110 test đạt, gồm domain rules, insights, boss catalog, achievements, Mock API (ledger, pause/resume, boss, achievement, migration, validation), `httpClient`, và a11y của Modal và overlay ăn mừng (jsdom + Testing Library, gồm StrictMode), level-up, huy hiệu chặng và hình học mô hình nhân vật (dáng nam) và trang bị theo level.
-- Mô hình nhân vật wireframe 3D (canvas) trên Chrome: xoay, hover/focus một chỉ số làm sáng bộ phận và vẽ đường kẻ, chế độ `prefers-reduced-motion` (đứng yên, hover vẫn vẽ lại), 1440/390/320px; trang bị dạng giáp ôm sát (mũ, giáp vai, giáp ngực, găng, giày) bậc 1–4 phát sáng theo màu từng lĩnh vực, có công cụ "Xem thử bậc trang bị" (chỉ ở chế độ demo, không đổi dữ liệu; mặc định đang đặt bậc 4 để duyệt giao diện); thời gian vẽ ~1 ms/khung (trung vị) ở DPR 2 trước khi thêm trang bị.
+- Mô hình nhân vật wireframe 3D (canvas) trên Chrome: xoay, hover/focus một chỉ số làm sáng bộ phận và vẽ đường kẻ, chế độ `prefers-reduced-motion` (đứng yên, hover vẫn vẽ lại), 1440/390/320px; trang bị dạng giáp ôm sát (mũ, giáp vai, giáp ngực, găng, giày) bậc 1–4 phát sáng theo màu từng lĩnh vực, có công cụ "Xem thử bậc trang bị" (chỉ ở chế độ demo, không đổi dữ liệu; mặc định hiển thị bậc thật); thời gian vẽ ~1 ms/khung (trung vị) ở DPR 2 trước khi thêm trang bị.
 - Chrome headless (CDP) trên bản dev: Today/Journey/Insights ở 1440×900, 390×844, 320×568 không tràn ngang; chụp màn hình đã xem.
 - Luồng tương tác thật trong Chrome: hoàn thành/hoàn tác quest (toast + effects), hạ/hoàn tác boss, thu hồi/cấp lại achievement, overlay level-up, level lĩnh vực và hạ boss kèm huy hiệu chặng (focus trap, Esc, trả focus; nếu nút mở đã bị thay thế thì về vùng nội dung chính), modal (focus vào trong, trả focus về nút mở khi đóng), đổi kỳ 7d/30d. Không có lỗi JavaScript runtime.
 - `docs/openapi.yaml`: cú pháp hợp lệ, mọi `$ref` đều tồn tại.
@@ -19,3 +19,7 @@
 - Mock API không phải authorization, offline sync hay cơ sở dữ liệu đồng thời (xem CLAUDE.md).
 - `QuestMutation.streak` vẫn là streak theo từng habit (ADR-009 mở).
 - Chuỗi giao diện còn trộn tiếng Việt và tiếng Anh theo phong cách thiết kế hiện tại.
+
+## Phê duyệt
+
+2026-10-15: owner duyệt rõ ràng ticket UI-00 ("oke duyệt ticket 00"). Backend được mở khóa.

@@ -13,7 +13,7 @@ const PREVIEW_TIERS = [1, 2, 3, 4] as const;
 export function CharacterCard({ areas, totalXp, allowPreview = false }: { areas: AreaStatDto[]; totalXp: number; allowPreview?: boolean }) {
   const [active, setActive] = useState<GoalCategory | null>(null);
   // Demo only: lets the viewer see every gear tier without playing for weeks. 'real' uses the actual area levels.
-  const [preview, setPreview] = useState<GearTier | 'real'>(4);
+  const [preview, setPreview] = useState<GearTier | 'real'>('real');
   const override = allowPreview && preview !== 'real' ? preview : null;
   return <section className="panel character-card" aria-label="Chỉ số nhân vật">
     <div className="panel-head"><h3>Chỉ số nhân vật</h3><span className="subtle-text">Tổng {number(totalXp)} XP</span></div>

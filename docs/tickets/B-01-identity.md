@@ -1,5 +1,5 @@
 # B-01 — Identity & nền tảng backend an toàn
-**Chỉ bắt đầu sau khi UI được duyệt.**
+**UI-00 đã được duyệt (2026-10-15) — ticket này được phép bắt đầu.**
 
 Mục tiêu: backend Java 21 Spring Boot khởi động được, Flyway khởi tạo schema Postgres cho users, GET `/me`, secure auth session, health check; frontend kết nối được qua real adapter mà không cần thiết kế lại UI.
 

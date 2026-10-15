@@ -16,12 +16,13 @@ describe('CharacterCard gear preview (demo only)', () => {
     expect(screen.queryByRole('group', { name: /Xem thử bậc trang bị/ })).toBeNull();
     expect(screen.getByRole('button', { name: 'Sự nghiệp, level 1' }).getAttribute('title')).toBe('Đệm vai');
   });
-  it('starts at the maximum tier in demo mode, and lets the viewer switch back to real levels or another tier', async () => {
+  it('starts at real levels in demo mode, and lets the viewer preview another tier', async () => {
     render(<CharacterCard areas={areas} totalXp={1500} allowPreview/>);
     const chip = () => screen.getByRole('button', { name: 'Sự nghiệp, level 1' });
-    expect(chip().getAttribute('title')).toBe('Giáp vai kèm gorget'); // preview defaults to tier 4
-    await userEvent.click(screen.getByRole('button', { name: 'Thật' }));
     expect(chip().getAttribute('title')).toBe('Đệm vai');
+    expect(screen.getByRole('button', { name: 'Thật' }).getAttribute('aria-pressed')).toBe('true');
+    await userEvent.click(screen.getByRole('button', { name: 'Bậc 4' }));
+    expect(chip().getAttribute('title')).toBe('Giáp vai kèm gorget');
     await userEvent.click(screen.getByRole('button', { name: 'Bậc 2' }));
     expect(chip().getAttribute('title')).toBe('Giáp vai');
     expect(screen.getByRole('button', { name: 'Bậc 2' }).getAttribute('aria-pressed')).toBe('true');

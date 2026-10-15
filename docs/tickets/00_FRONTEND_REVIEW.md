@@ -17,3 +17,7 @@ Review và xác thực frontend được cung cấp (`frontend/`) trên browser 
 ## Ngoài phạm vi
 
 Database, Spring Boot, login, AI coach, device sync, push notification.
+
+## Trạng thái
+
+**ĐÃ DUYỆT** bởi owner ngày 2026-10-15 ("oke duyệt ticket 00"). Backend B-01..B-06 được mở khóa. Xem `docs/QA_STATUS.md` cho các hạng mục chưa kiểm chứng (PWA install/offline, thiết bị thật, screen reader, tablet, trình duyệt khác).
