@@ -11,7 +11,7 @@
 | ADR-007 | Đề xuất cho backend | Secure HTTP-only cookie + CSRF token | Tránh token trong localStorage và các bẫy CSRF của cookie |
 | ADR-008 | Mở | Nhà cung cấp credential (local password hay OAuth) | Quyết định trước B-01 |
 | ADR-009 | Mở | Ý nghĩa của Streak toàn cục: habit tốt nhất hay mọi ngày có lịch | Demo hiển thị max per-habit streak |
-| ADR-010 | Chấp nhận cho demo | Goal bị pause ẩn các quest liên kết; pause habit riêng vẫn được giữ | Tránh complete quest của goal không hoạt động. Lịch sử trong mock chưa bất biến |
+| ADR-010 | Chấp nhận cho demo (thay đổi bởi ADR-018) | Goal bị pause ẩn các quest liên kết; pause habit riêng vẫn được giữ | Tránh complete quest của goal không hoạt động |
 | ADR-011 | Chấp nhận | Area stats: XP và level riêng cho mỗi lĩnh vực; `totalXp = Σ areaXp`; level tổng giữ công thức cũ | Chỉ số kiểu nhân vật RPG mà không đổi công thức level |
 | ADR-012 | Chấp nhận | Campaign = journey chia 4 chặng; boss lấy từ danh mục cấu hình | Thêm boss mới không cần đổi luật |
 | ADR-013 | Chấp nhận | Boss mở khóa theo level của lĩnh vực của boss; đánh lại được; undo thu hồi thưởng | Thử thách rõ ràng, thưởng nhất quán với ledger bất biến |
@@ -19,6 +19,8 @@
 | ADR-015 | Chấp nhận | Boss tính vào thống kê: scheduled ở `bossDate`, completed ở ngày hạ; không ảnh hưởng streak | Số liệu phản ánh nỗ lực mà không làm đứt thói quen vì boss |
 | ADR-016 | Chấp nhận | Hình boss là asset tĩnh tạo bằng công cụ AI, theo `artKey`; kích thước/hiệu ứng theo tier | Hình quái vật thực thụ, độ hoành tráng tỷ lệ với độ khó |
 | ADR-017 | Chấp nhận | Ledger event có `category`, `sourceType`, `sourceId`; habit `xpReward=0` không ghi transaction | Hỗ trợ area stats và nhiều nguồn XP; giải quyết mâu thuẫn `amount <> 0` |
+| ADR-018 | Chấp nhận | Pause/resume goal và habit có hiệu lực từ ngày local kế tiếp, ghi bằng lifecycle event; một hàm duy nhất quyết định quest hợp lệ cho mọi đọc/ghi; cửa sổ sửa là hôm nay và lùi 7 ngày | Lịch sử bất biến (không viết lại analytics/journey/streak), khớp DOMAIN_RULES |
+| ADR-019 | Chấp nhận | Mã lỗi thống nhất mock/HTTP (`ApiError` với `status`, `code`, `fields`); 422 cho sai dữ liệu hoặc ngày, 409 cho quest không hoạt động | Frontend xử lý lỗi giống nhau ở cả hai adapter |
 
 ADR-009 (streak toàn cục) vẫn Mở; BALANCED và COMEBACK dùng định nghĩa streak theo từng habit, cần xác nhận lại khi ADR-009 được chốt. Spec chi tiết: `.scratch/rpg-campaign/spec.md`.
 

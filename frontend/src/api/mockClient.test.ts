@@ -1,6 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { mockClient, resetDemoData } from './mockClient';
-import { todayInTimezone } from '../domain/rules';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { exportDemoData, mockClient, resetDemoData } from './mockClient';
+import { ApiError } from './errors';
+import type { Weekday } from './types';
+import { moveDate, todayInTimezone } from '../domain/rules';
 
 const store = new Map<string, string>();
 Object.defineProperty(globalThis, 'localStorage', {
@@ -13,6 +15,16 @@ Object.defineProperty(globalThis, 'localStorage', {
   }
 });
 beforeEach(() => { store.clear(); resetDemoData(); });
+afterEach(() => { vi.useRealTimers(); });
+
+/** 2026-10-14 is a Wednesday; 05:00Z is noon in Asia/Ho_Chi_Minh. */
+const D0 = '2026-10-14';
+function freezeAt(date: string) { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date(`${date}T05:00:00Z`)); }
+async function rejection(promise: Promise<unknown>): Promise<ApiError> {
+  try { await promise; } catch (e) { return e as ApiError; }
+  throw new Error('expected promise to reject');
+}
+const ledger = () => (JSON.parse(exportDemoData()) as { xpTransactions: { habitId: string; date: string; type: string; cycle: number; amount: number }[] }).xpTransactions;
 
 describe('mock API contracts', () => {
   it('PUT/DELETE completion are idempotent and re-completing works', async () => {
@@ -61,5 +73,193 @@ describe('mock API contracts', () => {
     const after = await mockClient.getAnalytics('7d');
     expect(after.completedCount).toBe(before.completedCount + 1);
     expect(after.previous).toEqual(before.previous);
+  });
+});
+
+describe('XP ledger', () => {
+  it('keeps every event, uses a new cycle for each completion and reverses the snapshotted amount', async () => {
+    freezeAt(D0);
+    const habitId = 'habit-piano'; // daily, 35 XP, still pending on the seed's last day
+    expect((await mockClient.getDashboard(D0)).quests.find(q => q.habitId === habitId)?.status).toBe('PENDING');
+    const sizeBefore = ledger().length;
+    await mockClient.completeQuest(habitId, D0);
+    await mockClient.undoQuest(habitId, D0);
+    await mockClient.completeQuest(habitId, D0);
+    const events = ledger().slice(sizeBefore);
+    expect(events.map(e => [e.type, e.cycle, e.amount])).toEqual([
+      ['QUEST_COMPLETE', 1, 35], ['QUEST_REVERT', 1, -35], ['QUEST_COMPLETE', 2, 35]
+    ]);
+    const keys = events.map(e => `${e.habitId}|${e.date}|${e.cycle}|${e.type}`);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+  it('lets a zero-reward habit change state without writing a ledger event', async () => {
+    freezeAt(D0);
+    const goal = await mockClient.createGoal({ title: 'Free', category: 'MINDFULNESS', description: '' });
+    const habit = await mockClient.createHabit({ title: 'Breathe', goalId: goal.id, targetMinutes: 5, xpReward: 0, weekdays: [1,2,3,4,5,6,7], startDate: D0 });
+    const size = ledger().length;
+    const done = await mockClient.completeQuest(habit.id, D0);
+    expect(done.status).toBe('COMPLETED'); expect(done.xpAwarded).toBe(0);
+    expect((await mockClient.completeQuest(habit.id, D0)).status).toBe('COMPLETED');
+    expect((await mockClient.undoQuest(habit.id, D0)).status).toBe('PENDING');
+    expect(ledger()).toHaveLength(size);
+  });
+  it('does not write anything on GET', async () => {
+    freezeAt(D0);
+    const before = exportDemoData();
+    await mockClient.getDashboard(D0); await mockClient.getQuests(D0); await mockClient.getAnalytics('30d'); await mockClient.getCurrentJourney();
+    expect(exportDemoData()).toBe(before);
+  });
+});
+
+describe('quest errors', () => {
+  it('rejects the future with QUEST_IN_FUTURE (422)', async () => {
+    freezeAt(D0);
+    const e = await rejection(mockClient.completeQuest('habit-piano', moveDate(D0, 1)));
+    expect(e).toBeInstanceOf(ApiError); expect([e.status, e.code]).toEqual([422, 'QUEST_IN_FUTURE']);
+  });
+  it('allows 7 days back and rejects 8 with QUEST_TOO_OLD (422)', async () => {
+    freezeAt(D0);
+    await expect(mockClient.undoQuest('habit-reading', moveDate(D0, -7))).resolves.toBeTruthy();
+    const e = await rejection(mockClient.undoQuest('habit-reading', moveDate(D0, -8)));
+    expect([e.status, e.code]).toEqual([422, 'QUEST_TOO_OLD']);
+  });
+  it('rejects unscheduled weekdays with QUEST_OUTSIDE_SCHEDULE (422)', async () => {
+    freezeAt(D0); // Wednesday; habit-workout runs Tue/Thu/Sat
+    const e = await rejection(mockClient.completeQuest('habit-workout', D0));
+    expect([e.status, e.code]).toEqual([422, 'QUEST_OUTSIDE_SCHEDULE']);
+  });
+  it('rejects unknown habits with NOT_FOUND (404) and malformed dates with VALIDATION_FAILED', async () => {
+    freezeAt(D0);
+    const missing = await rejection(mockClient.completeQuest('nope', D0));
+    expect([missing.status, missing.code]).toEqual([404, 'NOT_FOUND']);
+    const bad = await rejection(mockClient.completeQuest('habit-piano', '14/10/2026'));
+    expect([bad.status, bad.code]).toEqual([422, 'VALIDATION_FAILED']);
+  });
+});
+
+describe('history is not rewritten by pause/resume', () => {
+  it('a pause takes effect from the next local day and leaves past analytics untouched', async () => {
+    freezeAt(D0);
+    const before = await mockClient.getAnalytics('7d');
+    const dashboardBefore = await mockClient.getDashboard(D0);
+    await mockClient.updateHabit('habit-piano', { status: 'PAUSED' });
+    const same = await mockClient.getAnalytics('7d');
+    expect(same.days).toEqual(before.days);
+    expect(same.categories).toEqual(before.categories);
+    const dashboardSame = await mockClient.getDashboard(D0);
+    expect(dashboardSame.quests.map(q => q.habitId)).toEqual(dashboardBefore.quests.map(q => q.habitId));
+    expect(dashboardSame.journey).toEqual(dashboardBefore.journey);
+
+    freezeAt(moveDate(D0, 1));
+    const tomorrow = await mockClient.getDashboard(moveDate(D0, 1));
+    expect(tomorrow.quests.some(q => q.habitId === 'habit-piano')).toBe(false);
+    const later = await mockClient.getAnalytics('7d');
+    const d0 = (a: typeof later) => a.days.find(d => d.date === D0);
+    expect(d0(later)).toEqual(d0(before));
+    expect((await mockClient.getDashboard(D0)).quests.some(q => q.habitId === 'habit-piano')).toBe(true);
+  });
+  it('resume also takes effect from the next day', async () => {
+    freezeAt(D0);
+    await mockClient.updateHabit('habit-piano', { status: 'PAUSED' });
+    freezeAt(moveDate(D0, 1));
+    await mockClient.updateHabit('habit-piano', { status: 'ACTIVE' });
+    expect((await mockClient.getDashboard(moveDate(D0, 1))).quests.some(q => q.habitId === 'habit-piano')).toBe(false);
+    freezeAt(moveDate(D0, 2));
+    expect((await mockClient.getDashboard(moveDate(D0, 2))).quests.some(q => q.habitId === 'habit-piano')).toBe(true);
+  });
+  it('a paused day cannot be completed (QUEST_NOT_ACTIVE, 409) but an earlier day still can', async () => {
+    freezeAt(D0);
+    await mockClient.updateHabit('habit-piano', { status: 'PAUSED' });
+    freezeAt(moveDate(D0, 1));
+    const e = await rejection(mockClient.completeQuest('habit-piano', moveDate(D0, 1)));
+    expect([e.status, e.code]).toEqual([409, 'QUEST_NOT_ACTIVE']);
+    await expect(mockClient.undoQuest('habit-piano', D0)).resolves.toBeTruthy();
+  });
+  it('a paused goal blocks its habits the same way and earned XP matches visible quests', async () => {
+    freezeAt(D0);
+    await mockClient.updateGoal('goal-knowledge', { status: 'PAUSED' });
+    freezeAt(moveDate(D0, 1));
+    const e = await rejection(mockClient.completeQuest('habit-reading', moveDate(D0, 1)));
+    expect(e.code).toBe('QUEST_NOT_ACTIVE');
+    const dash = await mockClient.getDashboard(moveDate(D0, 1));
+    const shownXp = dash.quests.filter(q => q.status === 'COMPLETED').reduce((a, q) => a + q.xpReward, 0);
+    expect(dash.earnedXpToday).toBe(shownXp);
+  });
+  it('a paused habit does not break its longest streak and does not count as current', async () => {
+    freezeAt(D0);
+    const before = (await mockClient.getProgress()).longestStreak;
+    await mockClient.updateHabit('habit-code', { status: 'PAUSED' });
+    freezeAt(moveDate(D0, 3));
+    expect((await mockClient.getProgress()).longestStreak).toBeGreaterThanOrEqual(before);
+  });
+});
+
+describe('input validation', () => {
+  it('rejects invalid goals with field messages', async () => {
+    const blank = await rejection(mockClient.createGoal({ title: '   ', category: 'CAREER', description: '' }));
+    expect([blank.status, blank.code]).toEqual([422, 'VALIDATION_FAILED']); expect(blank.fields).toHaveProperty('title');
+    const long = await rejection(mockClient.createGoal({ title: 'x'.repeat(151), category: 'CAREER', description: 'y'.repeat(601) }));
+    expect(Object.keys(long.fields ?? {}).sort()).toEqual(['description', 'title']);
+    const cat = await rejection(mockClient.createGoal({ title: 'ok', category: 'MAGIC' as never, description: '' }));
+    expect(cat.fields).toHaveProperty('category');
+  });
+  it('rejects invalid habits', async () => {
+    freezeAt(D0);
+    const valid = { title: 'h', goalId: 'goal-career', targetMinutes: 30, xpReward: 35, weekdays: [1, 2] as Weekday[], startDate: D0 };
+    for (const [field, patch] of [
+      ['targetMinutes', { targetMinutes: 481 }], ['targetMinutes', { targetMinutes: 1.5 }],
+      ['xpReward', { xpReward: 101 }], ['xpReward', { xpReward: -1 }], ['xpReward', { xpReward: 10.5 }],
+      ['weekdays', { weekdays: [] }], ['weekdays', { weekdays: [9] }],
+      ['startDate', { startDate: 'nope' }], ['startDate', { startDate: moveDate(D0, -1) }],
+      ['goalId', { goalId: 'missing' }], ['title', { title: ' ' }]
+    ] as const) {
+      const e = await rejection(mockClient.createHabit({ ...valid, ...patch } as never));
+      expect([field, e.code, Object.keys(e.fields ?? {}).includes(field)]).toEqual([field, 'VALIDATION_FAILED', true]);
+    }
+    const paused = await mockClient.createGoal({ title: 'p', category: 'HEALTH', description: '' });
+    await mockClient.updateGoal(paused.id, { status: 'PAUSED' });
+    const e = await rejection(mockClient.createHabit({ ...valid, goalId: paused.id }));
+    expect(e.fields).toHaveProperty('goalId');
+  });
+  it('only patches allowed fields and never changes ids', async () => {
+    const empty = await rejection(mockClient.updateGoal('goal-career', {}));
+    expect(empty.code).toBe('VALIDATION_FAILED');
+    const sneaky = await rejection(mockClient.updateGoal('goal-career', { id: 'x' } as never));
+    expect(sneaky.code).toBe('VALIDATION_FAILED');
+    const blank = await rejection(mockClient.updateGoal('goal-career', { title: '' }));
+    expect(blank.fields).toHaveProperty('title');
+    expect((await mockClient.getGoals()).some(g => g.id === 'goal-career')).toBe(true);
+    const habitPatch = await rejection(mockClient.updateHabit('habit-code', { title: 'x' } as never));
+    expect(habitPatch.code).toBe('VALIDATION_FAILED');
+    const missing = await rejection(mockClient.updateHabit('nope', { status: 'PAUSED' }));
+    expect([missing.status, missing.code]).toEqual([404, 'NOT_FOUND']);
+  });
+});
+
+describe('stored data', () => {
+  it('migrates a version 1 database and keeps completions and XP', async () => {
+    freezeAt(D0);
+    const v1 = {
+      version: 1,
+      goals: [{ id: 'g', title: 'G', category: 'CAREER', description: '', status: 'ACTIVE', createdAt: '2026-10-01T00:00:00Z' }],
+      habits: [{ id: 'h', goalId: 'g', title: 'H', targetMinutes: 30, xpReward: 40, weekdays: [1,2,3,4,5,6,7], startDate: '2026-10-10', endDate: null, status: 'ACTIVE' }],
+      completions: [{ habitId: 'h', date: '2026-10-12', completedAt: '2026-10-12T01:00:00Z' }],
+      xpTransactions: [
+        { id: 'a', habitId: 'h', date: '2026-10-12', type: 'QUEST_COMPLETE', amount: 40, createdAt: '2026-10-12T01:00:00Z' },
+        { id: 'b', habitId: 'h', date: '2026-10-11', type: 'QUEST_COMPLETE', amount: 40, createdAt: '2026-10-11T01:00:00Z' },
+        { id: 'c', habitId: 'h', date: '2026-10-11', type: 'QUEST_REVERT', amount: -40, createdAt: '2026-10-11T02:00:00Z' }
+      ],
+      journey: { id: 'j', title: 'J', startDate: '2026-10-10', durationDays: 66, status: 'ACTIVE', elapsedDays: 0, totalScheduledToDate: 0, completedToDate: 0 }
+    };
+    store.set('life-os.mock.v1', JSON.stringify(v1));
+    const dash = await mockClient.getDashboard('2026-10-12');
+    expect(dash.progress.totalXp).toBe(40);
+    expect(dash.quests[0].status).toBe('COMPLETED');
+    expect((await mockClient.getDashboard('2026-10-11')).quests[0].status).toBe('PENDING');
+    expect(ledger().map(e => [e.date, e.type, e.cycle])).toEqual(expect.arrayContaining([['2026-10-12', 'QUEST_COMPLETE', 1], ['2026-10-11', 'QUEST_COMPLETE', 1], ['2026-10-11', 'QUEST_REVERT', 1]]));
+  });
+  it('resets to the sample when stored data is damaged', async () => {
+    store.set('life-os.mock.v1', '{not json');
+    expect((await mockClient.getGoals()).length).toBeGreaterThan(0);
   });
 });

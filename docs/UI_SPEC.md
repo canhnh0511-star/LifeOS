@@ -36,7 +36,7 @@ Hiển thị chế độ mock / real; timezone; export JSON; reset demo (bắt b
 2. Ở Today, hoàn thành một quest pending; xác minh XP, tiến độ và biểu đồ cập nhật.
 3. Undo task rồi complete lại, xác minh XP trở về đúng tổng cũ.
 4. Tạo goal Career, rồi tạo habit cho hôm nay; xác minh task xuất hiện.
-5. Pause habit; xác minh nó biến mất khỏi chế độ xem scheduled tương lai của hôm nay; resume.
+5. Pause habit; xác minh hôm nay và các ngày đã qua không đổi, còn từ ngày mai habit không còn xuất hiện (toast nói rõ "có hiệu lực từ ngày mai"); resume cũng có hiệu lực từ ngày mai.
 6. Reload; xác minh trạng thái local đã lưu.
 7. Chuyển Insights 7d/30d và xác minh số liệu khác nhau phù hợp.
 8. Settings export mock JSON; sau đó reset và xác minh dữ liệu mẫu được khôi phục.
@@ -44,5 +44,5 @@ Hiển thị chế độ mock / real; timezone; export JSON; reset demo (bắt b
 
 ## Các điểm khác biệt đã biết của demo so với backend cuối cùng
 - Streak hiển thị ở Today là max current streak theo scheduled session của từng habit, không phải streak ngày toàn cục của mọi habit.
-- Pause/resume và schedule status có thể làm thay đổi số liệu tổng hợp lịch sử; sẽ sửa bằng schedule effective date và quest instance ở B-03.
+- Mock đã ghi pause/resume bằng lifecycle event có hiệu lực từ ngày mai nên lịch sử không bị viết lại; backend vẫn cần `habit_lifecycle_events` và quest instance bất biến ở B-03.
 - Demo user là mock được seed; màn hình đăng nhập được cố ý hoãn sang B-01.

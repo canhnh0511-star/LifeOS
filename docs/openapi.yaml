@@ -36,6 +36,7 @@ paths:
         - {name: date, in: query, required: false, schema: {$ref: '#/components/schemas/LocalDate'}}
       responses:
         '200': {description: Dashboard, content: {application/json: {schema: {$ref: '#/components/schemas/DailyDashboard'}}}}
+        '422': {$ref: '#/components/responses/ValidationError'}
   /goals:
     get:
       tags: [Goals]
@@ -54,10 +55,12 @@ paths:
       tags: [Goals]
       operationId: updateGoal
       parameters: [{$ref: '#/components/parameters/Id'}]
+      description: A status change takes effect from the next local day; past days and today are unchanged.
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PatchGoal'}}}}
       responses:
         '200': {description: Updated goal, content: {application/json: {schema: {$ref: '#/components/schemas/Goal'}}}}
         '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError'}
   /habits:
     get:
       tags: [Habits]
@@ -76,10 +79,12 @@ paths:
       tags: [Habits]
       operationId: updateHabit
       parameters: [{$ref: '#/components/parameters/Id'}]
+      description: A status change takes effect from the next local day; past days and today are unchanged.
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PatchHabit'}}}}
       responses:
         '200': {description: Updated habit, content: {application/json: {schema: {$ref: '#/components/schemas/Habit'}}}}
         '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError'}
   /quests:
     get:
       tags: [Quests]
@@ -94,17 +99,21 @@ paths:
     put:
       tags: [Quests]
       operationId: completeQuest
-      description: Idempotent transition to COMPLETED. Duplicate call returns xpAwarded=0.
+      description: Idempotent transition to COMPLETED. Duplicate call returns xpAwarded=0. Errors - 404 NOT_FOUND; 422 QUEST_IN_FUTURE, QUEST_TOO_OLD, QUEST_OUTSIDE_SCHEDULE, VALIDATION_FAILED; 409 QUEST_NOT_ACTIVE (habit or goal paused on that date).
       responses:
         '200': {description: Mutation result, content: {application/json: {schema: {$ref: '#/components/schemas/QuestMutation'}}}}
+        '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/ValidationError'}
     delete:
       tags: [Quests]
       operationId: undoQuest
-      description: Idempotent transition to PENDING. A repeated undo returns xpAwarded=0.
+      description: Idempotent transition to PENDING. A repeated undo returns xpAwarded=0 and reverses exactly the amount awarded in the current cycle. Same errors as PUT.
       responses:
         '200': {description: Mutation result, content: {application/json: {schema: {$ref: '#/components/schemas/QuestMutation'}}}}
+        '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/ValidationError'}
   /progress:
     get:
       tags: [Progress]
@@ -163,7 +172,7 @@ components:
   responses:
     Unauthorized: {description: Unauthenticated, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
     NotFound: {description: Not found or not owned, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
-    Conflict: {description: Illegal quest state transition or date, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+    Conflict: {description: 'State conflict, e.g. QUEST_NOT_ACTIVE (habit or goal paused on that date)', content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
     ValidationError: {description: Input validation failed, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
   schemas:
     LocalDate: {type: string, format: date, example: '2026-10-13'}

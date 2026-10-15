@@ -82,6 +82,22 @@ Mảng `days` phải có đúng 7 ngày theo thứ tự trên production (ví d�
 Định dạng: `{"code":"QUEST_OUTSIDE_SCHEDULE","message":"Ngày không thuộc lịch thói quen.","fields":{}}`.
 HTTP status chuẩn: 400 validation, 401 chưa xác thực, 403 không có quyền, 404 không tìm thấy, 409 xung đột trạng thái, 422 domain validation, 429 rate limit, 500 lỗi không mong đợi. Không bao giờ trả raw exception hay stack trace.
 
+### Bảng mã lỗi (mock và backend phải khớp)
+| HTTP | `code` | Khi nào |
+|---|---|---|
+| 401 | `UNAUTHENTICATED` | Chưa đăng nhập hoặc session hết hạn |
+| 404 | `NOT_FOUND` | Không tìm thấy hoặc không thuộc về user |
+| 422 | `VALIDATION_FAILED` | Input sai; `fields` liệt kê từng field kèm thông báo (gồm cả ngày sai định dạng, patch rỗng hoặc có field không cho phép) |
+| 422 | `QUEST_IN_FUTURE` | Hoàn thành/hoàn tác quest của ngày tương lai |
+| 422 | `QUEST_TOO_OLD` | Quest cũ hơn 7 ngày so với hôm nay (hôm nay và lùi 7 ngày vẫn được) |
+| 422 | `QUEST_OUTSIDE_SCHEDULE` | Ngày không thuộc weekday hoặc khoảng ngày của habit |
+| 409 | `QUEST_NOT_ACTIVE` | Habit hoặc goal đang tạm dừng vào ngày đó |
+
+Chỉ có `HTTP_ERROR`, `NETWORK_ERROR`, `REQUEST_TIMEOUT` (status 0) là mã phía client, khi không có response hợp lệ từ server.
+
+### Pause/resume và hiệu lực
+`PATCH /goals/{id}` và `PATCH /habits/{id}` đổi `status` có hiệu lực từ **ngày local kế tiếp**. Response trả `status` mới được yêu cầu. Các ngày đã qua và ngày hôm nay không bị thay đổi: quest, analytics, journey và streak của chúng giữ nguyên. Ngày bị pause không phải session bắt buộc nên không làm đứt streak.
+
 ## Chuyển từ mock sang API thật
 - `frontend/src/api/client.ts` = interface duy nhất.
 - `frontend/src/api/mockClient.ts` = bản triển khai localStorage.

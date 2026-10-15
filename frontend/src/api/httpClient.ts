@@ -1,14 +1,30 @@
 import type { LifeOsApi } from './client';
-import type { CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto } from './types';
+import type { ApiErrorDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto } from './types';
+import { ApiError, ErrorCode } from './errors';
 const base = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${base}${path}`, {
-    credentials: 'include', headers: { 'Content-Type': 'application/json', ...init?.headers }, ...init,
-  });
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    throw new Error(body?.message || `HTTP ${response.status}`);
+const TIMEOUT_MS = 15000;
+export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(`${base}${path}`, {
+      ...init, credentials: 'include', signal: controller.signal,
+      headers: { ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...init.headers },
+    });
+  } catch {
+    throw controller.signal.aborted
+      ? new ApiError(0, ErrorCode.timeout, 'Máy chủ phản hồi quá lâu. Vui lòng thử lại.')
+      : new ApiError(0, ErrorCode.network, 'Không kết nối được máy chủ. Kiểm tra mạng và thử lại.');
+  } finally {
+    clearTimeout(timer);
   }
+  if (!response.ok) {
+    const body = await response.json().catch(() => null) as Partial<ApiErrorDto> | null;
+    const fallback = response.status === 401 ? ErrorCode.unauthenticated : ErrorCode.http;
+    throw new ApiError(response.status, body?.code ?? fallback, body?.message ?? `HTTP ${response.status}`, body?.fields);
+  }
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
 export const httpClient: LifeOsApi = {

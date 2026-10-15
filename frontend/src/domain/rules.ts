@@ -21,14 +21,18 @@ export function xpForLevel(level: number): number { return level <= 1 ? 0 : 100 
 export function levelProgress(xp: number) {
   const level = levelAtXp(xp); return { level, levelStartXp: xpForLevel(level), nextLevelXp: xpForLevel(level + 1) };
 }
-/** Scheduled-session streak. Pending today does not break an already-earned streak. */
-export function streakForHabit(habit: HabitDto, completedDates: ReadonlySet<string>, referenceDate: string): number {
+/**
+ * Scheduled-session streak. Pending today does not break an already-earned streak.
+ * `isRequired` decides whether a date needs a completion (defaults to the weekly schedule);
+ * callers pass a stricter predicate to skip paused days.
+ */
+export function streakForHabit(habit: HabitDto, completedDates: ReadonlySet<string>, referenceDate: string, isRequired: (date: string) => boolean = date => isScheduled(habit, date)): number {
   let cursor = referenceDate;
   // Today's incomplete scheduled task is allowed to remain pending until the day ends.
-  if (isScheduled(habit, cursor) && !completedDates.has(cursor)) cursor = moveDate(cursor, -1);
+  if (isRequired(cursor) && !completedDates.has(cursor)) cursor = moveDate(cursor, -1);
   let result = 0;
   for (let i = 0; i < 730 && cursor >= habit.startDate; i++, cursor = moveDate(cursor, -1)) {
-    if (!isScheduled(habit, cursor)) continue;
+    if (!isRequired(cursor)) continue;
     if (!completedDates.has(cursor)) break;
     result++;
   }
@@ -36,13 +40,13 @@ export function streakForHabit(habit: HabitDto, completedDates: ReadonlySet<stri
 }
 
 /** Historical maximum of consecutive planned sessions, including gaps that broke a streak. */
-export function longestStreakForHabit(habit: HabitDto, completedDates: ReadonlySet<string>, referenceDate: string): number {
+export function longestStreakForHabit(habit: HabitDto, completedDates: ReadonlySet<string>, referenceDate: string, isRequired: (date: string) => boolean = date => isScheduled(habit, date)): number {
   let longest = 0;
   let run = 0;
   let cursor = habit.startDate;
   // Two-year guard mirrors current-streak lookback; production should query scheduled instances.
   for (let i = 0; i < 730 && cursor <= referenceDate; i++, cursor = moveDate(cursor, 1)) {
-    if (!isScheduled(habit, cursor)) continue;
+    if (!isRequired(cursor)) continue;
     if (completedDates.has(cursor)) { run++; longest = Math.max(longest, run); }
     else run = 0;
   }
