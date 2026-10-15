@@ -110,3 +110,6 @@ Các lỗi nền tảng đã nêu: ledger thiếu `cycle`/`questId`, lịch sử
 - Xong thêm: achievements STREAK_7/BALANCED/COMEBACK (`frontend/src/domain/achievements.ts`), `effects[]`, `GET /achievements`, danh sách thành tựu + toast, ADR-020.
 - Xong thêm: hiệu ứng ăn mừng level-up và hạ boss (`Celebration.tsx`, tôn trọng reduced-motion).
 - Chưa: huy hiệu chặng, kiểm tra trực quan trên trình duyệt (ảnh nền navy không trong suốt — UI dùng khung bo góc nền navy).
+
+## Hướng phát triển sau (owner, 2026-10-15)
+Owner review UI hiện tại: "ổn trước mắt". Sau này đi sâu vào từng chỉ số (lĩnh vực) để **sinh số lượng nhiệm vụ phù hợp nhằm tăng điểm** của chỉ số đó. Chưa có thiết kế; cần làm rõ khi bắt đầu (gợi ý nhiệm vụ heuristic hay tự sinh habit, giới hạn tải mỗi ngày, XP không được lạm phát).
