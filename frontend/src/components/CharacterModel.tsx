@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { AreaStatDto, GoalCategory } from '../api/types';
 import { categoryLabel } from '../domain/rules';
 import { ANCHORS, MODEL, project } from '../domain/characterModel';
+import { GEAR_NAMES, equipmentFor, gearTier } from '../domain/characterGear';
 import { categoryColors, categoryIcons } from '../ui/categories';
 
 const RGB: Record<GoalCategory, string> = {
@@ -24,6 +25,10 @@ export function CharacterModel({ areas, active, onActive }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const activeRef = useRef(active);
   activeRef.current = active;
+  // Equipment follows each area's level; rebuilt only when a level changes.
+  const gearKey = areas.map(a => `${a.category}:${gearTier(a.level)}`).join('|');
+  const gearRef = useRef<{ part: GoalCategory; tier: number; points: [number, number, number][] }[]>([]);
+  gearRef.current = areas.flatMap(a => equipmentFor(a.category, gearTier(a.level)).map(points => ({ part: a.category, tier: gearTier(a.level), points })));
 
   useEffect(() => {
     const el = canvas.current, box = stage.current;
@@ -85,6 +90,31 @@ export function CharacterModel({ areas, active, onActive }: Props) {
         ctx!.stroke();
       }
       ctx!.shadowBlur = 0;
+      // Glowing equipment, each piece in its own area's colour; higher tiers pulse.
+      const gearBatches = new Map<string, { part: GoalCategory; alpha: number; hot: boolean; paths: { x: number; y: number }[][] }>();
+      for (const piece of gearRef.current) {
+        const hot = current === piece.part;
+        const pts = piece.points.map(p => project(p, angle));
+        const depth = pts.reduce((a, p) => a + p.depth, 0) / pts.length;
+        const nearness = Math.max(0, Math.min(1, (depth + 0.3) / 0.6));
+        const pulse = piece.tier >= 3 ? 0.88 + 0.12 * Math.sin(time / 420 + piece.part.length) : 1;
+        let alpha = (0.55 + 0.35 * nearness) * pulse;
+        if (current) alpha = hot ? 1 : alpha * 0.4;
+        const bucket = Math.round(Math.min(1, alpha) * 8) / 8;
+        const key = `${piece.part}|${bucket}|${hot}`;
+        const batch = gearBatches.get(key) ?? { part: piece.part, alpha: bucket, hot, paths: [] };
+        batch.paths.push(pts.map(toScreen));
+        gearBatches.set(key, batch);
+      }
+      for (const batch of gearBatches.values()) {
+        ctx!.beginPath();
+        for (const path of batch.paths) path.forEach((q, i) => i ? ctx!.lineTo(q.x, q.y) : ctx!.moveTo(q.x, q.y));
+        ctx!.strokeStyle = `rgba(${RGB[batch.part]},${batch.alpha})`;
+        ctx!.lineWidth = batch.hot ? 2.2 : 1.5;
+        ctx!.shadowColor = `rgba(${RGB[batch.part]},${batch.hot ? 1 : 0.8})`; ctx!.shadowBlur = batch.hot ? 16 : 9;
+        ctx!.stroke();
+      }
+      ctx!.shadowBlur = 0;
       // Leader line from the chip into the body part
       if (current) {
         const slot = SLOTS[current];
@@ -115,7 +145,7 @@ export function CharacterModel({ areas, active, onActive }: Props) {
     return () => { cancelAnimationFrame(frame); observer?.disconnect(); if (redraw) el.removeEventListener('redraw', redraw); };
   }, []);
 
-  useEffect(() => { canvas.current?.dispatchEvent(new Event('redraw')); }, [active]);
+  useEffect(() => { canvas.current?.dispatchEvent(new Event('redraw')); }, [active, gearKey]);
 
   return <div ref={stage} className="character-stage" onMouseLeave={() => onActive(null)}>
     <canvas ref={canvas} aria-hidden="true"/>
@@ -123,6 +153,7 @@ export function CharacterModel({ areas, active, onActive }: Props) {
       const Icon = categoryIcons[area.category]; const slot = SLOTS[area.category];
       return <button key={area.category} type="button" className={`stat-chip tone-${categoryColors[area.category]} ${active === area.category ? 'is-active' : ''}`}
         style={{ [slot.side]: 0, top: `${slot.top * 100}%`, width: CHIP_W, height: CHIP_H }}
+        title={gearTier(area.level) ? GEAR_NAMES[area.category][gearTier(area.level) as 1 | 2 | 3 | 4] : undefined}
         aria-label={`${categoryLabel(area.category)}, level ${area.level}`} aria-pressed={active === area.category}
         onMouseEnter={() => onActive(area.category)} onFocus={() => onActive(area.category)} onBlur={() => onActive(null)} onClick={() => onActive(area.category)}>
         <Icon size={18} aria-hidden="true"/><span><small>{categoryLabel(area.category)}</small><strong>Lv {area.level}</strong></span>

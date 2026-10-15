@@ -35,34 +35,35 @@ function smooth(keys: readonly Key[], per: number, partAt: (y: number) => GoalCa
 const mirror = (tube: Section[]): Section[] => tube.map(s => ({ ...s, cx: -s.cx }));
 
 /** Landmarks the tests (and tuning) rely on: the head sits into the neck, the arm starts inside the shoulder line. */
-export const PROPORTIONS = { headBottom: 1.52, neckTop: 1.57, shoulderHalfWidth: 0.225, armStartX: 0.24 } as const;
+export const PROPORTIONS = { headBottom: 1.52, neckTop: 1.57, shoulderHalfWidth: 0.26, armStartX: 0.275 } as const;
 
 const torsoPart = (y: number): GoalCategory => y >= 1.38 ? 'CAREER' : y >= 1.15 ? 'MINDFULNESS' : 'HEALTH';
 const armPart = (y: number): GoalCategory => y >= 1.3 ? 'CAREER' : 'CREATIVITY';
 const arm = (r: number): [number, number] => [r, r];
 
 function tubes(): Section[][] {
+  // Male build: squarer jaw, thick neck, broad shoulders tapering to a narrower waist and hips, heavier arms and legs.
   const head = smooth([
-    [1.805, 0.012, 0.014, 0, 0.02], [1.785, 0.055, 0.065, 0, 0.02], [1.745, 0.086, 0.098, 0, 0.018], [1.69, 0.095, 0.108, 0, 0.015],
-    [1.63, 0.09, 0.104, 0, 0.018], [1.58, 0.072, 0.088, 0, 0.025], [1.545, 0.046, 0.062, 0, 0.03], [PROPORTIONS.headBottom, 0.03, 0.04, 0, 0.03]
+    [1.805, 0.012, 0.014, 0, 0.02], [1.785, 0.058, 0.068, 0, 0.02], [1.745, 0.089, 0.1, 0, 0.018], [1.69, 0.097, 0.109, 0, 0.015],
+    [1.63, 0.094, 0.106, 0, 0.018], [1.58, 0.082, 0.093, 0, 0.025], [1.545, 0.058, 0.07, 0, 0.03], [PROPORTIONS.headBottom, 0.04, 0.05, 0, 0.03]
   ], 3, () => 'KNOWLEDGE');
   // Neck rises into the head, then widens along the trapezius slope into the shoulders before tapering to the hips.
   const torso = smooth([
-    [PROPORTIONS.neckTop, 0.043, 0.047, 0, 0], [1.5, 0.047, 0.05, 0, 0.005], [1.46, 0.055, 0.056, 0, 0.005], [1.435, 0.085, 0.07, 0, 0],
-    [1.415, 0.14, 0.083, 0, 0], [1.395, 0.195, 0.098, 0, 0], [1.37, PROPORTIONS.shoulderHalfWidth, 0.105, 0, 0], [1.33, 0.215, 0.112, 0, 0],
-    [1.28, 0.2, 0.115, 0, 0.005], [1.2, 0.18, 0.108, 0, 0.005], [1.12, 0.155, 0.098, 0, 0], [1.05, 0.152, 0.095, 0, 0],
-    [0.98, 0.17, 0.103, 0, 0], [0.92, 0.178, 0.108, 0, 0], [0.88, 0.17, 0.1, 0, 0]
+    [PROPORTIONS.neckTop, 0.055, 0.057, 0, 0], [1.5, 0.06, 0.06, 0, 0.005], [1.46, 0.07, 0.064, 0, 0.005], [1.435, 0.105, 0.078, 0, 0],
+    [1.415, 0.165, 0.09, 0, 0], [1.395, 0.225, 0.104, 0, 0], [1.37, PROPORTIONS.shoulderHalfWidth, 0.11, 0, 0], [1.33, 0.25, 0.122, 0, 0.004],
+    [1.28, 0.235, 0.125, 0, 0.008], [1.2, 0.2, 0.115, 0, 0.005], [1.12, 0.17, 0.1, 0, 0], [1.05, 0.162, 0.096, 0, 0],
+    [0.98, 0.172, 0.102, 0, 0], [0.92, 0.176, 0.106, 0, 0], [0.88, 0.17, 0.1, 0, 0]
   ], 3, torsoPart);
   // Leg: thigh, knee, calf, ankle, then a foot that points forward.
   const leg = smooth([
-    [0.95, 0.088, 0.095, 0.095, 0], [0.86, 0.088, 0.097, 0.095, 0], [0.74, 0.078, 0.088, 0.095, 0], [0.6, 0.062, 0.07, 0.095, 0],
-    [0.5, 0.058, 0.066, 0.095, 0], [0.4, 0.06, 0.068, 0.095, 0], [0.28, 0.048, 0.056, 0.095, 0], [0.14, 0.04, 0.045, 0.095, 0],
-    [0.07, 0.036, 0.04, 0.095, 0], [0.045, 0.037, 0.055, 0.095, 0.02], [0.025, 0.04, 0.08, 0.095, 0.045], [0.008, 0.036, 0.09, 0.095, 0.05], [0.0, 0.03, 0.075, 0.095, 0.05]
+    [0.95, 0.092, 0.098, 0.095, 0], [0.86, 0.093, 0.1, 0.095, 0], [0.74, 0.083, 0.092, 0.095, 0], [0.6, 0.066, 0.074, 0.095, 0],
+    [0.5, 0.06, 0.068, 0.095, 0], [0.4, 0.064, 0.072, 0.095, 0], [0.28, 0.05, 0.058, 0.095, 0], [0.14, 0.041, 0.046, 0.095, 0],
+    [0.07, 0.037, 0.041, 0.095, 0], [0.045, 0.038, 0.056, 0.095, 0.02], [0.025, 0.041, 0.082, 0.095, 0.045], [0.008, 0.037, 0.092, 0.095, 0.05], [0.0, 0.031, 0.076, 0.095, 0.05]
   ], 2, () => 'HEALTH');
-  // Arm: deltoid inside the shoulder, elbow, forearm, wrist, then a mitten-shaped hand.
+  // Arm: deltoid inside the shoulder, bicep, elbow, forearm, wrist, then a mitten-shaped hand.
   const armKeys: [number, number, number][] = [
-    [1.39, 0.052, PROPORTIONS.armStartX], [1.35, 0.064, 0.255], [1.29, 0.056, 0.268], [1.2, 0.048, 0.28], [1.12, 0.044, 0.288], [1.04, 0.045, 0.3],
-    [0.95, 0.04, 0.312], [0.86, 0.032, 0.322], [0.8, 0.03, 0.326], [0.77, 0.036, 0.328], [0.73, 0.04, 0.33], [0.69, 0.036, 0.331], [0.65, 0.024, 0.331], [0.625, 0.008, 0.331]
+    [1.39, 0.06, PROPORTIONS.armStartX], [1.35, 0.075, 0.29], [1.29, 0.068, 0.303], [1.2, 0.058, 0.315], [1.12, 0.05, 0.325], [1.04, 0.052, 0.337],
+    [0.95, 0.046, 0.349], [0.86, 0.036, 0.358], [0.8, 0.033, 0.362], [0.77, 0.04, 0.364], [0.73, 0.045, 0.366], [0.69, 0.04, 0.367], [0.65, 0.027, 0.367], [0.625, 0.009, 0.367]
   ];
   const armTube = smooth(armKeys.map(([y, r, x]) => [y, ...arm(r), x, 0] as const), 2, armPart);
   return [head, torso, leg, mirror(leg), armTube, mirror(armTube)];
@@ -84,9 +85,9 @@ export const MODEL: ModelLine[] = buildModel();
 /** Where each stat's leader line lands on the body. */
 export const ANCHORS: Record<GoalCategory, Vec3> = {
   KNOWLEDGE: [0, 1.68, 0.11],
-  CAREER: [-0.23, 1.37, 0.08],
+  CAREER: [-0.26, 1.38, 0.09],
   MINDFULNESS: [0.04, 1.26, 0.115],
-  CREATIVITY: [0.33, 0.73, 0.04],
+  CREATIVITY: [0.367, 0.73, 0.045],
   HEALTH: [-0.095, 0.5, 0.07]
 };
 
