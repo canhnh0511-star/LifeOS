@@ -110,7 +110,7 @@ Các lỗi nền tảng đã nêu: ledger thiếu `cycle`/`questId`, lịch sử
 - Xong thêm: achievements STREAK_7/BALANCED/COMEBACK (`frontend/src/domain/achievements.ts`), `effects[]`, `GET /achievements`, danh sách thành tựu + toast, ADR-020.
 - Xong thêm: hiệu ứng ăn mừng level-up và hạ boss (`Celebration.tsx`, tôn trọng reduced-motion).
 - Xong thêm: overlay là dialog thật (focus trap/trả focus, hook `useDialog`), ăn mừng level lĩnh vực, huy hiệu chặng (`ChapterDto.badge`, suy ra từ boss DEFEATED, không có XP riêng).
-- Chưa:  kiểm tra trực quan trên trình duyệt (ảnh nền navy không trong suốt — UI dùng khung bo góc nền navy).
+- Đã kiểm tra trực quan bằng Chrome (xem `docs/QA_STATUS.md`). Lưu ý: ảnh boss có nền navy, không trong suốt — UI dùng khung bo góc nền navy.
 
 ## Hướng phát triển sau (owner, 2026-10-15)
 Owner review UI hiện tại: "ổn trước mắt". Sau này đi sâu vào từng chỉ số (lĩnh vực) để **sinh số lượng nhiệm vụ phù hợp nhằm tăng điểm** của chỉ số đó. Chưa có thiết kế; cần làm rõ khi bắt đầu (gợi ý nhiệm vụ heuristic hay tự sinh habit, giới hạn tải mỗi ngày, XP không được lạm phát).
