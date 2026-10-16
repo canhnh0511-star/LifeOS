@@ -114,3 +114,18 @@
 .field-error{display:block;color:#ff8a80;margin-top:4px}
 
 .btn-danger-quiet{background:transparent;border:1px solid #5b2f35;color:#ff9b9b;border-radius:10px;padding:0 14px;height:40px}.btn-danger-quiet:hover{background:#2a171a}
+
+.today-simple{display:flex;flex-direction:column;gap:16px;max-width:860px}
+.today-summary{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(3,minmax(0,.7fr));gap:10px;align-items:stretch}
+.today-progress,.today-chip{background:#151e2a;border:1px solid #283340;border-radius:14px;padding:13px 16px}
+.today-progress-top{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:#9fb0c3;margin-bottom:10px}.today-progress-top strong{font-size:20px;color:#f4f8fd}
+.today-chip{display:flex;flex-direction:column;justify-content:center;gap:2px;color:#9fb0c3;font-size:12px;text-align:left}.today-chip svg{color:#c6fa55}.today-chip strong{font-size:20px;color:#f4f8fd}
+.today-level{cursor:pointer;font:inherit}.today-level:hover{border-color:#6f8f66;background:#1a2530}
+.next-up{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(135deg,#1c2e29,#16222c);border:1px solid #3d5a43;border-radius:16px;padding:18px 20px}
+.next-up-label{flex:0 0 100%;font-size:11px;letter-spacing:1.6px;font-weight:800;color:#c6fa55}
+.next-up-main{display:flex;align-items:center;gap:14px;flex:1 1 280px;min-width:0}.next-up-main h2{margin:0 0 4px;font-size:19px;color:#f4f8fd}.next-up-main small{display:flex;align-items:center;gap:5px;color:#a9b8c8;font-size:12px}
+.next-up-done{border-color:#2f4a52;background:linear-gradient(135deg,#17262c,#16222c)}.next-up-done svg{color:#c6fa55;flex:0 0 auto}
+.quest-row.is-next{border-color:#6f8f66}
+.character-page{display:flex;flex-direction:column;gap:20px;max-width:1000px}
+@media (max-width:700px){.today-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.today-progress{grid-column:1 / -1}.next-up .btn{width:100%;justify-content:center}}
+.metric-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}

@@ -13,6 +13,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { useLifeOsData } from './hooks/useLifeOsData';
 import { InsightsPage } from './pages/InsightsPage';
 import { JourneyPage } from './pages/JourneyPage';
+import { CharacterPage } from './pages/CharacterPage';
 import { TodayPage } from './pages/TodayPage';
 import { withEffects } from './ui/messages';
 import { primaryNav, tabFromHash, type Tab } from './ui/nav';
@@ -100,8 +101,9 @@ export default function App() {
       <main className="page-content" data-dialog-fallback tabIndex={-1}>
         {error && <div role="alert" className="error-banner">{error}<button onClick={refresh}>Thử lại <RotateCcw size={14}/></button></div>}
         {loading && !dashboard ? <div className="loading-shell"><div className="loader"/><p>Đang chuẩn bị hành trình của bạn...</p></div> : <>
-          {tab === 'today' && <TodayPage dashboard={dashboard} weekly={weekly} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onNewHabit={() => setModal('habit')} goTo={goTo}/>}
+          {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onNewHabit={() => setModal('habit')} goTo={goTo}/>}
           {tab === 'journey' && <JourneyPage journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')}/>}
+          {tab === 'character' && <CharacterPage dashboard={dashboard}/>}
           {tab === 'insights' && <InsightsPage analytics={analytics} period={period} onPeriod={setPeriod} currentStreak={dashboard?.progress.currentStreak || 0}/>}
         </>}
         <footer className="footer"><span>© Life OS · Built for progress, not perfection.</span><span>Version 0.1.0 · {isDemo ? 'Mock API' : 'Real API'} · Asia/Ho_Chi_Minh</span></footer>

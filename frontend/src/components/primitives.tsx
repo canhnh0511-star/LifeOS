@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Home, Zap } from 'lucide-react';
 
 export function Logo() {
@@ -12,9 +12,6 @@ export function CardTitle({ title, kicker, action }: { title: string; kicker?: s
 }
 export function IconBubble({ icon: Icon, tone = 'blue', size = 'normal' }: { icon: typeof Home; tone?: string; size?: string }) {
   return <span className={`icon-bubble tone-${tone} ${size}`}><Icon size={size === 'small' ? 17 : 20} strokeWidth={1.85} /></span>;
-}
-export function CircleProgress({ value, children }: { value: number; children: ReactNode }) {
-  return <div className="circle-progress" style={{ '--progress': `${value}%` } as CSSProperties}><div className="circle-progress-inner">{children}</div></div>;
 }
 export function EmptyState({ icon: Icon, title, details, action }: { icon: typeof Home; title: string; details: string; action?: ReactNode }) {
   return <div className="empty-state"><Icon size={29} /><h3>{title}</h3><p>{details}</p>{action}</div>;

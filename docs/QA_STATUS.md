@@ -44,3 +44,6 @@
 
 ## Trang bị nhân vật (2026-10-16)
 Trang bị đã được gỡ khỏi thẻ "Chỉ số nhân vật" (owner thấy xấu khi vẽ bằng code). Mô hình dây, hover chỉ số và danh sách chỉ số giữ nguyên; gợi ý "XP nữa lên Lv" không còn tên món đồ. Kế hoạch làm lại: ticket B-16.
+
+## Đơn giản hóa màn Today (2026-10-16)
+Today chỉ còn tóm tắt + "Việc tiếp theo" + danh sách nhiệm vụ; tab "Nhân vật" mới giữ level, thẻ nhân vật và chỉ số. Đã chụp màn hình desktop của Today và Nhân vật; mobile chưa kiểm tra bằng trình duyệt thật (Chrome headless không thu nhỏ dưới ~500px). 132 test frontend, gồm 4 test mới cho TodayPage.
