@@ -17,6 +17,10 @@ public interface XpTransactionRepository extends JpaRepository<XpTransaction, UU
     @Query("select coalesce(sum(x.amount), 0) from XpTransaction x where x.userId = :userId and x.scheduledDate = :date")
     long sumForDate(@Param("userId") UUID userId, @Param("date") LocalDate date);
 
+    /** Rows of (scheduled date, summed amount) for days in [from, to]. */
+    @Query("select x.scheduledDate, sum(x.amount) from XpTransaction x where x.userId = :userId and x.scheduledDate between :from and :to group by x.scheduledDate")
+    List<Object[]> sumByDate(@Param("userId") UUID userId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
     @Query("select x.amount from XpTransaction x where x.sourceId = :questId and x.cycle = :cycle and x.eventType = app.lifeos.ledger.model.XpTransaction.EventType.QUEST_COMPLETE")
     Optional<Integer> completeAmount(@Param("questId") UUID questId, @Param("cycle") int cycle);
 }
