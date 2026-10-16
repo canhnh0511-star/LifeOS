@@ -26,3 +26,4 @@
 | B-21 | Cửa ải và ấn ký | Xong; lát 2, chỉ frontend |
 | B-22 | Vật phẩm rơi từ rương (thực hiện B-16) | Xong (mở rương, 6 vật phẩm có truyện, kho đồ, đeo/tháo; ADR-034) |
 | B-23 | Quái ngẫu nhiên và sự kiện | Ý tưởng; lát 4 |
+| B-24 | Số đo cơ thể (cân nặng, vòng eo, mỡ %, chỉ số riêng) | Xong (ADR-035) |

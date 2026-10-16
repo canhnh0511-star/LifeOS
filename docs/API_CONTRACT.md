@@ -116,6 +116,9 @@ Habit có thể có `objectives[]` (`title`, `target` 1..10000, `unit` tự do �
 ### Vật phẩm rơi từ rương (B-22, ADR-034)
 `GET /items` trả cả danh mục kèm `owned`/`equipped`/`acquiredDate`; `PUT|DELETE /items/{code}/equipped` đeo/tháo (đeo thay món đang đeo cùng ô; 404 nếu chưa sở hữu). Mỗi rương mở rơi tối đa một món, không trùng món đã có; rương bị thu hồi thì món đó mất và bị tháo. `dailyRewards[].itemCode` cho biết rương đã rơi món nào; `effects[]` có `ITEM_DROPPED`/`ITEM_REVOKED` (`code` = mã món, `xpDelta` = 0). Vật phẩm không cộng XP.
 
+### Số đo cơ thể (B-24, ADR-035)
+`GET /metrics` trả các chỉ số kèm giá trị theo ngày (cũ → mới); lần đọc đầu tạo 3 chỉ số mặc định (Cân nặng kg, Vòng eo cm, Mỡ cơ thể %). `POST /metrics` thêm chỉ số riêng (tên 1–40 ký tự, không trùng không phân biệt hoa thường, đơn vị ≤ 12, tối đa 20). `PUT /metrics/{id}/entries/{date}` ghi giá trị của một ngày (ghi lại cùng ngày thì thay thế; không ở tương lai, tối đa 366 ngày trước; giá trị > 0 và ≤ 100000, làm tròn 2 chữ số). `DELETE .../entries/{date}` xoá giá trị của ngày; `DELETE /metrics/{id}` xoá chỉ số riêng (mặc định → 409). Số đo **không** cộng XP, không vào ledger, streak hay rương.
+
 ### Pause/resume và hiệu lực
 `PATCH /goals/{id}` và `PATCH /habits/{id}` đổi `status` có hiệu lực từ **ngày local kế tiếp**. Response trả `status` mới được yêu cầu. Các ngày đã qua và ngày hôm nay không bị thay đổi: quest, analytics, journey và streak của chúng giữ nguyên. Ngày bị pause không phải session bắt buộc nên không làm đứt streak.
 

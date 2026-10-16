@@ -681,4 +681,43 @@ describe('quest checklists (B-17)', () => {
       expect((await rejection(mockClient.equipItem('NOPE'))).status).toBe(404);
     });
   });
+
+  describe('body measurements (B-24)', () => {
+    it('creates the three defaults once and records one value per day, replacing on repeat', async () => {
+      freezeAt(D0);
+      const list = await mockClient.getMetrics();
+      expect(list.map(m => m.name)).toEqual(['Cân nặng', 'Vòng eo', 'Mỡ cơ thể']);
+      expect((await mockClient.getMetrics()).map(m => m.id)).toEqual(list.map(m => m.id));
+      await mockClient.recordMeasurement(list[0].id, D0, 72.5);
+      const again = await mockClient.recordMeasurement(list[0].id, D0, 72.346);
+      expect(again.entries).toEqual([{ date: D0, value: 72.35 }]);
+      await mockClient.recordMeasurement(list[0].id, moveDate(D0, -3), 73);
+      expect((await mockClient.getMetrics())[0].entries.map(e => e.date)).toEqual([moveDate(D0, -3), D0]);
+    });
+    it('rejects bad values and dates, and never touches XP', async () => {
+      freezeAt(D0);
+      const id = (await mockClient.getMetrics())[0].id;
+      const xpBefore = (await mockClient.getDashboard(D0)).progress.totalXp;
+      for (const bad of [0, -3, 100001, Number.NaN, 'x' as unknown as number]) expect((await rejection(mockClient.recordMeasurement(id, D0, bad))).fields).toHaveProperty('value');
+      expect((await rejection(mockClient.recordMeasurement(id, moveDate(D0, 1), 70))).fields).toHaveProperty('date');
+      expect((await rejection(mockClient.recordMeasurement(id, moveDate(D0, -400), 70))).fields).toHaveProperty('date');
+      expect((await rejection(mockClient.recordMeasurement('nope', D0, 70))).status).toBe(404);
+      await mockClient.recordMeasurement(id, D0, 70);
+      expect((await mockClient.getDashboard(D0)).progress.totalXp).toBe(xpBefore);
+    });
+    it('custom metrics: validated, unique by name, deletable; defaults are not', async () => {
+      freezeAt(D0);
+      const made = await mockClient.createMetric({ name: ' Vòng đùi ', unit: 'cm' });
+      expect(made).toMatchObject({ name: 'Vòng đùi', builtin: false, entries: [] });
+      expect((await rejection(mockClient.createMetric({ name: 'vòng ĐÙI', unit: '' }))).fields).toHaveProperty('name');
+      expect((await rejection(mockClient.createMetric({ name: '', unit: '' }))).fields).toHaveProperty('name');
+      expect((await rejection(mockClient.createMetric({ name: 'x', unit: 'mười ba ký tự!' }))).fields).toHaveProperty('unit');
+      await mockClient.recordMeasurement(made.id, D0, 55);
+      await mockClient.removeMeasurement(made.id, D0);
+      expect((await mockClient.getMetrics()).find(m => m.id === made.id)!.entries).toEqual([]);
+      await mockClient.deleteMetric(made.id);
+      expect((await mockClient.getMetrics()).some(m => m.id === made.id)).toBe(false);
+      expect((await rejection(mockClient.deleteMetric((await mockClient.getMetrics())[0].id))).status).toBe(409);
+    });
+  });
 });

@@ -1,5 +1,5 @@
 import type { LifeOsApi } from './client';
-import type { AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, DailyRewardDto, ItemDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday, HabitObjectiveDto, ObjectiveInput, QuestObjectiveDto } from './types';
+import type { AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, DailyRewardDto, ItemDto, MetricDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday, HabitObjectiveDto, ObjectiveInput, QuestObjectiveDto } from './types';
 import { ApiError, ErrorCode } from './errors';
 import { ALL_CATEGORIES } from '../domain/insights';
 import { DAILY_TIERS, hasChests, rewardThreshold } from '../domain/dailyRewards';
@@ -25,7 +25,7 @@ type BossState = { bossId: string; status: 'AVAILABLE' | 'DEFEATED'; cycle: numb
 type AchievementState = { code: AchievementCode; status: 'EARNED' | 'LOCKED'; cycle: number; earnedDate: string | null; earnedAt: string | null };
 type StoredJourney = Omit<JourneyDto, 'chapters'>;
 type Lifecycle = { goals: Record<string, LifecycleEvent[]>; habits: Record<string, LifecycleEvent[]> };
-type Db = { version: typeof DB_VERSION; goals: GoalDto[]; habits: HabitDto[]; lifecycle: Lifecycle; questStates: QuestState[]; xpTransactions: XpEvent[]; bossStates: BossState[]; achievementStates: AchievementState[]; journey: StoredJourney; scheduleHistory?: Record<string, { from: string; weekdays: Weekday[] }[]>; rewardSnapshots?: Record<string, number>; items?: { code: string; sourceKey: string; equipped: boolean }[] };
+type Db = { version: typeof DB_VERSION; goals: GoalDto[]; habits: HabitDto[]; lifecycle: Lifecycle; questStates: QuestState[]; xpTransactions: XpEvent[]; bossStates: BossState[]; achievementStates: AchievementState[]; journey: StoredJourney; scheduleHistory?: Record<string, { from: string; weekdays: Weekday[] }[]>; rewardSnapshots?: Record<string, number>; items?: { code: string; sourceKey: string; equipped: boolean }[]; metrics?: MetricDto[] };
 
 const id = () => typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `mock-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const now = () => new Date().toISOString();
@@ -224,6 +224,19 @@ function revokeItem(db:Db,date:string,tier:string):string|null{
 function itemViews(db:Db):ItemDto[]{
   const owned=db.items??[];
   return ITEM_CATALOG.map(c=>{const o=owned.find(x=>x.code===c.code);return {...c,owned:!!o,equipped:!!o?.equipped,acquiredDate:o?o.sourceKey.slice(0,10):null};});
+}
+// ---------- body measurements (no XP, no ledger) ----------
+const METRIC_DEFAULTS:[string,string][]=[['Cân nặng','kg'],['Vòng eo','cm'],['Mỡ cơ thể','%']];
+function ensureMetrics(db:Db):MetricDto[]{
+  if(!db.metrics||!db.metrics.length)db.metrics=METRIC_DEFAULTS.map(([name,unit])=>({id:id(),name,unit,builtin:true,entries:[]}));
+  return db.metrics;
+}
+function metricOf(db:Db,metricId:string):MetricDto{const m=ensureMetrics(db).find(x=>x.id===metricId);if(!m)throw notFound('chỉ số');return m;}
+function entryDate(date:string,limitBackdate=true):string{
+  assertLocalDate(date);const today=todayInTimezone();
+  if(date>today)fail({date:'Không thể ghi số đo cho ngày trong tương lai.'});
+  if(limitBackdate&&diffDays(date,today)>366)fail({date:'Chỉ ghi được số đo trong 366 ngày gần nhất.'});
+  return date;
 }
 let dailyRewardsEnabled=true;
 /** Test seam: suites about other rules switch the chests off to keep exact XP totals; the app always runs with them on. */
@@ -572,6 +585,31 @@ export const mockClient:LifeOsApi={
   undoBoss:bossId=>mutateBoss(bossId,false),
   async getAchievements(){await delay();return achievements(load());},
   async getItems(){await delay();return itemViews(load());},
+  async getMetrics(){await delay();const db=load();const list=ensureMetrics(db);save(db);return structuredClone(list);},
+  async createMetric(input:{name:string;unit:string}){
+    await delay();const db=load();const list=ensureMetrics(db);const name=(input.name??'').trim();const unit=(input.unit??'').trim();const fields:Record<string,string>={};
+    if(!name||name.length>40)fields.name='Tên chỉ số từ 1 đến 40 ký tự.';else if(list.some(m=>m.name.toLowerCase()===name.toLowerCase()))fields.name='Đã có chỉ số tên này.';
+    if(unit.length>12)fields.unit='Đơn vị tối đa 12 ký tự.';
+    if(Object.keys(fields).length)fail(fields);
+    if(list.length>=20)throw new ApiError(422,'TOO_MANY_METRICS','Tối đa 20 chỉ số.');
+    const metric:MetricDto={id:id(),name,unit,builtin:false,entries:[]};list.push(metric);save(db);return structuredClone(metric);
+  },
+  async recordMeasurement(metricId:string,date:string,value:number){
+    await delay();const db=load();const metric=metricOf(db,metricId);const d=entryDate(date);
+    const v=typeof value==='number'&&Number.isFinite(value)?Math.round(value*100)/100:NaN;
+    if(!(v>0)||v>100000)fail({value:typeof value==='number'?'Giá trị phải lớn hơn 0 và không quá 100000.':'Giá trị phải là một số.'});
+    const at=metric.entries.findIndex(e=>e.date===d);if(at>=0)metric.entries[at].value=v;else metric.entries.push({date:d,value:v});
+    metric.entries.sort((a,b)=>a.date.localeCompare(b.date));save(db);return structuredClone(metric);
+  },
+  async removeMeasurement(metricId:string,date:string){
+    await delay();const db=load();const metric=metricOf(db,metricId);const d=entryDate(date,false);
+    metric.entries=metric.entries.filter(e=>e.date!==d);save(db);return structuredClone(metric);
+  },
+  async deleteMetric(metricId:string){
+    await delay();const db=load();const metric=metricOf(db,metricId);
+    if(metric.builtin)throw new ApiError(409,'METRIC_BUILTIN','Không xoá được chỉ số mặc định.');
+    db.metrics=ensureMetrics(db).filter(m=>m.id!==metricId);save(db);
+  },
   async equipItem(code:string){
     await delay();const db=load();db.items??=[];const mine=db.items.find(i=>i.code===code);if(!mine)throw notFound('vật phẩm');
     const slot=ITEM_CATALOG.find(c=>c.code===code)?.slot;if(!slot)throw notFound('vật phẩm');

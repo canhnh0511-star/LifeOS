@@ -1,4 +1,4 @@
-import type { ItemDto, AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, AchievementDto, BossMutationDto, PatchHabit, QuestMutationDto, UserDto, RegisterRequest, LoginRequest } from './types';
+import type { MetricDto, ItemDto, AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, AchievementDto, BossMutationDto, PatchHabit, QuestMutationDto, UserDto, RegisterRequest, LoginRequest } from './types';
 export interface LifeOsApi {
   getMe(): Promise<UserDto>;
   /** Real mode only; the mock has no accounts and always acts as the demo user. */
@@ -24,6 +24,12 @@ export interface LifeOsApi {
   getAchievements(): Promise<AchievementDto[]>;
   /** The whole catalog with this user's ownership; locked entries have `owned: false`. */
   getItems(): Promise<ItemDto[]>;
+  getMetrics(): Promise<MetricDto[]>;
+  createMetric(input: { name: string; unit: string }): Promise<MetricDto>;
+  /** One value per metric per day; recording the same day again replaces it. Returns the metric with its entries. */
+  recordMeasurement(metricId: string, date: string, value: number): Promise<MetricDto>;
+  removeMeasurement(metricId: string, date: string): Promise<MetricDto>;
+  deleteMetric(metricId: string): Promise<void>;
   /** Wears an owned item; the item already worn in the same slot is taken off. 404 when not owned. */
   equipItem(code: string): Promise<ItemDto>;
   unequipItem(code: string): Promise<ItemDto>;

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { CalendarDays, Layers3, Menu, RotateCcw, Settings2, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { api, isDemo } from './api';
 import { exportDemoData, resetDemoData } from './api/mockClient';
-import type { ItemDto, BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, PatchHabit, QuestDto, QuestObjectiveDto, RewardEffectDto } from './api/types';
+import type { MetricDto, ItemDto, BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, PatchHabit, QuestDto, QuestObjectiveDto, RewardEffectDto } from './api/types';
 import { formatDate, todayInTimezone } from './domain/rules';
 import { Celebration, hasCelebration, type CelebrationData } from './components/Celebration';
 import { levelUps } from './domain/levelUps';
@@ -14,6 +14,7 @@ import { useLifeOsData } from './hooks/useLifeOsData';
 import { InsightsPage } from './pages/InsightsPage';
 import { JourneyPage } from './pages/JourneyPage';
 import { CharacterPage } from './pages/CharacterPage';
+import { BodyPage } from './pages/BodyPage';
 import { TodayPage } from './pages/TodayPage';
 import { withEffects } from './ui/messages';
 import { primaryNav, tabFromHash, type Tab } from './ui/nav';
@@ -31,7 +32,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>(tabFromHash);
   const [selectedDate, setSelectedDate] = useState(todayInTimezone());
   const [period, setPeriod] = useState<'7d' | '30d'>('7d');
-  const { dashboard, goals, habits, achievements, items, analytics, weekly, loading, error, refresh: refreshNow } = useLifeOsData(selectedDate, period);
+  const { dashboard, goals, habits, achievements, items, metrics, metricsFailed, reloadMetrics, analytics, weekly, loading, error, refresh: refreshNow } = useLifeOsData(selectedDate, period);
   const [modal, setModal] = useState<ModalKind>(null);
   const [editing, setEditing] = useState<HabitDto | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -97,6 +98,19 @@ export default function App() {
     catch (e) { setNotice(failure(e, 'Không thể đổi trang bị.')); }
     finally { setBusyItemCode(null); }
   };
+  const [bodyBusy, setBodyBusy] = useState(false);
+  const bodyBusyRef = useRef(false);
+  /** Runs one body-metric call; the notice says what happened and `true` tells the form it can clear itself. */
+  const bodyCall = async (run: () => Promise<unknown>, done: string, fallback: string): Promise<boolean> => {
+    if (bodyBusyRef.current) return false; bodyBusyRef.current = true; setBodyBusy(true);
+    try { await run(); setNotice(done); await reloadMetrics(); return true; }
+    catch (e) { setNotice(failure(e, fallback)); return false; }
+    finally { bodyBusyRef.current = false; setBodyBusy(false); }
+  };
+  const recordMeasure = (m: MetricDto, date: string, value: number) => bodyCall(() => api.recordMeasurement(m.id, date, value), `Đã lưu ${m.name}`, 'Không thể lưu số đo.');
+  const removeMeasure = (m: MetricDto, date: string) => { void bodyCall(() => api.removeMeasurement(m.id, date), `Đã xoá số đo ${m.name}`, 'Không thể xoá số đo.'); };
+  const createMetric = (name: string, unit: string) => bodyCall(() => api.createMetric({ name, unit }), `Đã thêm chỉ số ${name}`, 'Không thể thêm chỉ số.');
+  const deleteMetric = (m: MetricDto) => { void bodyCall(() => api.deleteMetric(m.id), `Đã xoá chỉ số ${m.name}`, 'Không thể xoá chỉ số.'); };
   const bossAction = async (boss: BossDto, defeat: boolean) => {
     if (busyBossId) return; setBusyBossId(boss.id);
     try {
@@ -146,6 +160,7 @@ export default function App() {
           {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} goTo={goTo}/>}
           {tab === 'journey' && <JourneyPage journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')}/>}
           {tab === 'character' && <CharacterPage dashboard={dashboard} items={items} busyItemCode={busyItemCode} onEquip={item => wear(item, true)} onUnequip={item => wear(item, false)}/>}
+          {tab === 'body' && <BodyPage metrics={metrics} failed={metricsFailed} onRetry={() => { void reloadMetrics(); }} today={today} busy={bodyBusy} onRecord={recordMeasure} onRemoveEntry={removeMeasure} onCreate={createMetric} onDelete={deleteMetric}/>}
           {tab === 'insights' && <InsightsPage analytics={analytics} period={period} onPeriod={setPeriod} currentStreak={dashboard?.progress.currentStreak || 0}/>}
         </>}
         <footer className="footer"><span>© Life OS · Built for progress, not perfection.</span><span>Version 0.1.0 · {isDemo ? 'Mock API' : 'Real API'} · Asia/Ho_Chi_Minh</span></footer>

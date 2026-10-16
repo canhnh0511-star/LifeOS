@@ -200,6 +200,38 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '422': {$ref: '#/components/responses/ValidationError', description: 'QUEST_TOO_OLD when the boss was defeated more than 7 days ago'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /metrics:
+    get:
+      summary: Body metrics with their recorded values; the three defaults are created on first read
+      responses:
+        '200': {description: OK, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Metric'}}}}}
+    post:
+      summary: Add a custom metric (name 1-40, unique per user ignoring case; unit up to 12; at most 20 metrics)
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [name], properties: {name: {type: string}, unit: {type: string}}}}}}
+      responses:
+        '201': {description: Created, content: {application/json: {schema: {$ref: '#/components/schemas/Metric'}}}}
+        '422': {description: Validation failed}
+  /metrics/{id}:
+    parameters: [{name: id, in: path, required: true, schema: {type: string}}]
+    delete:
+      summary: Delete a custom metric and its values
+      responses:
+        '204': {description: Deleted}
+        '404': {description: Not found}
+        '409': {description: METRIC_BUILTIN, default metrics cannot be deleted}
+  /metrics/{id}/entries/{date}:
+    parameters: [{name: id, in: path, required: true, schema: {type: string}}, {name: date, in: path, required: true, schema: {$ref: '#/components/schemas/LocalDate'}}]
+    put:
+      summary: Record the value of a day (replaces that day's value). Not in the future, at most 366 days back; value > 0 and <= 100000, rounded to 2 decimals. No XP.
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [value], properties: {value: {type: number}}}}}}
+      responses:
+        '200': {description: OK, content: {application/json: {schema: {$ref: '#/components/schemas/Metric'}}}}
+        '404': {description: Not found}
+        '422': {description: Validation failed}
+    delete:
+      summary: Remove the value of a day (no-op when there is none)
+      responses:
+        '200': {description: OK, content: {application/json: {schema: {$ref: '#/components/schemas/Metric'}}}}
   /items:
     get:
       summary: Item catalog with this user's ownership (locked entries have owned=false)
@@ -530,6 +562,23 @@ components:
         threshold: {type: integer, minimum: 1}
         xp: {type: integer, enum: [10, 20, 40]}
         state: {type: string, enum: [LOCKED, EARNED]}
+    Metric:
+      type: object
+      required: [id, name, unit, builtin, entries]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string, maxLength: 40}
+        unit: {type: string, maxLength: 12}
+        builtin: {type: boolean, description: 'Default metrics (weight, waist, body fat) cannot be deleted.'}
+        entries:
+          type: array
+          description: Recorded values, oldest first (the last 730 days).
+          items:
+            type: object
+            required: [date, value]
+            properties:
+              date: {$ref: '#/components/schemas/LocalDate'}
+              value: {type: number}
     Item:
       type: object
       required: [code, name, story, slot, rarity, area, artKey, owned, equipped, acquiredDate]

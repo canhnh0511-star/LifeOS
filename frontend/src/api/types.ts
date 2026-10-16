@@ -30,6 +30,9 @@ export type RewardEffectType = 'BOSS_REVERTED' | 'ACHIEVEMENT_GRANTED' | 'ACHIEV
 export type DailyRewardTier = 'WOOD' | 'SILVER' | 'GOLD';
 /** A daily chest; `threshold` is the number of completed quests that opens it. Present only when the day has quests. */
 export interface DailyRewardDto { tier: DailyRewardTier; threshold: number; xp: number; state: 'LOCKED' | 'EARNED'; /** The item this chest dropped (null when none, e.g. the pool was exhausted). */ itemCode: string | null; }
+/** A body metric (defaults: weight, waist, body fat; plus the user's own) with its recorded values, oldest first. No XP is attached. */
+export interface MetricEntryDto { date: string; value: number; }
+export interface MetricDto { id: string; name: string; unit: string; builtin: boolean; entries: MetricEntryDto[]; }
 export type ItemSlot = 'WEAPON' | 'HEAD' | 'CLOAK' | 'FEET' | 'RELIC';
 export type ItemRarity = 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
 /** A catalog item plus this user's ownership. `acquiredDate` is the chest day that dropped it. */

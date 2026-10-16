@@ -250,3 +250,17 @@ button.chest{font:inherit;cursor:pointer;width:100%}button.chest:hover{filter:br
 @keyframes item-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .chest-item{animation:item-in .35s ease-out .25s backwards}
 @media(prefers-reduced-motion:reduce){.chest-item{animation:none}}
+/* B-24: body measurements */
+.metric-grid-page{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.metric-card-body{display:grid;gap:12px;align-content:start}
+.metric-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.metric-head h3{margin:0 0 4px;font-size:16px;color:#f1f6fc}
+.metric-latest{text-align:right;color:#f4f8fd}.metric-latest strong{font-size:28px;letter-spacing:-1px}.metric-latest small{margin-left:4px;color:#8b97a8;font-size:12px}
+.metric-trend{display:grid;gap:8px;color:#7fb6ff}.metric-deltas{list-style:none;margin:0;padding:0;display:grid;gap:3px;font-size:11px;color:#8b97a8}.metric-deltas strong{color:#dbe5f2}
+.metric-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}.metric-form label,.metric-new label{display:grid;gap:5px;font-size:11px;color:#9aa7b8}
+.metric-form input,.metric-new input{width:100%;box-sizing:border-box;padding:10px;border-radius:9px;border:1px solid #2f3b4c;background:#0f1520;color:#eaf0f8;font-size:14px}
+.metric-form .btn{grid-column:1 / -1}.metric-error{margin:0;color:#ff9aa5;font-size:12px}
+.metric-history summary{cursor:pointer;font-size:12px;color:#9aa7b8}.metric-history ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
+.metric-history li{display:flex;align-items:center;gap:10px;font-size:12px;color:#aab6c7}.metric-history li span{flex:1}.metric-history li strong{color:#e8eef8}
+.metric-delete{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:#9aa7b8}
+.metric-new{display:grid;grid-template-columns:2fr 1fr auto;gap:12px;align-items:end;margin-bottom:16px}
+@media(max-width:600px){.metric-new{grid-template-columns:1fr}.bottom-nav button{min-width:60px}}

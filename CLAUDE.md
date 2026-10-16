@@ -2,7 +2,7 @@
 
 Bắt đầu với `docs/agent/AGENT_PROMPT.md`. Repository này phát triển theo hướng **contract-first, frontend-first**: các vertical slice nhỏ, ledger XP bất biến (immutable), streak theo scheduled session có xét timezone, và mỗi behavior đều có test.
 
-## Milestone hiện tại: B-19 (rương hằng ngày, chuỗi ngày) xong; B-01 → B-10, B-15, B-17 → B-19 đã xong (UI-00 đã được duyệt)
+## Milestone hiện tại: B-24 (số đo cơ thể) xong; B-01 → B-10, B-15, B-17 → B-22, B-24 đã xong (UI-00 đã được duyệt)
 
 **UI-00 được owner duyệt rõ ràng ngày 2026-10-15** ("oke duyệt ticket 00"). Backend (B-01 → B-06) được mở khóa, làm lần lượt từng ticket, bắt đầu từ B-01. Giao diện frontend coi như đã chốt: đổi UI cần owner đồng ý.
 

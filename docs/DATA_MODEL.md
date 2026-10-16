@@ -17,6 +17,7 @@
 | `chapters` | UUID id PK, journey_id FK, idx, start_date, end_date |
 | `boss_definitions` | code PK, name, category, target_minutes, xp_reward 1..100, tier 1..5, required_level, art_key (dữ liệu seed/cấu hình) |
 | `habit_objectives` / `quest_objectives` (B-17) | `habit_objectives`: id, habit_id, position, title, target, unit, step. `quest_objectives`: bản chụp theo quest + `value` tiến độ; quest hoàn thành khi mọi dòng `value >= target` |
+| `metrics` / `measurements` (B-24, V11) | `metrics`: id, user_id, name (unique không phân biệt hoa thường mỗi user), unit, builtin. `measurements`: id, metric_id, user_id, entry_date, value NUMERIC(10,2) > 0, unique (metric, ngày) |
 | `user_items` (B-22, V10) | id, user_id, item_code, slot, source_key (`ngày:mốc`), equipped, acquired_at; unique (user, item), unique (user, source_key), unique một món đeo mỗi ô (partial index); danh mục nằm trong code |
 | rương hằng ngày (B-19) | Không có bảng: sự kiện `xp_transactions` với `source_type='DAILY'`, `event_type` `DAILY_REWARD_GRANT/REVOKE`, `source_id` = UUID suy ra từ (user, ngày, mốc), một sự kiện mỗi lĩnh vực (V9) |
 | `boss_states` (triển khai B-08, thay `campaign_bosses`) | UUID id PK, user_id FK, journey_id FK, boss_code, status (AVAILABLE/DEFEATED), cycle, defeated_date, defeated_at; UNIQUE(journey_id, boss_code); chỉ có dòng khi boss đã được đánh | 
