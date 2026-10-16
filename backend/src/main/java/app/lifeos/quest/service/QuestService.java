@@ -11,6 +11,7 @@ import app.lifeos.habit.repository.HabitScheduleVersionRepository;
 import app.lifeos.identity.dto.UserDto;
 import app.lifeos.identity.model.User;
 import app.lifeos.identity.repository.UserRepository;
+import app.lifeos.ledger.repository.XpTransactionRepository;
 import app.lifeos.lifecycle.model.LifecycleEvent;
 import app.lifeos.lifecycle.repository.LifecycleEventRepository;
 import app.lifeos.progress.service.ProgressService;
@@ -48,10 +49,12 @@ public class QuestService {
     private final QuestInstanceRepository instances;
     private final UserRepository users;
     private final ProgressService progress;
+    private final XpTransactionRepository ledger;
     private final UserClock clock;
 
     public QuestService(HabitRepository habits, HabitScheduleVersionRepository schedules, GoalRepository goals, LifecycleEventRepository lifecycle,
-                        QuestInstanceRepository instances, UserRepository users, ProgressService progress, UserClock clock) {
+                        QuestInstanceRepository instances, UserRepository users, ProgressService progress, XpTransactionRepository ledger, UserClock clock) {
+        this.ledger = ledger;
         this.habits = habits; this.schedules = schedules; this.goals = goals; this.lifecycle = lifecycle;
         this.instances = instances; this.users = users; this.progress = progress; this.clock = clock;
     }
@@ -68,8 +71,7 @@ public class QuestService {
         LocalDate day = date == null ? clock.today(user.getTimezone()) : parse(date, "date");
         List<QuestDto> list = questsOn(user, day);
         int completed = (int) list.stream().filter(q -> "COMPLETED".equals(q.status())).count();
-        // Nothing can be earned before B-04's ledger exists.
-        return new DailyDashboardDto(day, UserDto.of(user), list, progress.progressFor(userId), completed, list.size(), 0, null);
+        return new DailyDashboardDto(day, UserDto.of(user), list, progress.progressFor(userId), completed, list.size(), (int) ledger.sumForDate(userId, day), null);
     }
 
     private List<QuestDto> questsOn(User user, LocalDate day) {

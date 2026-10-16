@@ -32,3 +32,6 @@
 
 ## Backend B-03
 51 test backend (thêm 13 integration + 6 unit cho luật quest). `GET /quests` và `GET /dashboard/today` chạy trên Postgres thật. Chưa kiểm trong Chrome. Hoàn thành/undo quest (PUT/DELETE) thuộc B-04 nên Today hiện chỉ xem được; `progress` là placeholder rỗng.
+
+## Backend B-04
+68 test backend. Hoàn thành/undo quest, ledger và progress chạy trên Postgres thật, kể cả đồng thời và rollback. Chưa kiểm trong Chrome; streak vẫn 0 đến B-05.

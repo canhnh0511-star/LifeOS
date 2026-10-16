@@ -25,9 +25,17 @@ public class QuestInstance {
     @Column(name = "xp_reward", nullable = false, updatable = false) private int xpReward;
     @Enumerated(EnumType.STRING) @Column(nullable = false) private Status status;
     @Column(name = "completed_at") private Instant completedAt;
+    @Column(nullable = false) private int cycle;
     @Column(name = "created_at", nullable = false, updatable = false) private Instant createdAt;
 
     protected QuestInstance() {}
+
+    public UUID getId() { return id; }
+    public int getCycle() { return cycle; }
+
+    /** PENDING -> COMPLETED starts a new cycle. */
+    public void complete(Instant at) { status = Status.COMPLETED; cycle++; completedAt = at; }
+    public void revert() { status = Status.PENDING; completedAt = null; }
 
     public UUID getHabitId() { return habitId; }
     public LocalDate getScheduledDate() { return scheduledDate; }
