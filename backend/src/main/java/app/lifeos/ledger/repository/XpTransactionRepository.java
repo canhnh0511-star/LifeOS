@@ -23,4 +23,7 @@ public interface XpTransactionRepository extends JpaRepository<XpTransaction, UU
 
     @Query("select x.amount from XpTransaction x where x.sourceId = :questId and x.cycle = :cycle and x.eventType = app.lifeos.ledger.model.XpTransaction.EventType.QUEST_COMPLETE")
     Optional<Integer> completeAmount(@Param("questId") UUID questId, @Param("cycle") int cycle);
+
+    @Query("select x.amount from XpTransaction x where x.sourceId = :bossStateId and x.cycle = :cycle and x.eventType = app.lifeos.ledger.model.XpTransaction.EventType.BOSS_COMPLETE")
+    Optional<Integer> bossCompleteAmount(@Param("bossStateId") UUID bossStateId, @Param("cycle") int cycle);
 }

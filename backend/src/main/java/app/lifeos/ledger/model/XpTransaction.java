@@ -15,7 +15,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "xp_transactions")
 public class XpTransaction {
-    public enum EventType { QUEST_COMPLETE, QUEST_REVERT }
+    public enum EventType { QUEST_COMPLETE, QUEST_REVERT, BOSS_COMPLETE, BOSS_REVERT }
 
     @Id private UUID id;
     @Column(name = "user_id", nullable = false, updatable = false) private UUID userId;
@@ -33,6 +33,13 @@ public class XpTransaction {
     public XpTransaction(UUID userId, UUID questId, EventType eventType, int cycle, Category category, int amount, LocalDate scheduledDate, Instant createdAt) {
         this.id = UUID.randomUUID(); this.userId = userId; this.sourceType = "QUEST"; this.sourceId = questId; this.eventType = eventType;
         this.cycle = cycle; this.category = category; this.amount = amount; this.scheduledDate = scheduledDate; this.createdAt = createdAt;
+    }
+
+    /** A boss event; `sourceId` is the boss_states row. */
+    public static XpTransaction boss(UUID userId, UUID bossStateId, EventType eventType, int cycle, Category category, int amount, LocalDate date, Instant createdAt) {
+        XpTransaction t = new XpTransaction(userId, bossStateId, eventType, cycle, category, amount, date, createdAt);
+        t.sourceType = "BOSS";
+        return t;
     }
 
     public int getAmount() { return amount; }

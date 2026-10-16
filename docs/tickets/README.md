@@ -10,7 +10,7 @@
 | B-05 | Journey & streak | Xong (ADR-009 chấp nhận tạm) |
 | B-06 | Analytics & cutover | Xong phần API; kiểm tra thiết bị thật chuyển sang B-11 |
 | B-07 | Rate limit đăng nhập | Xong (ADR-027, bộ đếm trong bộ nhớ) |
-| B-08 | Hạ boss | Chưa làm |
+| B-08 | Hạ boss | Xong (ADR-028) |
 | B-09 | Achievement cấp/thu hồi | Chưa làm, sau B-08 |
 | B-10 | Sửa lịch habit, archive | Chưa làm, cần owner duyệt UI |
 | B-11 | Production readiness, a11y, PWA | Chưa làm |

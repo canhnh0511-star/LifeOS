@@ -21,5 +21,8 @@ final class BossCatalog {
         new Boss("TROLL_OF_BURNOUT", 3, "Troll of Burnout", "HEALTH", 120, 65, 3, 2, "troll-of-burnout"),
         new Boss("DRAGON_OF_PROCRASTINATION", 4, "Dragon of Procrastination", "CAREER", 180, 100, 5, 3, "dragon-of-procrastination"));
 
+    /** The id the API uses for a boss (`boss-slime-of-inertia`). */
+    static String idOf(Boss b) { return "boss-" + b.code().toLowerCase(java.util.Locale.ROOT).replace('_', '-'); }
+
     static Boss bossOf(int chapter) { return BOSSES.stream().filter(b -> b.chapter() == chapter).findFirst().orElseThrow(); }
 }

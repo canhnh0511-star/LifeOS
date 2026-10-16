@@ -165,7 +165,7 @@ paths:
       responses:
         '200': {description: Mutation result, content: {application/json: {schema: {$ref: '#/components/schemas/BossMutation'}}}}
         '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
+        '409': {description: 'BOSS_LOCKED - area level below requiredLevel', content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
     delete:
       tags: [Bosses]
       operationId: undoBoss

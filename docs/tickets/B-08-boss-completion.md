@@ -1,6 +1,6 @@
 # B-08 — Hạ boss: `PUT/DELETE /bosses/{bossId}/completion`
 
-Trạng thái: **chưa làm** · Chặn bởi: không (B-04, B-05 đã xong).
+Trạng thái: **xong** (ADR-028) · Chặn bởi: không (B-04, B-05 đã xong).
 
 Hiện tại: Journey trả boss LOCKED/AVAILABLE theo level lĩnh vực nhưng không bao giờ DEFEATED; huy hiệu chặng luôn `earned=false`; analytics chưa có `completed` cho boss.
 
