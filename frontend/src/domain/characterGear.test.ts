@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_CATEGORIES } from './insights';
-import { GEAR_NAMES, MAX_GEAR_TIER, equipmentFor, gearTier } from './characterGear';
+import { GEAR_NAMES, MAX_GEAR_TIER, equipmentFor, gearFor, gearTier } from './characterGear';
 import type { Vec3 } from './characterModel';
 
 const points = (lines: Vec3[][]) => lines.flat();
@@ -46,5 +46,25 @@ describe('equipmentFor', () => {
   });
   it('names the piece for every area and tier', () => {
     for (const category of ALL_CATEGORIES) for (const t of [1, 2, 3, 4] as const) expect(GEAR_NAMES[category][t].length).toBeGreaterThan(2);
+  });
+});
+
+describe('gearFor (solid plates)', () => {
+  it('every piece at every tier becomes filled plates of 3-4 points, mirrored pieces on both sides', () => {
+    for (const category of ALL_CATEGORIES) for (const tier of [1, 2, 3, 4] as const) {
+      const { solids } = gearFor(category, tier);
+      expect(solids.length, `${category} tier ${tier}`).toBeGreaterThan(0);
+      for (const plate of solids) { expect(plate.length).toBeGreaterThanOrEqual(3); expect(plate.length).toBeLessThanOrEqual(4); }
+    }
+    const shoulders = gearFor('CAREER', 2).solids.flat();
+    expect(shoulders.some(([x]) => x > 0.2)).toBe(true);
+    expect(shoulders.some(([x]) => x < -0.2)).toBe(true);
+  });
+  it('no gear at tier 0, and the wireframe API is unchanged by building solids', () => {
+    expect(gearFor('HEALTH', 0)).toEqual({ solids: [], decor: [] });
+    const before = equipmentFor('CAREER', 3).length;
+    gearFor('CAREER', 3);
+    expect(equipmentFor('CAREER', 3).length).toBe(before);
+    expect(equipmentFor('CAREER', 3).every(line => !(line as { face?: boolean }).face)).toBe(true);
   });
 });

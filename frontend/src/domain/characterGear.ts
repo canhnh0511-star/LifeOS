@@ -14,7 +14,11 @@ export const GEAR_NAMES: Record<GoalCategory, Record<1 | 2 | 3 | 4, string>> = {
   HEALTH: { 1: 'Giày', 2: 'Giáp gối', 3: 'Đai lưng', 4: 'Giày cánh' }
 };
 
-type Line = Vec3[];
+/** A polyline, or (in solid mode) a flat plate: `face` marks a closed polygon to be filled and shaded instead of stroked. */
+type Line = Vec3[] & { face?: boolean };
+/** While true, shells, gems, spikes and feathers return filled plates instead of wireframe lines (see `gearFor`). */
+let solidMode = false;
+const plate = (points: Vec3[]): Line => { const p: Line = points; p.face = true; return p; };
 const TAU = Math.PI * 2;
 const ring = (cx: number, y: number, cz: number, rx: number, rz: number, sides = 16): Line =>
   Array.from({ length: sides + 1 }, (_, i) => { const a = (i / sides) * TAU; return [cx + Math.cos(a) * rx, y, cz + Math.sin(a) * rz] as Vec3; });
@@ -25,9 +29,10 @@ const vring = (cx: number, cy: number, cz: number, r: number): Line =>
 function gem(cx: number, cy: number, cz: number, r: number): Line[] {
   const top: Vec3 = [cx, cy + r * 1.3, cz], bottom: Vec3 = [cx, cy - r * 1.3, cz];
   const eq: Vec3[] = [[cx + r, cy, cz], [cx, cy, cz + r], [cx - r, cy, cz], [cx, cy, cz - r]];
+  if (solidMode) return eq.flatMap((p, i) => [plate([top, p, eq[(i + 1) % 4]]), plate([bottom, p, eq[(i + 1) % 4]])]);
   return [...eq.map(p => [top, p]), ...eq.map(p => [bottom, p]), [...eq, eq[0]]];
 }
-const mirror = (lines: Line[]): Line[] => lines.map(l => l.map(([x, y, z]) => [-x, y, z] as Vec3));
+const mirror = (lines: Line[]): Line[] => lines.map(l => { const m: Line = l.map(([x, y, z]) => [-x, y, z] as Vec3); if (l.face) m.face = true; return m; });
 const both = (lines: Line[]): Line[] => [...lines, ...mirror(lines)];
 
 /** Key pose of a shell: [y, rx, rz, cx, cz], blended with a Catmull-Rom curve. */
@@ -51,6 +56,11 @@ function shell(keys: readonly Key[], { per = 2, arc = [0, TAU], sides = 16, meri
     const a = arc[0] + (i / sides) * (arc[1] - arc[0]);
     return [cx + Math.cos(a) * Math.max(0.003, rx), y, cz + Math.sin(a) * Math.max(0.003, rz)] as Vec3;
   }));
+  if (solidMode) {
+    const plates: Line[] = [];
+    for (let r = 0; r < rings.length - 1; r++) for (let k = 0; k < sides; k++) plates.push(plate([rings[r][k], rings[r][k + 1], rings[r + 1][k + 1], rings[r + 1][k]]));
+    return plates;
+  }
   const lines: Line[] = [...rings];
   const last = closed ? sides - 1 : sides;
   for (let r = 0; r < rings.length - 1; r++) for (let k = 0; k <= last; k += meridians) lines.push([rings[r][k], rings[r + 1][k]]);
@@ -61,12 +71,14 @@ const FRONT: [number, number] = [Math.PI * 0.14, Math.PI * 0.86];
 /** Cone spike: a small base ring joined to an apex. */
 const spike = (cx: number, baseY: number, tipY: number, cz: number, r: number): Line[] => {
   const base = ring(cx, baseY, cz, r, r, 6);
+  if (solidMode) return base.slice(0, 6).map((p, i) => plate([p, base[i + 1], [cx, tipY, cz]]));
   return [base, ...base.slice(0, 6).map((p): Line => [p, [cx, tipY, cz]])];
 };
 /** A blade/feather swept from a root: polyline plus a closing outline so it reads as a flat plate. */
 const feather = (root: Vec3, tip: Vec3, width: number): Line[] => {
   const mid: Vec3 = [(root[0] + tip[0]) / 2, (root[1] + tip[1]) / 2 + width, (root[2] + tip[2]) / 2];
   const mid2: Vec3 = [(root[0] + tip[0]) / 2, (root[1] + tip[1]) / 2 - width, (root[2] + tip[2]) / 2];
+  if (solidMode) return [plate([root, mid, tip, mid2])];
   return [[root, mid, tip, mid2, root]];
 };
 
@@ -148,3 +160,14 @@ const PIECES: Record<GoalCategory, (tier: number) => Line[]> = { KNOWLEDGE: head
 export function equipmentFor(category: GoalCategory, tier: GearTier): Line[] {
   return tier <= 0 ? [] : PIECES[category](tier);
 }
+
+/** Equipment for one area as shaded plates plus the few leftover lines (halos, orbits, necklace) that stay as glowing strokes. */
+export function gearFor(category: GoalCategory, tier: GearTier): { solids: Vec3[][]; decor: Vec3[][] } {
+  if (tier <= 0) return { solids: [], decor: [] };
+  solidMode = true;
+  try {
+    const all = PIECES[category](tier);
+    return { solids: all.filter(l => l.face), decor: all.filter(l => !l.face) };
+  } finally { solidMode = false; }
+}
+

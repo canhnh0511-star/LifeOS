@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { AreaStatDto, GoalCategory } from '../api/types';
 import { categoryLabel } from '../domain/rules';
 import { ANCHORS, MODEL, project } from '../domain/characterModel';
-import { GEAR_NAMES, equipmentFor, gearTier, type GearTier } from '../domain/characterGear';
+import { GEAR_NAMES, gearFor, gearTier, type GearTier } from '../domain/characterGear';
 import { categoryColors, categoryIcons } from '../ui/categories';
 
 const RGB: Record<GoalCategory, string> = {
@@ -28,8 +28,9 @@ export function CharacterModel({ areas, active, onActive, tierOverride = null }:
   activeRef.current = active;
   // Equipment follows each area's level; rebuilt only when a level changes.
   const gearKey = areas.map(a => `${a.category}:${tierOf(a.level)}`).join('|');
-  const gearRef = useRef<{ part: GoalCategory; tier: number; points: [number, number, number][] }[]>([]);
-  gearRef.current = areas.flatMap(a => equipmentFor(a.category, tierOf(a.level)).map(points => ({ part: a.category, tier: tierOf(a.level), points })));
+  const gear = useMemo(() => areas.map(a => ({ part: a.category, tier: tierOf(a.level), ...gearFor(a.category, tierOf(a.level)) })), [gearKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const gearRef = useRef(gear);
+  gearRef.current = gear;
 
   useEffect(() => {
     const el = canvas.current, box = stage.current;
@@ -50,6 +51,73 @@ export function CharacterModel({ areas, active, onActive, tierOverride = null }:
 
     const toScreen = (p: { x: number; y: number }) => ({ x: width / 2 + p.x * height * 0.43, y: height * 0.5 + p.y * height * 0.43 });
 
+    /** Armour plates: filled, lit from the upper left, drawn far to near. `behind` plates sit behind the body's mid-plane. */
+    const LIGHT = (() => { const l = [-0.45, -0.6, 0.66]; const n = Math.hypot(l[0], l[1], l[2]); return l.map(v => v / n); })();
+    function drawPlates(time: number, current: GoalCategory | null, behind: boolean) {
+      const faces: { part: GoalCategory; tier: number; pts: { x: number; y: number; depth: number }[]; depth: number }[] = [];
+      for (const piece of gearRef.current) {
+        for (const face of piece.solids) {
+          const pts = face.map(p => project(p, angle));
+          const depth = pts.reduce((a, p) => a + p.depth, 0) / pts.length;
+          if ((depth < 0) === behind) faces.push({ part: piece.part, tier: piece.tier, pts, depth });
+        }
+      }
+      faces.sort((a, b) => a.depth - b.depth);
+      for (const f of faces) {
+        const [a, b, c] = f.pts;
+        const ux = b.x - a.x, uy = b.y - a.y, uz = b.depth - a.depth, vx = c.x - a.x, vy = c.y - a.y, vz = c.depth - a.depth;
+        let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        const len = Math.hypot(nx, ny, nz) || 1; nx /= len; ny /= len; nz /= len;
+        if (nz < 0) { nx = -nx; ny = -ny; nz = -nz; } // two-sided: always lit as seen from the camera
+        const lambert = Math.max(0, nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]);
+        const hot = current === f.part;
+        const pulse = f.tier >= 3 ? 0.05 * Math.sin(time / 420 + f.part.length) : 0;
+        const shade = Math.min(1.3, 0.2 + 0.95 * lambert + pulse + (hot ? 0.2 : 0));
+        const shine = Math.max(0, lambert - 0.8) * 1.6;
+        const [r, g, bl] = RGB[f.part].split(',').map(Number);
+        const mix = (v: number) => Math.min(255, Math.round(v * shade + 255 * shine * 0.5));
+        const dim = current && !hot ? 0.35 : 1;
+        ctx!.beginPath();
+        f.pts.forEach((q, i) => { const s = toScreen(q); i ? ctx!.lineTo(s.x, s.y) : ctx!.moveTo(s.x, s.y); });
+        ctx!.closePath();
+        ctx!.fillStyle = `rgba(${mix(r)},${mix(g)},${mix(bl)},${(behind ? 0.8 : 0.95) * dim})`;
+        ctx!.shadowColor = hot ? `rgba(${RGB[f.part]},0.9)` : 'transparent'; ctx!.shadowBlur = hot ? 10 : 0;
+        ctx!.fill();
+        ctx!.shadowBlur = 0;
+        // Stroking in the fill colour seals the hairline gaps between neighbouring plates, so a shell reads as one smooth shaded surface.
+        ctx!.strokeStyle = ctx!.fillStyle; ctx!.lineWidth = 0.9; ctx!.lineJoin = 'round'; ctx!.stroke();
+      }
+    }
+
+    /** Remaining glowing strokes (halos, orbits, necklace); the ones behind the body's mid-plane are drawn before the front plates. */
+    function drawDecor(current: GoalCategory | null, behind: boolean) {
+      const decor = new Map<string, { part: GoalCategory; alpha: number; hot: boolean; paths: { x: number; y: number }[][] }>();
+      for (const piece of gearRef.current) {
+        const hot = current === piece.part;
+        for (const points of piece.decor) {
+          const pts = points.map(p => project(p, angle));
+          if ((pts.reduce((a, q) => a + q.depth, 0) / pts.length < 0) !== behind) continue;
+          const nearness = Math.max(0, Math.min(1, (pts.reduce((a, p) => a + p.depth, 0) / pts.length + 0.3) / 0.6));
+          let alpha = 0.55 + 0.35 * nearness;
+          if (current) alpha = hot ? 1 : alpha * 0.4;
+          const bucket = Math.round(Math.min(1, alpha) * 8) / 8;
+          const key = `${piece.part}|${bucket}|${hot}`;
+          const batch = decor.get(key) ?? { part: piece.part, alpha: bucket, hot, paths: [] };
+          batch.paths.push(pts.map(toScreen));
+          decor.set(key, batch);
+        }
+      }
+      for (const batch of decor.values()) {
+        ctx!.beginPath();
+        for (const path of batch.paths) path.forEach((q, i) => i ? ctx!.lineTo(q.x, q.y) : ctx!.moveTo(q.x, q.y));
+        ctx!.strokeStyle = `rgba(${RGB[batch.part]},${batch.alpha})`;
+        ctx!.lineWidth = batch.hot ? 2.2 : 1.5;
+        ctx!.shadowColor = `rgba(${RGB[batch.part]},${batch.hot ? 1 : 0.8})`; ctx!.shadowBlur = batch.hot ? 16 : 9;
+        ctx!.stroke();
+      }
+      ctx!.shadowBlur = 0;
+    }
+
     function draw(time: number) {
       ctx!.clearRect(0, 0, width, height);
       const current = activeRef.current;
@@ -62,6 +130,7 @@ export function CharacterModel({ areas, active, onActive, tierOverride = null }:
         ctx!.strokeStyle = `rgba(${BASE},${r < 0.5 ? 0.35 : 0.18})`; ctx!.stroke();
       }
       ctx!.restore();
+      drawPlates(time, current, true);
       // Wireframe, far lines first so near lines draw over them
       const drawn = MODEL.map(line => {
         const pts = line.points.map(p => ({ s: project(p, angle), y: p[1] }));
@@ -91,31 +160,9 @@ export function CharacterModel({ areas, active, onActive, tierOverride = null }:
         ctx!.stroke();
       }
       ctx!.shadowBlur = 0;
-      // Glowing equipment, each piece in its own area's colour; higher tiers pulse.
-      const gearBatches = new Map<string, { part: GoalCategory; alpha: number; hot: boolean; paths: { x: number; y: number }[][] }>();
-      for (const piece of gearRef.current) {
-        const hot = current === piece.part;
-        const pts = piece.points.map(p => project(p, angle));
-        const depth = pts.reduce((a, p) => a + p.depth, 0) / pts.length;
-        const nearness = Math.max(0, Math.min(1, (depth + 0.3) / 0.6));
-        const pulse = piece.tier >= 3 ? 0.88 + 0.12 * Math.sin(time / 420 + piece.part.length) : 1;
-        let alpha = (0.55 + 0.35 * nearness) * pulse;
-        if (current) alpha = hot ? 1 : alpha * 0.4;
-        const bucket = Math.round(Math.min(1, alpha) * 8) / 8;
-        const key = `${piece.part}|${bucket}|${hot}`;
-        const batch = gearBatches.get(key) ?? { part: piece.part, alpha: bucket, hot, paths: [] };
-        batch.paths.push(pts.map(toScreen));
-        gearBatches.set(key, batch);
-      }
-      for (const batch of gearBatches.values()) {
-        ctx!.beginPath();
-        for (const path of batch.paths) path.forEach((q, i) => i ? ctx!.lineTo(q.x, q.y) : ctx!.moveTo(q.x, q.y));
-        ctx!.strokeStyle = `rgba(${RGB[batch.part]},${batch.alpha})`;
-        ctx!.lineWidth = batch.hot ? 2.2 : 1.5;
-        ctx!.shadowColor = `rgba(${RGB[batch.part]},${batch.hot ? 1 : 0.8})`; ctx!.shadowBlur = batch.hot ? 16 : 9;
-        ctx!.stroke();
-      }
-      ctx!.shadowBlur = 0;
+      drawDecor(current, true);
+      drawPlates(time, current, false);
+      drawDecor(current, false);
       // Leader line from the chip into the body part
       if (current) {
         const slot = SLOTS[current];
