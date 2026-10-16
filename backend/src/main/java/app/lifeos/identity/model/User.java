@@ -27,5 +27,6 @@ public class User {
     public String getEmail() { return email; }
     public String getDisplayName() { return displayName; }
     public String getTimezone() { return timezone; }
+    public Instant getCreatedAt() { return createdAt; }
     public String getPasswordHash() { return passwordHash; }
 }

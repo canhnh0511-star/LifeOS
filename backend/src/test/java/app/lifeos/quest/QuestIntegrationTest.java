@@ -73,7 +73,7 @@ class QuestIntegrationTest {
         TestBrowser b = user();
         createHabit(b, createGoal(b, "CAREER"), 50, everyDay());
         String body = b.get("/api/v1/dashboard/today").body();
-        assertThat(body).contains("\"earnedXpToday\":0", "\"totalXp\":0", "\"completedCount\":0", "\"scheduledCount\":1", "\"journey\":null", "\"level\":1");
+        assertThat(body).contains("\"earnedXpToday\":0", "\"totalXp\":0", "\"completedCount\":0", "\"scheduledCount\":1", "\"level\":1");
     }
 
     @Test

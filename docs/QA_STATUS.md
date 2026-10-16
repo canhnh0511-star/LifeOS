@@ -35,3 +35,6 @@
 
 ## Backend B-04
 68 test backend. Hoàn thành/undo quest, ledger và progress chạy trên Postgres thật, kể cả đồng thời và rollback. Chưa kiểm trong Chrome; streak vẫn 0 đến B-05.
+
+## Backend B-05
+89 test backend. Journey, boss (chỉ đọc) và streak chạy trên Postgres thật. Chưa kiểm trong Chrome. Boss/achievement mutation và analytics còn thiếu (B-06 và lớp RPG).

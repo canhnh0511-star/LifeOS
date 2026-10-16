@@ -16,6 +16,8 @@ import org.springframework.data.repository.query.Param;
 public interface QuestInstanceRepository extends JpaRepository<QuestInstance, UUID> {
     List<QuestInstance> findByUserIdAndScheduledDate(UUID userId, LocalDate scheduledDate);
 
+    List<QuestInstance> findByUserIdAndStatus(UUID userId, QuestInstance.Status status);
+
     /** Row lock: concurrent mutations of the same quest serialize here, so the transition and ledger write happen once. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<QuestInstance> findByUserIdAndHabitIdAndScheduledDate(UUID userId, UUID habitId, LocalDate scheduledDate);

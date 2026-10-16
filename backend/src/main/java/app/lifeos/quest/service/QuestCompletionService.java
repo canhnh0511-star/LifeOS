@@ -19,6 +19,7 @@ import app.lifeos.lifecycle.repository.LifecycleEventRepository;
 import app.lifeos.progress.dto.ProgressDto;
 import app.lifeos.progress.service.ProgressService;
 import app.lifeos.quest.dto.QuestMutationDto;
+import app.lifeos.streak.service.StreakService;
 import app.lifeos.quest.model.QuestInstance;
 import app.lifeos.quest.repository.QuestInstanceRepository;
 import java.time.DateTimeException;
@@ -51,9 +52,11 @@ public class QuestCompletionService {
     private final UserRepository users;
     private final ProgressService progress;
     private final UserClock clock;
+    private final StreakService streaks;
 
     public QuestCompletionService(HabitRepository habits, HabitScheduleVersionRepository schedules, GoalRepository goals, LifecycleEventRepository lifecycle,
-                                  QuestInstanceRepository instances, XpTransactionRepository ledger, UserRepository users, ProgressService progress, UserClock clock) {
+                                  QuestInstanceRepository instances, XpTransactionRepository ledger, UserRepository users, ProgressService progress, StreakService streaks, UserClock clock) {
+        this.streaks = streaks;
         this.habits = habits; this.schedules = schedules; this.goals = goals; this.lifecycle = lifecycle;
         this.instances = instances; this.ledger = ledger; this.users = users; this.progress = progress; this.clock = clock;
     }
@@ -108,7 +111,7 @@ public class QuestCompletionService {
         if (delta != 0 || (complete && quest.getStatus() == QuestInstance.Status.COMPLETED)) {
             log.info("quest.{} userId={} habitId={} date={} cycle={} xpDelta={}", complete ? "completed" : "reverted", userId, habit.getId(), day, quest.getCycle(), delta);
         }
-        return new QuestMutationDto(habit.getId().toString(), day, quest.getStatus().name(), delta, p.totalXp(), p.level(), 0, List.of());
+        return new QuestMutationDto(habit.getId().toString(), day, quest.getStatus().name(), delta, p.totalXp(), p.level(), streaks.forHabit(userId, habit.getId(), today), List.of());
     }
 
     private Habit findHabit(UUID userId, String habitId) {

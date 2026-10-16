@@ -14,6 +14,8 @@ import app.lifeos.identity.repository.UserRepository;
 import app.lifeos.ledger.repository.XpTransactionRepository;
 import app.lifeos.lifecycle.model.LifecycleEvent;
 import app.lifeos.lifecycle.repository.LifecycleEventRepository;
+import app.lifeos.journey.dto.JourneyDto;
+import app.lifeos.journey.service.JourneyService;
 import app.lifeos.progress.service.ProgressService;
 import app.lifeos.quest.dto.DailyDashboardDto;
 import app.lifeos.quest.dto.QuestDto;
@@ -22,7 +24,6 @@ import app.lifeos.quest.repository.QuestInstanceRepository;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,20 +43,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class QuestService {
     private static final Logger log = LoggerFactory.getLogger(QuestService.class);
 
-    private final HabitRepository habits;
-    private final HabitScheduleVersionRepository schedules;
-    private final GoalRepository goals;
-    private final LifecycleEventRepository lifecycle;
+    private final ScheduleHistoryLoader loader;
+    private final JourneyService journeys;
     private final QuestInstanceRepository instances;
     private final UserRepository users;
     private final ProgressService progress;
     private final XpTransactionRepository ledger;
     private final UserClock clock;
 
-    public QuestService(HabitRepository habits, HabitScheduleVersionRepository schedules, GoalRepository goals, LifecycleEventRepository lifecycle,
+    public QuestService(ScheduleHistoryLoader loader, JourneyService journeys,
                         QuestInstanceRepository instances, UserRepository users, ProgressService progress, XpTransactionRepository ledger, UserClock clock) {
         this.ledger = ledger;
-        this.habits = habits; this.schedules = schedules; this.goals = goals; this.lifecycle = lifecycle;
+        this.loader = loader; this.journeys = journeys;
         this.instances = instances; this.users = users; this.progress = progress; this.clock = clock;
     }
 
@@ -71,40 +70,25 @@ public class QuestService {
         LocalDate day = date == null ? clock.today(user.getTimezone()) : parse(date, "date");
         List<QuestDto> list = questsOn(user, day);
         int completed = (int) list.stream().filter(q -> "COMPLETED".equals(q.status())).count();
-        return new DailyDashboardDto(day, UserDto.of(user), list, progress.progressFor(userId), completed, list.size(), (int) ledger.sumForDate(userId, day), null);
+        return new DailyDashboardDto(day, UserDto.of(user), list, progress.progressFor(userId), completed, list.size(), (int) ledger.sumForDate(userId, day), journeys.current(userId));
     }
 
     private List<QuestDto> questsOn(User user, LocalDate day) {
         UUID userId = user.getId();
-        List<Habit> mine = habits.findByUserIdOrderByCreatedAtAsc(userId);
-        if (mine.isEmpty()) return List.of();
-        Map<UUID, Goal> goalById = goals.findByUserIdOrderByCreatedAtAsc(userId).stream().collect(Collectors.toMap(Goal::getId, g -> g));
-        Map<UUID, List<HabitScheduleVersion>> versions = schedules.findByHabitIdInOrderByEffectiveFromAsc(mine.stream().map(Habit::getId).toList())
-            .stream().collect(Collectors.groupingBy(HabitScheduleVersion::getHabitId));
-        Map<UUID, List<LifecycleEvent>> events = lifecycle.findByUserId(userId).stream()
-            .sorted(Comparator.comparing(LifecycleEvent::getEffectiveDate).thenComparing(LifecycleEvent::getCreatedAt))
-            .collect(Collectors.groupingBy(LifecycleEvent::getSubjectId));
-
+        ScheduleHistory history = loader.load(userId);
         boolean lived = !day.isAfter(clock.today(user.getTimezone()));
-        List<Habit> due = new ArrayList<>();
-        for (Habit h : mine) {
-            Goal goal = goalById.get(h.getGoalId());
-            if (goal == null) continue;
-            boolean has = QuestRules.hasQuest(h, versions.getOrDefault(h.getId(), List.of()), events.getOrDefault(h.getId(), List.of()),
-                events.getOrDefault(goal.getId(), List.of()), day);
-            if (has) due.add(h);
-        }
+        List<Habit> due = history.habits().stream().filter(h -> history.hasQuest(h, day)).toList();
         if (due.isEmpty()) return List.of();
 
         Map<UUID, QuestInstance> stored = new HashMap<>();
         if (lived) {
             for (Habit h : due) {
-                int created = instances.materialize(UUID.randomUUID(), userId, h.getId(), day, goalById.get(h.getGoalId()).getCategory().name(), h.getXpReward(), clock.now());
+                int created = instances.materialize(UUID.randomUUID(), userId, h.getId(), day, history.goalOf(h).getCategory().name(), h.getXpReward(), clock.now());
                 if (created > 0) log.info("quest.materialized userId={} habitId={} date={}", userId, h.getId(), day);
             }
             instances.findByUserIdAndScheduledDate(userId, day).forEach(q -> stored.put(q.getHabitId(), q));
         }
-        return due.stream().map(h -> toDto(h, goalById.get(h.getGoalId()), stored.get(h.getId()), day)).toList();
+        return due.stream().map(h -> toDto(h, history.goalOf(h), stored.get(h.getId()), day)).toList();
     }
 
     private static QuestDto toDto(Habit h, Goal goal, QuestInstance q, LocalDate day) {
