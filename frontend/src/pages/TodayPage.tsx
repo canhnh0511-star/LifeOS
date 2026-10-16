@@ -1,7 +1,10 @@
+import { useEffect, useState } from 'react';
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Circle, Clock3, Flame, Gift, Lock, PartyPopper, Plus, Zap } from 'lucide-react';
-import type { DailyDashboardDto, QuestDto, QuestObjectiveDto } from '../api/types';
+import type { DailyDashboardDto, DailyRewardDto, QuestDto, QuestObjectiveDto } from '../api/types';
 import { RankBadge } from '../components/RankBadge';
 import { rankForLevel } from '../domain/ranks';
+import { ChestOpening } from '../components/ChestOpening';
+import { isOpened, loadOpened, withOpened } from '../ui/openedChests';
 import { tierName } from '../domain/dailyRewards';
 import { categoryLabel, formatDate, moveDate, titleForLevel } from '../domain/rules';
 import { ObjectiveList, metCount } from '../components/ObjectiveList';
@@ -22,6 +25,8 @@ interface Props {
  * Level, stats, balance and the campaign live in their own tabs.
  */
 export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate, onToggleQuest, onSetObjective, onNewHabit, goTo }: Props) {
+  const [opening, setOpening] = useState<DailyRewardDto | null>(null);
+  const [opened, setOpened] = useState(loadOpened);
   const cur = dashboard?.progress;
   const total = dashboard?.scheduledCount || 0, done = dashboard?.completedCount || 0;
   const dayPct = pct(done, total);
@@ -30,8 +35,14 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   const next = isToday ? dashboard?.quests.find(q => q.status === 'PENDING') : undefined;
   const allDone = isToday && total > 0 && !next;
   const rewards = dashboard?.dailyRewards ?? [];
+  // A chest whose XP was taken back (undo) is forgotten, so earning it again is a fresh reveal.
+  useEffect(() => {
+    const stale = rewards.filter(r => r.state === 'LOCKED' && isOpened(opened, selectedDate, r.tier));
+    if (stale.length) setOpened(prev => stale.reduce((acc, r) => withOpened(acc, selectedDate, r.tier, false), prev));
+  }, [rewards, opened, selectedDate]);
   const nextChest = rewards.find(r => r.state === 'LOCKED');
-  const rewardHint = !rewards.length ? '' : nextChest ? `Còn ${Math.max(1, nextChest.threshold - done)} nhiệm vụ để mở ${tierName(nextChest.tier)}` : 'Đã mở hết rương';
+  const unopened = rewards.some(r => r.state === 'EARNED' && !isOpened(opened, selectedDate, r.tier));
+  const rewardHint = !rewards.length ? '' : (unopened ? 'Chạm vào rương để mở' + (nextChest ? ' · ' : '') : '') + (nextChest ? `Còn ${Math.max(1, nextChest.threshold - done)} nhiệm vụ để mở ${tierName(nextChest.tier)}` : unopened ? '' : 'Đã mở hết rương');
   const NextIcon = next ? categoryIcons[next.category] : null;
   return <>
     <div className="page-header today-banner"><div><h1>{isToday ? <>Hôm <span className="text-gradient">nay</span></> : <span className="text-gradient">Ngày đã chọn</span>}</h1><p>{dateText(selectedDate)} · {total === 0 ? 'chưa có nhiệm vụ nào' : `${done}/${total} nhiệm vụ đã xong`}</p></div><button className="btn btn-outlined" onClick={onNewHabit}><Plus size={17}/> Thói quen mới</button></div>
@@ -45,9 +56,14 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
 
       {rewards.length > 0 && <section className="daily-rewards" aria-label={`Phần thưởng ${isToday ? 'hôm nay' : 'ngày này'}`}>
         <div className="daily-rewards-head"><strong>Phần thưởng {isToday ? 'hôm nay' : 'ngày này'}</strong><span>{rewardHint}</span></div>
-        <ul>{rewards.map(r => <li key={r.tier} className={`chest chest-${r.tier.toLowerCase()} ${r.state === 'EARNED' ? 'is-open' : ''}`} aria-label={`${tierName(r.tier)}: ${r.state === 'EARNED' ? 'đã mở' : `mở khi xong ${r.threshold} nhiệm vụ`}, +${r.xp} XP`}>
-          {r.state === 'EARNED' ? <Gift size={22}/> : <Lock size={20}/>}<strong>{tierName(r.tier)}</strong><small>{r.state === 'EARNED' ? `+${r.xp} XP` : `${r.threshold} nhiệm vụ · +${r.xp} XP`}</small>
-        </li>)}</ul>
+        <ul>{rewards.map(r => {
+          const ready = r.state === 'EARNED' && !isOpened(opened, selectedDate, r.tier);
+          const label = `${tierName(r.tier)}: ${r.state === 'LOCKED' ? `mở khi xong ${r.threshold} nhiệm vụ` : ready ? 'chạm để mở' : 'đã mở'}, +${r.xp} XP`;
+          const body = <>{r.state === 'EARNED' ? <Gift size={22}/> : <Lock size={20}/>}<strong>{tierName(r.tier)}</strong><small>{r.state === 'LOCKED' ? `${r.threshold} nhiệm vụ · +${r.xp} XP` : ready ? 'Chạm để mở!' : `+${r.xp} XP`}</small></>;
+          return <li key={r.tier}>{r.state === 'EARNED'
+            ? <button className={`chest chest-${r.tier.toLowerCase()} is-open ${ready ? 'is-ready' : ''}`} aria-label={label} onClick={() => setOpening(r)}>{body}</button>
+            : <div className={`chest chest-${r.tier.toLowerCase()}`} aria-label={label} role="group">{body}</div>}</li>;
+        })}</ul>
       </section>}
 
       {next && NextIcon && <article className="next-up" aria-label="Việc tiếp theo">
@@ -88,5 +104,6 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
           })}</div>
       </article>
     </div>
+    {opening && <ChestOpening reward={opening} onRevealed={() => setOpened(prev => withOpened(prev, selectedDate, opening.tier, true))} onClose={() => setOpening(null)}/>}
   </>;
 }
