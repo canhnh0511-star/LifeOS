@@ -110,6 +110,9 @@ Chỉ có `HTTP_ERROR`, `NETWORK_ERROR`, `REQUEST_TIMEOUT` (status 0) là mã ph
 ### Nhiệm vụ có danh sách mục tiêu (B-17)
 Habit có thể có `objectives[]` (`title`, `target` 1..10000, `unit` tự do ≤ 20 ký tự, `step` 1..target). `target 1` không đơn vị là mục tick. Quest chụp danh sách này khi được tạo (giống `xpReward`); sửa danh sách chỉ áp dụng từ ngày mai. `PUT /quests/{habitId}/dates/{date}/objectives/{objectiveId}` với `{value}` đặt tiến độ tuyệt đối (idempotent); khi mọi mục `value >= target` quest tự hoàn thành (một `QUEST_COMPLETE`, XP không đổi) và tự hoàn tác khi một mục tụt dưới mục tiêu. `PUT/DELETE .../completion` vẫn chạy: đặt mọi mục bằng mục tiêu / về 0. Habit không có mục giữ nguyên một nút tick.
 
+### Rương hằng ngày và chuỗi ngày (B-19, ADR-033)
+`GET /dashboard/today` (cả `?date=`) trả thêm `dailyRewards[]` (`tier` WOOD/SILVER/GOLD, `threshold` = số nhiệm vụ cần xong, `xp` 10/20/40, `state` LOCKED/EARNED; rỗng nếu ngày không có nhiệm vụ) và `dayStreak`. Mốc = 50%/80%/100% số nhiệm vụ đã lên lịch, làm tròn lên. Hoàn thành/hoàn tác nhiệm vụ cấp hoặc thu hồi rương trong cùng transaction; `QuestMutation.effects` có `DAILY_REWARD_GRANTED/REVOKED` (`code` = tier) và XP đã nằm trong `xpAwarded`.
+
 ### Pause/resume và hiệu lực
 `PATCH /goals/{id}` và `PATCH /habits/{id}` đổi `status` có hiệu lực từ **ngày local kế tiếp**. Response trả `status` mới được yêu cầu. Các ngày đã qua và ngày hôm nay không bị thay đổi: quest, analytics, journey và streak của chúng giữ nguyên. Ngày bị pause không phải session bắt buộc nên không làm đứt streak.
 

@@ -16,7 +16,7 @@ export interface HabitDto { id: string; goalId: string; title: string; targetMin
 export interface QuestDto { habitId: string; goalId: string; goalTitle: string; title: string; targetMinutes: number; xpReward: number; category: GoalCategory; date: string; status: QuestStatus; completedAt: string | null; objectives: QuestObjectiveDto[]; }
 export interface AreaStatDto { category: GoalCategory; xp: number; level: number; levelStartXp: number; nextLevelXp: number; }
 export interface ProgressDto { totalXp: number; level: number; levelStartXp: number; nextLevelXp: number; currentStreak: number; longestStreak: number; areas: AreaStatDto[]; }
-export interface DailyDashboardDto { date: string; user: UserDto; quests: QuestDto[]; progress: ProgressDto; completedCount: number; scheduledCount: number; earnedXpToday: number; journey: JourneyDto | null; }
+export interface DailyDashboardDto { date: string; user: UserDto; quests: QuestDto[]; progress: ProgressDto; completedCount: number; scheduledCount: number; earnedXpToday: number; journey: JourneyDto | null; dailyRewards: DailyRewardDto[]; dayStreak: number; }
 export type BossStatus = 'LOCKED' | 'AVAILABLE' | 'DEFEATED';
 export type BossTier = 1 | 2 | 3 | 4 | 5;
 export interface BossDto { id: string; code: string; name: string; category: GoalCategory; targetMinutes: number; xpReward: number; tier: BossTier; requiredLevel: number; currentAreaLevel: number; artKey: string; bossDate: string; status: BossStatus; defeatedDate: string | null; defeatedAt: string | null; }
@@ -26,7 +26,10 @@ export interface ChapterDto { index: number; title: string; startDate: string; e
 export interface JourneyDto { id: string; title: string; startDate: string; durationDays: number; elapsedDays: number; totalScheduledToDate: number; completedToDate: number; status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED'; chapters: ChapterDto[]; }
 export type AchievementCode = 'STREAK_7' | 'BALANCED' | 'COMEBACK';
 export interface AchievementDto { code: AchievementCode; name: string; description: string; xpReward: number; status: 'LOCKED' | 'EARNED'; earnedAt: string | null; }
-export type RewardEffectType = 'BOSS_REVERTED' | 'ACHIEVEMENT_GRANTED' | 'ACHIEVEMENT_REVOKED';
+export type RewardEffectType = 'BOSS_REVERTED' | 'ACHIEVEMENT_GRANTED' | 'ACHIEVEMENT_REVOKED' | 'DAILY_REWARD_GRANTED' | 'DAILY_REWARD_REVOKED';
+export type DailyRewardTier = 'WOOD' | 'SILVER' | 'GOLD';
+/** A daily chest; `threshold` is the number of completed quests that opens it. Present only when the day has quests. */
+export interface DailyRewardDto { tier: DailyRewardTier; threshold: number; xp: number; state: 'LOCKED' | 'EARNED'; }
 export interface RewardEffectDto { type: RewardEffectType; code: string; xpDelta: number; }
 export interface DayStatDto { date: string; scheduled: number; completed: number; xpEarned: number; }
 export interface CategoryStatDto { category: GoalCategory; scheduled: number; completed: number; }

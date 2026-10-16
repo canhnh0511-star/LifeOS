@@ -11,7 +11,7 @@ afterEach(() => { cleanup(); window.location.hash = ''; });
 const dashboard: DailyDashboardDto = {
   date: '2026-10-15', user: { id: 'u', displayName: 'C', email: 'c@x.co', timezone: 'Asia/Ho_Chi_Minh' }, quests: [],
   progress: { totalXp: 1000, level: 3, levelStartXp: 900, nextLevelXp: 1600, currentStreak: 4, longestStreak: 9, areas: ALL_CATEGORIES.map(category => ({ category, xp: 200, level: 1, levelStartXp: 0, nextLevelXp: 400 })) },
-  completedCount: 0, scheduledCount: 3, earnedXpToday: 77, journey: null
+  completedCount: 0, scheduledCount: 3, earnedXpToday: 77, journey: null, dailyRewards: [], dayStreak: 0
 };
 
 describe('CharacterPage and the Nhân vật tab', () => {

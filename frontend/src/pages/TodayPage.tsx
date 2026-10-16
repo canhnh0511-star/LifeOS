@@ -1,5 +1,6 @@
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Circle, Clock3, Flame, PartyPopper, Plus, Zap } from 'lucide-react';
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Circle, Clock3, Flame, Gift, Lock, PartyPopper, Plus, Zap } from 'lucide-react';
 import type { DailyDashboardDto, QuestDto, QuestObjectiveDto } from '../api/types';
+import { tierName } from '../domain/dailyRewards';
 import { categoryLabel, formatDate, moveDate, titleForLevel } from '../domain/rules';
 import { ObjectiveList, metCount } from '../components/ObjectiveList';
 import { EmptyState, IconBubble, ProgressBar } from '../components/primitives';
@@ -26,16 +27,26 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   const isToday = selectedDate === today;
   const next = isToday ? dashboard?.quests.find(q => q.status === 'PENDING') : undefined;
   const allDone = isToday && total > 0 && !next;
+  const rewards = dashboard?.dailyRewards ?? [];
+  const nextChest = rewards.find(r => r.state === 'LOCKED');
+  const rewardHint = !rewards.length ? '' : nextChest ? `Còn ${Math.max(1, nextChest.threshold - done)} nhiệm vụ để mở ${tierName(nextChest.tier)}` : 'Đã mở hết rương';
   const NextIcon = next ? categoryIcons[next.category] : null;
   return <>
     <div className="page-header today-banner"><div><h1>{isToday ? <>Hôm <span className="text-gradient">nay</span></> : <span className="text-gradient">Ngày đã chọn</span>}</h1><p>{dateText(selectedDate)} · {total === 0 ? 'chưa có nhiệm vụ nào' : `${done}/${total} nhiệm vụ đã xong`}</p></div><button className="btn btn-outlined" onClick={onNewHabit}><Plus size={17}/> Thói quen mới</button></div>
     <div className="today-simple">
       <div className="today-summary" aria-label="Tóm tắt hôm nay">
         <div className="today-progress"><div className="today-progress-top"><span>Tiến độ trong ngày</span><strong>{done}/{total}</strong></div><ProgressBar value={dayPct} variant="green" size="slim"/></div>
-        <div className="today-chip" title="Chuỗi dài nhất hiện tại của một thói quen"><Flame size={18}/><strong>{cur?.currentStreak || 0}</strong><span>phiên liền</span></div>
+        <div className="today-chip" title="Số ngày liên tiếp hoàn thành ít nhất một nửa nhiệm vụ trong ngày"><Flame size={18}/><strong>{dashboard?.dayStreak || 0}</strong><span>ngày liên tục</span></div>
         <div className="today-chip"><Zap size={18}/><strong>+{dashboard?.earnedXpToday || 0}</strong><span>{isToday ? 'XP hôm nay' : 'XP ngày này'}</span></div>
         <button className="today-chip today-level" onClick={() => goTo('character')} aria-label={`Level ${cur?.level || 1}, xem nhân vật`}><span className="level-line"><strong>Lv {cur?.level || 1}</strong><span>{titleForLevel(cur?.level || 1)}</span></span><ProgressBar value={levelPct} size="slim"/><small>{number(cur?.totalXp || 0)} / {number(cur?.nextLevelXp || 0)} XP</small></button>
       </div>
+
+      {rewards.length > 0 && <section className="daily-rewards" aria-label={`Phần thưởng ${isToday ? 'hôm nay' : 'ngày này'}`}>
+        <div className="daily-rewards-head"><strong>Phần thưởng {isToday ? 'hôm nay' : 'ngày này'}</strong><span>{rewardHint}</span></div>
+        <ul>{rewards.map(r => <li key={r.tier} className={`chest chest-${r.tier.toLowerCase()} ${r.state === 'EARNED' ? 'is-open' : ''}`} aria-label={`${tierName(r.tier)}: ${r.state === 'EARNED' ? 'đã mở' : `mở khi xong ${r.threshold} nhiệm vụ`}, +${r.xp} XP`}>
+          {r.state === 'EARNED' ? <Gift size={22}/> : <Lock size={20}/>}<strong>{tierName(r.tier)}</strong><small>{r.state === 'EARNED' ? `+${r.xp} XP` : `${r.threshold} nhiệm vụ · +${r.xp} XP`}</small>
+        </li>)}</ul>
+      </section>}
 
       {next && NextIcon && <article className="next-up" aria-label="Việc tiếp theo">
         <div className="next-up-label">VIỆC TIẾP THEO</div>

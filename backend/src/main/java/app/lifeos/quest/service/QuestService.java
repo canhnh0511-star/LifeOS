@@ -56,12 +56,13 @@ public class QuestService {
     private final XpTransactionRepository ledger;
     private final UserClock clock;
     private final QuestMaterializer materializer;
+    private final app.lifeos.daily.DailyRewardService daily;
     private final QuestObjectiveRepository questObjectives;
     private final HabitObjectiveRepository habitObjectives;
 
-    public QuestService(QuestMaterializer materializer, QuestObjectiveRepository questObjectives, HabitObjectiveRepository habitObjectives, ScheduleHistoryLoader loader, JourneyService journeys,
+    public QuestService(app.lifeos.daily.DailyRewardService daily, QuestMaterializer materializer, QuestObjectiveRepository questObjectives, HabitObjectiveRepository habitObjectives, ScheduleHistoryLoader loader, JourneyService journeys,
                         QuestInstanceRepository instances, UserRepository users, ProgressService progress, XpTransactionRepository ledger, UserClock clock) {
-        this.materializer = materializer; this.questObjectives = questObjectives; this.habitObjectives = habitObjectives;
+        this.daily = daily; this.materializer = materializer; this.questObjectives = questObjectives; this.habitObjectives = habitObjectives;
         this.ledger = ledger;
         this.loader = loader; this.journeys = journeys;
         this.instances = instances; this.users = users; this.progress = progress; this.clock = clock;
@@ -76,10 +77,12 @@ public class QuestService {
     @Transactional
     public DailyDashboardDto dashboard(UUID userId, String date) {
         User user = users.findById(userId).orElseThrow();
-        LocalDate day = date == null ? clock.today(user.getTimezone()) : parse(date, "date");
+        LocalDate today = clock.today(user.getTimezone());
+        LocalDate day = date == null ? today : parse(date, "date");
         List<QuestDto> list = questsOn(user, day);
         int completed = (int) list.stream().filter(q -> "COMPLETED".equals(q.status())).count();
-        return new DailyDashboardDto(day, UserDto.of(user), list, progress.progressFor(userId), completed, list.size(), (int) ledger.sumForDate(userId, day), journeys.current(userId));
+        return new DailyDashboardDto(day, UserDto.of(user), list, progress.progressFor(userId), completed, list.size(), (int) ledger.sumForDate(userId, day), journeys.current(userId),
+            daily.rewards(userId, day), daily.dayStreak(userId, today));
     }
 
     /**

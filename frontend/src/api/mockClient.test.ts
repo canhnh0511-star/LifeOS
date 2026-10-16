@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { exportDemoData, mockClient, resetDemoData } from './mockClient';
+import { exportDemoData, mockClient, resetDemoData, setDailyRewardsEnabled } from './mockClient';
 import { ApiError } from './errors';
 import type { Weekday } from './types';
 import { levelProgress, moveDate, todayInTimezone } from '../domain/rules';
@@ -15,7 +15,7 @@ Object.defineProperty(globalThis, 'localStorage', {
     clear: () => { store.clear(); }
   }
 });
-beforeEach(() => { store.clear(); resetDemoData(); });
+beforeEach(() => { store.clear(); resetDemoData(); setDailyRewardsEnabled(false); });
 afterEach(() => { vi.useRealTimers(); });
 
 /** 2026-10-14 is a Wednesday; 05:00Z is noon in Asia/Ho_Chi_Minh. */
@@ -604,5 +604,43 @@ describe('quest checklists (B-17)', () => {
     store.set('life-os.mock.v1', JSON.stringify(saved));
     freezeAt(D0);
     expect((await mockClient.getHabits()).every(h => Array.isArray(h.objectives))).toBe(true);
+  });
+
+  describe('daily reward chests and the day streak', () => {
+    beforeEach(() => { setDailyRewardsEnabled(true); });
+    const states = async (date: string) => (await mockClient.getDashboard(date)).dailyRewards.map(r => `${r.tier}:${r.state}`);
+    it('opens each chest once at its rounded-up threshold, pays per area, and revokes on undo', async () => {
+      freezeAt(D0);
+      const first = await mockClient.getDashboard(D0);
+      const quests = first.quests; const n = quests.length;
+      expect(n).toBeGreaterThanOrEqual(2);
+      expect(first.dailyRewards.map(r => r.threshold)).toEqual([Math.ceil(n * 0.5), Math.ceil(n * 0.8), n]);
+      expect((await states(D0)).every(s => s.endsWith('LOCKED'))).toBe(true);
+      for (const q of quests) await mockClient.undoQuest(q.habitId, D0);
+      let granted = 0;
+      for (const q of quests) { const r = await mockClient.completeQuest(q.habitId, D0); granted += r.effects.filter(e => e.type === 'DAILY_REWARD_GRANTED').length; }
+      expect(granted).toBe(3);
+      expect((await states(D0)).every(s => s.endsWith('EARNED'))).toBe(true);
+      const grants = ledger().filter(e => e.type === 'DAILY_REWARD_GRANT');
+      expect(grants).toHaveLength(15);
+      expect(new Set(grants.filter(g => g.amount === 8).map(g => g.category)).size).toBe(5);
+      expect((await mockClient.completeQuest(quests[0].habitId, D0)).xpAwarded).toBe(0);
+      const undo = await mockClient.undoQuest(quests[0].habitId, D0);
+      expect(undo.effects.some(e => e.type === 'DAILY_REWARD_REVOKED')).toBe(true);
+      const dash = await mockClient.getDashboard(D0);
+      expect(dash.progress.totalXp).toBe(ledger().reduce((a, e) => a + e.amount, 0));
+      expect(dash.progress.areas.reduce((a, x) => a + x.xp, 0)).toBe(dash.progress.totalXp);
+    });
+    it('counts days at half the scheduled quests, skips empty days and stops at a missed day', async () => {
+      freezeAt(D0);
+      const quests = (await mockClient.getDashboard(D0)).quests;
+      for (const q of quests) await mockClient.undoQuest(q.habitId, D0);
+      const base = (await mockClient.getDashboard(D0)).dayStreak;
+      const half = Math.ceil(quests.length / 2);
+      for (const q of quests.slice(0, half)) await mockClient.completeQuest(q.habitId, D0);
+      expect((await mockClient.getDashboard(D0)).dayStreak).toBe(base + 1);
+      for (const q of quests.slice(0, half)) await mockClient.undoQuest(q.habitId, D0);
+      expect((await mockClient.getDashboard(D0)).dayStreak).toBe(base);
+    });
   });
 });

@@ -1,7 +1,8 @@
 import type { LifeOsApi } from './client';
-import type { AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday, HabitObjectiveDto, ObjectiveInput, QuestObjectiveDto } from './types';
+import type { AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, DailyRewardDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday, HabitObjectiveDto, ObjectiveInput, QuestObjectiveDto } from './types';
 import { ApiError, ErrorCode } from './errors';
 import { ALL_CATEGORIES } from '../domain/insights';
+import { DAILY_TIERS, rewardThreshold } from '../domain/dailyRewards';
 import { ACHIEVEMENT_CATALOG, STREAK_TARGET, balancedAchieved, comebackAchieved, spreadAcrossAreas } from '../domain/achievements';
 import { BOSS_CATALOG, CHAPTERS } from '../domain/bosses';
 import { categoryLabel, diffDays, isScheduled, levelProgress, longestStreakForHabit, moveDate, streakForHabit, todayInTimezone } from '../domain/rules';
@@ -16,7 +17,7 @@ type LifecycleEvent = { effectiveDate: string; status: RecordStatus };
 /** Mutable state of one materialized quest (habit + local date). `cycle` counts completions, as in docs/DATA_MODEL.md. */
 type QuestState = { habitId: string; date: string; status: 'PENDING' | 'COMPLETED'; cycle: number; completedAt: string | null; /** the checklist as it was when the quest was created, with progress */ objectives?: QuestObjectiveDto[] };
 /** Append-only ledger entry. Never edited or removed. `date` is the quest's local date. */
-type XpEvent = { id: string; habitId?: string; bossId?: string; achievementCode?: AchievementCode; date: string; category: GoalCategory; type: 'QUEST_COMPLETE' | 'QUEST_REVERT' | 'BOSS_COMPLETE' | 'BOSS_REVERT' | 'ACHIEVEMENT_GRANT' | 'ACHIEVEMENT_REVOKE'; cycle: number; amount: number; createdAt: string };
+type XpEvent = { id: string; habitId?: string; bossId?: string; achievementCode?: AchievementCode; dailyKey?: string; date: string; category: GoalCategory; type: 'QUEST_COMPLETE' | 'QUEST_REVERT' | 'BOSS_COMPLETE' | 'BOSS_REVERT' | 'ACHIEVEMENT_GRANT' | 'ACHIEVEMENT_REVOKE' | 'DAILY_REWARD_GRANT' | 'DAILY_REWARD_REVOKE'; cycle: number; amount: number; createdAt: string };
 /** Mutable state of one boss. `cycle` counts defeats; `defeatedDate` is the local date of the current defeat. */
 type BossState = { bossId: string; status: 'AVAILABLE' | 'DEFEATED'; cycle: number; defeatedDate: string | null; defeatedAt: string | null };
 /** Mutable state of one achievement. `cycle` counts grants; `earnedDate` is the local date of the current grant. */
@@ -203,6 +204,39 @@ function quests(db:Db,date:string):QuestDto[]{
     return {habitId:h.id,goalId:h.goalId,goalTitle:goal?.title??'',title:h.title,targetMinutes:h.targetMinutes,xpReward:rewardFor(db,h,date),category:goal?.category??'CAREER',date,status:state?.status??'PENDING',completedAt:state?.completedAt??null,objectives:(state?state.objectives??[]:h.objectives.map(o=>({...o,value:0}))).map(o=>({...o}))};
   });
 }
+// ---------- daily rewards (chests) and the day streak ----------
+function dayCounts(db:Db,date:string){const due=db.habits.filter(h=>isQuestOn(db,h,date));return {scheduled:due.length,completed:due.filter(h=>stateOf(db,h.id,date)?.status==='COMPLETED').length};}
+function chestEvents(db:Db,date:string,tier:string,type:'DAILY_REWARD_GRANT'|'DAILY_REWARD_REVOKE'){return db.xpTransactions.filter(e=>e.dailyKey===`${date}:${tier}`&&e.type===type&&e.category===ALL_CATEGORIES[0]).length;}
+function chestGranted(db:Db,date:string,tier:string){return chestEvents(db,date,tier,'DAILY_REWARD_GRANT')>chestEvents(db,date,tier,'DAILY_REWARD_REVOKE');}
+/** Grants chests now reached and revokes chests no longer reached for one day; every change is a ledger event per area. */
+let dailyRewardsEnabled=true;
+/** Test seam: suites about other rules switch the chests off to keep exact XP totals; the app always runs with them on. */
+export function setDailyRewardsEnabled(on:boolean){dailyRewardsEnabled=on;}
+function reconcileDaily(db:Db,date:string):RewardEffectDto[]{
+  if(!dailyRewardsEnabled)return [];
+  const {scheduled,completed}=dayCounts(db,date);const effects:RewardEffectDto[]=[];
+  for(const t of DAILY_TIERS){
+    const want=scheduled>0&&completed>=rewardThreshold(scheduled,t.percent);const have=chestGranted(db,date,t.tier);
+    if(want===have)continue;
+    const cycle=chestEvents(db,date,t.tier,'DAILY_REWARD_GRANT')+(want?1:0);const each=t.xp/ALL_CATEGORIES.length;
+    for(const category of ALL_CATEGORIES)db.xpTransactions.push({id:id(),dailyKey:`${date}:${t.tier}`,date,category,type:want?'DAILY_REWARD_GRANT':'DAILY_REWARD_REVOKE',cycle,amount:want?each:-each,createdAt:now()});
+    effects.push({type:want?'DAILY_REWARD_GRANTED':'DAILY_REWARD_REVOKED',code:t.tier,xpDelta:want?t.xp:-t.xp});
+  }
+  return effects;
+}
+function dailyRewards(db:Db,date:string):DailyRewardDto[]{
+  const {scheduled}=dayCounts(db,date);if(scheduled===0)return [];
+  return DAILY_TIERS.map(t=>({tier:t.tier,threshold:rewardThreshold(scheduled,t.percent),xp:t.xp,state:chestGranted(db,date,t.tier)?'EARNED':'LOCKED'}));
+}
+/** Consecutive days ending today with >= 50% of the scheduled quests done; empty days are skipped, a still-short today does not break it. */
+function dayStreak(db:Db,today:string):number{
+  const first=db.habits.map(h=>h.startDate).sort()[0]??today;let streak=0;
+  for(let d=today;d>=first;d=moveDate(d,-1)){
+    const {scheduled,completed}=dayCounts(db,d);if(scheduled===0)continue;
+    if(completed>=rewardThreshold(scheduled,DAILY_TIERS[0].percent))streak++;else if(d!==today)break;
+  }
+  return streak;
+}
 // ---------- achievements ----------
 function sessionsOf(db:Db,habit:HabitDto,today:string):boolean[]{
   const done=completedDates(db,habit.id);const sessions:boolean[]=[];
@@ -350,7 +384,7 @@ async function mutateQuest(habitId:string,date:string,complete:boolean|null,obje
     xpAwarded=-(awarded?.amount??0);
     if(awarded)db.xpTransactions.push({id:id(),habitId,date,category,type:'QUEST_REVERT',cycle:state.cycle,amount:xpAwarded,createdAt:now()});
   }
-  const effects=changed?reconcileAchievements(db):[];xpAwarded+=effects.reduce((a,e)=>a+e.xpDelta,0);
+  const effects=changed?[...reconcileDaily(db,date),...reconcileAchievements(db)]:[];xpAwarded+=effects.reduce((a,e)=>a+e.xpDelta,0);
   save(db);const p=progress(db);
   return {habitId,date,status:state.status,xpAwarded,effects,totalXp:p.totalXp,level:p.level,streak:streakForHabit(habit,completedDates(db,habitId),todayInTimezone(),d=>isQuestOn(db,habit,d)),objectives:checklist.map(o=>({...o}))};
 }
@@ -387,7 +421,7 @@ export const mockClient:LifeOsApi={
   async logout(){await delay();},
   async getDashboard(date=todayInTimezone()):Promise<DailyDashboardDto>{
     await delay();assertLocalDate(date);const db=load();const list=quests(db,date);
-    return {date,user,quests:list,progress:progress(db),completedCount:list.filter(q=>q.status==='COMPLETED').length,scheduledCount:list.length,earnedXpToday:db.xpTransactions.filter(e=>e.date===date).reduce((a,e)=>a+e.amount,0),journey:journey(db)};
+    return {date,user,quests:list,progress:progress(db),completedCount:list.filter(q=>q.status==='COMPLETED').length,scheduledCount:list.length,earnedXpToday:db.xpTransactions.filter(e=>e.date===date).reduce((a,e)=>a+e.amount,0),journey:journey(db),dailyRewards:dailyRewards(db,date),dayStreak:dayStreak(db,todayInTimezone())};
   },
   async getGoals(){await delay();return load().goals;},
   async createGoal(input:CreateGoalRequest){

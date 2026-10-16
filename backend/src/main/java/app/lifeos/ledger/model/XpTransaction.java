@@ -15,7 +15,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "xp_transactions")
 public class XpTransaction {
-    public enum EventType { QUEST_COMPLETE, QUEST_REVERT, BOSS_COMPLETE, BOSS_REVERT, ACHIEVEMENT_GRANT, ACHIEVEMENT_REVOKE }
+    public enum EventType { QUEST_COMPLETE, QUEST_REVERT, BOSS_COMPLETE, BOSS_REVERT, ACHIEVEMENT_GRANT, ACHIEVEMENT_REVOKE, DAILY_REWARD_GRANT, DAILY_REWARD_REVOKE }
 
     @Id private UUID id;
     @Column(name = "user_id", nullable = false, updatable = false) private UUID userId;
@@ -46,6 +46,13 @@ public class XpTransaction {
     public static XpTransaction achievement(UUID userId, UUID stateId, EventType eventType, int cycle, Category category, int amount, LocalDate date, Instant createdAt) {
         XpTransaction t = new XpTransaction(userId, stateId, eventType, cycle, category, amount, date, createdAt);
         t.sourceType = "ACHIEVEMENT";
+        return t;
+    }
+
+    /** A daily reward chest event; `sourceId` is derived from (user, date, tier). */
+    public static XpTransaction daily(UUID userId, UUID sourceId, EventType eventType, int cycle, Category category, int amount, LocalDate date, Instant createdAt) {
+        XpTransaction t = new XpTransaction(userId, sourceId, eventType, cycle, category, amount, date, createdAt);
+        t.sourceType = "DAILY";
         return t;
     }
 

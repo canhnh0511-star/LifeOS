@@ -473,7 +473,8 @@ components:
       type: object
       required: [type, code, xpDelta]
       properties:
-        type: {type: string, enum: [BOSS_REVERTED, ACHIEVEMENT_GRANTED, ACHIEVEMENT_REVOKED]}
+        type: {type: string, enum: [BOSS_REVERTED, ACHIEVEMENT_GRANTED, ACHIEVEMENT_REVOKED, DAILY_REWARD_GRANTED, DAILY_REWARD_REVOKED]}
+        # For DAILY_REWARD_*, `code` is the chest tier (WOOD, SILVER, GOLD).
         code: {type: string}
         xpDelta: {type: integer}
     BossMutation:
@@ -488,7 +489,7 @@ components:
         effects: {type: array, items: {$ref: '#/components/schemas/RewardEffect'}}
     DailyDashboard:
       type: object
-      required: [date, user, quests, progress, completedCount, scheduledCount, earnedXpToday, journey]
+      required: [date, user, quests, progress, completedCount, scheduledCount, earnedXpToday, journey, dailyRewards, dayStreak]
       properties:
         date: {$ref: '#/components/schemas/LocalDate'}
         user: {$ref: '#/components/schemas/User'}
@@ -498,6 +499,19 @@ components:
         scheduledCount: {type: integer, minimum: 0}
         earnedXpToday: {type: integer}
         journey: {oneOf: [{$ref: '#/components/schemas/Journey'}, {type: 'null'}]}
+        dailyRewards:
+          type: array
+          description: Chests of the requested day with their real state; empty when the day has no quests. `threshold` = completed quests needed (50%/80%/100% of the scheduled, rounded up).
+          items: {$ref: '#/components/schemas/DailyReward'}
+        dayStreak: {type: integer, minimum: 0, description: 'Consecutive days ending today with at least 50% of the scheduled quests completed; days without quests are skipped, a still-short today does not break it.'}
+    DailyReward:
+      type: object
+      required: [tier, threshold, xp, state]
+      properties:
+        tier: {type: string, enum: [WOOD, SILVER, GOLD]}
+        threshold: {type: integer, minimum: 1}
+        xp: {type: integer, enum: [10, 20, 40]}
+        state: {type: string, enum: [LOCKED, EARNED]}
     QuestMutation:
       type: object
       required: [habitId, date, status, xpAwarded, totalXp, level, streak, effects, objectives]

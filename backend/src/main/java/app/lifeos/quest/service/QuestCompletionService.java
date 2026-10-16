@@ -2,6 +2,7 @@ package app.lifeos.quest.service;
 
 import app.lifeos.achievement.dto.RewardEffectDto;
 import app.lifeos.achievement.service.AchievementService;
+import app.lifeos.daily.DailyRewardService;
 import app.lifeos.common.error.ApiException;
 import app.lifeos.common.error.FieldErrors;
 import app.lifeos.common.time.UserClock;
@@ -30,6 +31,7 @@ import app.lifeos.quest.repository.QuestInstanceRepository;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -60,11 +62,13 @@ public class QuestCompletionService {
     private final UserClock clock;
     private final StreakService streaks;
     private final AchievementService achievements;
+    private final DailyRewardService daily;
     private final QuestMaterializer materializer;
     private final QuestObjectiveRepository questObjectives;
 
     public QuestCompletionService(QuestMaterializer materializer, QuestObjectiveRepository questObjectives, HabitRepository habits, HabitScheduleVersionRepository schedules, GoalRepository goals, LifecycleEventRepository lifecycle,
-                                  QuestInstanceRepository instances, XpTransactionRepository ledger, UserRepository users, ProgressService progress, StreakService streaks, AchievementService achievements, UserClock clock) {
+                                  QuestInstanceRepository instances, XpTransactionRepository ledger, UserRepository users, ProgressService progress, StreakService streaks, AchievementService achievements, DailyRewardService daily, UserClock clock) {
+        this.daily = daily;
         this.materializer = materializer; this.questObjectives = questObjectives;
         this.streaks = streaks; this.achievements = achievements;
         this.habits = habits; this.schedules = schedules; this.goals = goals; this.lifecycle = lifecycle;
@@ -148,7 +152,8 @@ public class QuestCompletionService {
         }
         instances.flush();
         // Only a real transition re-evaluates achievements; an idempotent repeat changes nothing and awards nothing.
-        List<RewardEffectDto> effects = changed ? achievements.reconcile(userId) : List.of();
+        List<RewardEffectDto> effects = new ArrayList<>();
+        if (changed) { effects.addAll(daily.reconcile(userId, day)); effects.addAll(achievements.reconcile(userId)); }
         delta += effects.stream().mapToInt(RewardEffectDto::xpDelta).sum();
         ProgressDto p = progress.progressFor(userId);
         if (p.totalXp() < 0) throw new IllegalStateException("negative XP total"); // rolls the whole mutation back

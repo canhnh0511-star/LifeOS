@@ -165,3 +165,13 @@
 .quest-card.is-done,.quest-row.is-done{animation:quest-pop .5s ease-out}
 @media(prefers-reduced-motion:reduce){.quest-card.is-done,.quest-row.is-done{animation:none}}
 @media(max-width:700px){.today-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.today-level,.today-progress{grid-column:1 / -1}}
+/* B-19: daily reward chests */
+.daily-rewards{border:1px solid #3d3a2c;border-radius:14px;padding:14px 16px;background:linear-gradient(160deg,#1f1d17,#161d27)}
+.daily-rewards-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;margin-bottom:12px;font-size:12px;color:#a89c78}.daily-rewards-head strong{color:#f1e2ae;font-size:14px}
+.daily-rewards ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.chest{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px;border:1px dashed #4a4a44;border-radius:12px;background:#12181f;color:#7f8b99;text-align:center}.chest strong{font-size:12px;color:#aab6c4}.chest small{font-size:10px}
+.chest.is-open{border-style:solid;animation:chest-open .6s ease-out}
+.chest-wood.is-open{border-color:#b07a43;color:#e1ab6c;background:#2a2118}.chest-silver.is-open{border-color:#9fb1c4;color:#d4e1ee;background:#1f2731}.chest-gold.is-open{border-color:#e7c46a;color:#f6dc8c;background:#2c2615}
+.chest.is-open strong{color:inherit}
+@keyframes chest-open{0%{transform:scale(.92)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.chest.is-open{animation:none}}

@@ -28,4 +28,8 @@ public interface XpTransactionRepository extends JpaRepository<XpTransaction, UU
 
     @Query("select x.amount from XpTransaction x where x.sourceId = :bossStateId and x.cycle = :cycle and x.eventType = app.lifeos.ledger.model.XpTransaction.EventType.BOSS_COMPLETE")
     Optional<Integer> bossCompleteAmount(@Param("bossStateId") UUID bossStateId, @Param("cycle") int cycle);
+
+    /** Events of one category for a source, used to read a daily chest's state (granted = grants > revokes) and next cycle. */
+    @Query("select count(x) from XpTransaction x where x.sourceId = :sourceId and x.eventType = :eventType and x.category = :category")
+    long countEvents(@Param("sourceId") UUID sourceId, @Param("eventType") XpTransaction.EventType eventType, @Param("category") app.lifeos.goal.model.Category category);
 }

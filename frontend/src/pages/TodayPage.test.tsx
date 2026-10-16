@@ -11,7 +11,7 @@ const quest = (id: string, status: QuestDto['status'], title = id): QuestDto => 
 const dashboard = (quests: QuestDto[]): DailyDashboardDto => ({
   date: '2026-10-16', user: { id: 'u', displayName: 'C', email: 'c@x.co', timezone: 'Asia/Ho_Chi_Minh' }, quests,
   progress: { totalXp: 500, level: 2, levelStartXp: 400, nextLevelXp: 900, currentStreak: 3, longestStreak: 5, areas: [] },
-  completedCount: quests.filter(q => q.status === 'COMPLETED').length, scheduledCount: quests.length, earnedXpToday: 20, journey: null
+  completedCount: quests.filter(q => q.status === 'COMPLETED').length, scheduledCount: quests.length, earnedXpToday: 20, journey: null, dailyRewards: [], dayStreak: 0
 });
 const props = { today: '2026-10-16', selectedDate: '2026-10-16', busyId: null, onSelectDate: () => {}, onNewHabit: () => {}, onSetObjective: () => {}, goTo: () => {} };
 
@@ -40,6 +40,20 @@ describe('TodayPage', () => {
     expect(screen.queryByLabelText('Việc tiếp theo')).toBeNull();
     expect(screen.queryByLabelText('Đã xong hôm nay')).toBeNull();
     expect(screen.getByText('Không có nhiệm vụ trong ngày này')).toBeTruthy();
+  });
+  it('shows the real chest states and how many quests remain for the next one', () => {
+    const d = { ...dashboard([quest('a', 'COMPLETED'), quest('b', 'PENDING'), quest('c', 'PENDING'), quest('d', 'PENDING')]), dayStreak: 12,
+      dailyRewards: [{ tier: 'WOOD' as const, threshold: 2, xp: 10, state: 'EARNED' as const }, { tier: 'SILVER' as const, threshold: 4, xp: 20, state: 'LOCKED' as const }, { tier: 'GOLD' as const, threshold: 4, xp: 40, state: 'LOCKED' as const }] };
+    render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={d}/>);
+    const block = screen.getByLabelText('Phần thưởng hôm nay');
+    expect(block.textContent).toContain('Còn 3 nhiệm vụ để mở Rương bạc');
+    expect(screen.getByLabelText(/Rương gỗ: đã mở/)).toBeTruthy();
+    expect(screen.getByLabelText(/Rương vàng: mở khi xong 4 nhiệm vụ/)).toBeTruthy();
+    expect(screen.getByText('12').closest('.today-chip')!.textContent).toContain('ngày liên tục');
+  });
+  it('shows no reward block on a day without chests', () => {
+    render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={dashboard([])}/>);
+    expect(screen.queryByLabelText('Phần thưởng hôm nay')).toBeNull();
   });
   it('keeps the character stats off the page and links to them from the level chip', async () => {
     const goTo = vi.fn();

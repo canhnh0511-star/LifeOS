@@ -1,6 +1,6 @@
 # B-19 — Chuỗi ngày và "Phần thưởng hôm nay" (rương theo số nhiệm vụ)
 
-Trạng thái: **chưa làm** · Lát 3/3 · Cần owner duyệt UI/contract · Phụ thuộc B-17 (nên làm sau) và giải quyết ADR-009.
+Trạng thái: **xong** (huy hiệu "Ngày trọn vẹn" chưa làm; mốc đổi do thêm/pause habit trong ngày chỉ cập nhật ở lần mutation kế tiếp của ngày đó — ADR-033) · Lát 3/3 · Cần owner duyệt UI/contract · Phụ thuộc B-17 (nên làm sau) và giải quyết ADR-009.
 
 ## Chuỗi ngày (owner chọn phương án b, 2026-10-16)
 Một ngày được tính vào chuỗi khi người dùng đạt **mốc rương đầu tiên (>= 50% nhiệm vụ đã lên lịch của ngày đó)**. Ngày không có nhiệm vụ nào (không lịch, tất cả pause) **bỏ qua**, không làm đứt chuỗi; hôm nay chưa đủ 50% thì chuỗi giữ nguyên (chưa đứt) như quy tắc streak hiện tại. Tính từ lịch sử mỗi lần đọc, không lưu (như ADR-026); theo timezone người dùng. Header hiển thị "12 ngày liên tục". Streak theo từng habit (phiên) vẫn giữ cho STREAK_7/COMEBACK. Ghi ADR thay/bổ sung ADR-009.
