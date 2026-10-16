@@ -20,5 +20,5 @@
 | B-15 | Nhập kế hoạch thói quen hàng loạt | Xong phần API (ADR-029), chưa có UI; owner yêu cầu 2026-10-16 |
 | B-16 | Trang bị: màn Trang bị, kho đồ, phần thưởng đeo/tháo | Chưa làm; trang bị đã gỡ khỏi thẻ nhân vật 2026-10-16, cần owner chốt phong cách ảnh |
 | B-17 | Nhiệm vụ có danh sách mục tiêu (checklist số lượng) | Xong (ADR-032); chưa có giao diện sửa danh sách mục |
-| B-18 | Diện mạo RPG cho Hôm nay (ảnh nền, cuộn nhiệm vụ, header) | Chưa làm; lát 2, chỉ frontend |
+| B-18 | Diện mạo RPG cho Hôm nay (ảnh nền, cuộn nhiệm vụ, header) | Xong; lát 2, chỉ frontend |
 | B-19 | Chuỗi ngày + Phần thưởng hôm nay (rương) | Chưa làm; lát 3, sau B-17 |

@@ -1,6 +1,6 @@
 # B-18 — Diện mạo RPG cho màn Hôm nay (ảnh nền, cuộn nhiệm vụ, header)
 
-Trạng thái: **chưa làm** · Lát 2/3 · Chỉ frontend · Cần owner duyệt UI (đã duyệt hướng 2026-10-16; duyệt ảnh nền trước khi dùng).
+Trạng thái: **xong** (banner, HUD level/XP/chuỗi, thẻ nhiệm vụ có trạng thái, hiệu ứng hoàn thành; chuỗi ngày thật chờ B-19) · Lát 2/3 · Chỉ frontend · Cần owner duyệt UI (đã duyệt hướng 2026-10-16; duyệt ảnh nền trước khi dùng).
 
 - **Ảnh nền/banner:** chiến binh đứng quay lưng trên đỉnh núi, nhìn lên mặt trăng giữa đêm tối (owner chọn, khác phong cách ảnh boss). Tạo bằng công cụ tạo ảnh có sẵn, lưu thành asset tĩnh (`frontend/public/art/`), tỉ lệ 2:1, chừa vùng tối để chồng chữ; tối ưu dung lượng (JPG/WebP, có bản nhỏ cho mobile). Bản thử đã sinh để owner xem.
 - **Header Hôm nay:** Level + danh hiệu, thanh XP của level (`2.190 / 2.500`), chuỗi ngày (số thật từ B-19; trước khi B-19 xong hiển thị đúng nhãn "phiên" đang có, không giả số).

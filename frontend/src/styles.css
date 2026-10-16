@@ -151,3 +151,17 @@
 .today-banner h1,.today-banner p{text-shadow:0 2px 12px #000c}
 .today-banner p{color:#c3cedb}
 @media(max-width:690px){.today-banner{min-height:170px;padding:20px 16px}.today-banner>.btn{margin-top:0}}
+/* B-18: RPG look — HUD header, quest-board cards */
+.today-summary{grid-template-columns:minmax(0,1.3fr) minmax(0,1.5fr) repeat(2,minmax(0,.6fr))}
+.today-level{order:-1;gap:7px;border-color:#6a5a34;background:linear-gradient(160deg,#241f17,#17202b)}
+.today-level .level-line{display:flex;align-items:baseline;gap:8px;color:#d9c48a}.today-level .level-line strong{font-size:22px;color:#f6e7b4}
+.today-level small{font-size:11px;color:#a89c78}.today-level .progress-fill{background:linear-gradient(90deg,#d9a93d,#f6d982)}.today-level .progress-track{background:#3a3424}
+.quest-card,.quest-row{border-left:3px solid #4a5a6c;background:linear-gradient(180deg,#1a2230,#151c27)}
+.quest-card[data-status=doing]{border-left-color:#d9a93d}.quest-card[data-status=done],.quest-row.is-done{border-left-color:#56d7af}
+.quest-card[data-status]::before{content:'Chưa làm';display:inline-block;font-size:9px;letter-spacing:1.2px;font-weight:800;text-transform:uppercase;color:#8c9bad;margin-bottom:8px}
+.quest-card[data-status=doing]::before{content:'Đang làm';color:#e7c46a}.quest-card[data-status=done]::before{content:'Hoàn thành';color:#6bdda7}
+.next-up{border-color:#7a6a3c;box-shadow:0 0 0 1px #d9a93d22,0 8px 30px #0006}.next-up-label{color:#e7c46a}
+@keyframes quest-pop{0%{transform:scale(1)}40%{transform:scale(1.015);box-shadow:0 0 22px #56d7af55}100%{transform:scale(1)}}
+.quest-card.is-done,.quest-row.is-done{animation:quest-pop .5s ease-out}
+@media(prefers-reduced-motion:reduce){.quest-card.is-done,.quest-row.is-done{animation:none}}
+@media(max-width:700px){.today-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.today-level,.today-progress{grid-column:1 / -1}}

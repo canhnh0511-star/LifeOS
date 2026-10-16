@@ -4,7 +4,7 @@ import { categoryLabel, formatDate, moveDate, titleForLevel } from '../domain/ru
 import { ObjectiveList, metCount } from '../components/ObjectiveList';
 import { EmptyState, IconBubble, ProgressBar } from '../components/primitives';
 import { categoryColors, categoryIcons } from '../ui/categories';
-import { dateText, pct } from '../ui/format';
+import { dateText, number, pct } from '../ui/format';
 import type { Tab } from '../ui/nav';
 
 interface Props {
@@ -22,6 +22,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   const cur = dashboard?.progress;
   const total = dashboard?.scheduledCount || 0, done = dashboard?.completedCount || 0;
   const dayPct = pct(done, total);
+  const levelPct = cur ? pct(cur.totalXp - cur.levelStartXp, cur.nextLevelXp - cur.levelStartXp) : 0;
   const isToday = selectedDate === today;
   const next = isToday ? dashboard?.quests.find(q => q.status === 'PENDING') : undefined;
   const allDone = isToday && total > 0 && !next;
@@ -33,7 +34,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
         <div className="today-progress"><div className="today-progress-top"><span>Tiến độ trong ngày</span><strong>{done}/{total}</strong></div><ProgressBar value={dayPct} variant="green" size="slim"/></div>
         <div className="today-chip" title="Chuỗi dài nhất hiện tại của một thói quen"><Flame size={18}/><strong>{cur?.currentStreak || 0}</strong><span>phiên liền</span></div>
         <div className="today-chip"><Zap size={18}/><strong>+{dashboard?.earnedXpToday || 0}</strong><span>{isToday ? 'XP hôm nay' : 'XP ngày này'}</span></div>
-        <button className="today-chip today-level" onClick={() => goTo('character')} aria-label={`Level ${cur?.level || 1}, xem nhân vật`}><strong>Lv {cur?.level || 1}</strong><span>{titleForLevel(cur?.level || 1)}</span></button>
+        <button className="today-chip today-level" onClick={() => goTo('character')} aria-label={`Level ${cur?.level || 1}, xem nhân vật`}><span className="level-line"><strong>Lv {cur?.level || 1}</strong><span>{titleForLevel(cur?.level || 1)}</span></span><ProgressBar value={levelPct} size="slim"/><small>{number(cur?.totalXp || 0)} / {number(cur?.nextLevelXp || 0)} XP</small></button>
       </div>
 
       {next && NextIcon && <article className="next-up" aria-label="Việc tiếp theo">
@@ -60,7 +61,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
             const Icon = categoryIcons[q.category]; const completed = q.status === 'COMPLETED';
             if (q.objectives.length > 0) {
               // A quest with a checklist is a card, not one big button: its lines are the controls.
-              return <div key={q.habitId} className={`quest-card ${completed ? 'is-done' : ''} ${next?.habitId === q.habitId ? 'is-next' : ''}`}>
+              return <div key={q.habitId} data-status={completed ? 'done' : metCount(q.objectives) > 0 ? 'doing' : 'todo'} className={`quest-card ${completed ? 'is-done' : ''} ${next?.habitId === q.habitId ? 'is-next' : ''}`}>
                 <div className="quest-card-head"><IconBubble icon={Icon} tone={categoryColors[q.category]}/><span className="quest-body"><strong>{q.title}</strong><small><Clock3 size={13}/> {q.targetMinutes} phút <i/> {categoryLabel(q.category)} <i/> {metCount(q.objectives)}/{q.objectives.length} việc</small></span><span className={`xp-tag ${completed ? 'earned' : ''}`}>{completed ? <Check size={13}/> : <Zap size={13}/>} {completed ? 'Xong' : `+${q.xpReward} XP`}</span></div>
                 {next?.habitId !== q.habitId && <ObjectiveList quest={q} onSet={(o, v) => onSetObjective(q, o, v)}/>}
               </div>;
