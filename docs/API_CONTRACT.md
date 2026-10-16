@@ -113,6 +113,9 @@ Habit có thể có `objectives[]` (`title`, `target` 1..10000, `unit` tự do �
 ### Rương hằng ngày và chuỗi ngày (B-19, ADR-033)
 `GET /dashboard/today` (cả `?date=`) trả thêm `dailyRewards[]` (`tier` WOOD/SILVER/GOLD, `threshold` = số nhiệm vụ cần xong, `xp` 10/20/40, `state` LOCKED/EARNED; rỗng nếu ngày không có nhiệm vụ) và `dayStreak`. Mốc = 50%/80%/100% số nhiệm vụ đã lên lịch, làm tròn lên. Hoàn thành/hoàn tác nhiệm vụ cấp hoặc thu hồi rương trong cùng transaction; `QuestMutation.effects` có `DAILY_REWARD_GRANTED/REVOKED` (`code` = tier) và XP đã nằm trong `xpAwarded`.
 
+### Vật phẩm rơi từ rương (B-22, ADR-034)
+`GET /items` trả cả danh mục kèm `owned`/`equipped`/`acquiredDate`; `PUT|DELETE /items/{code}/equipped` đeo/tháo (đeo thay món đang đeo cùng ô; 404 nếu chưa sở hữu). Mỗi rương mở rơi tối đa một món, không trùng món đã có; rương bị thu hồi thì món đó mất và bị tháo. `dailyRewards[].itemCode` cho biết rương đã rơi món nào; `effects[]` có `ITEM_DROPPED`/`ITEM_REVOKED` (`code` = mã món, `xpDelta` = 0). Vật phẩm không cộng XP.
+
 ### Pause/resume và hiệu lực
 `PATCH /goals/{id}` và `PATCH /habits/{id}` đổi `status` có hiệu lực từ **ngày local kế tiếp**. Response trả `status` mới được yêu cầu. Các ngày đã qua và ngày hôm nay không bị thay đổi: quest, analytics, journey và streak của chúng giữ nguyên. Ngày bị pause không phải session bắt buộc nên không làm đứt streak.
 

@@ -5,6 +5,8 @@ import { useDialog } from '../hooks/useDialog';
 import { tierName } from '../domain/dailyRewards';
 import { ALL_CATEGORIES } from '../domain/insights';
 import { categoryLabel } from '../domain/rules';
+import { ITEM_CATALOG, RARITY_LABEL } from '../domain/items';
+import { ItemArt } from './ItemArt';
 
 const SHAKE_MS = 1100;
 const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -26,6 +28,7 @@ export function ChestOpening({ reward, onRevealed, onClose }: { reward: DailyRew
     return () => clearTimeout(timer);
   }, [revealed]);
   const each = reward.xp / ALL_CATEGORIES.length;
+  const item = reward.itemCode ? ITEM_CATALOG.find(i => i.code === reward.itemCode) : undefined;
   return <div className={`chest-opening chest-${reward.tier.toLowerCase()}`} onMouseDown={e => { if (e.target === e.currentTarget && revealed) onClose(); }}>
     <div ref={card} className={`chest-opening-card ${revealed ? 'is-revealed' : 'is-opening'}`} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
       <div className="chest-box" aria-hidden="true">
@@ -35,6 +38,10 @@ export function ChestOpening({ reward, onRevealed, onClose }: { reward: DailyRew
       <h2 id={titleId}>{revealed ? `${tierName(reward.tier)} đã mở!` : `Đang mở ${tierName(reward.tier)}…`}</h2>
       {revealed && <>
         <p className="chest-xp">+{reward.xp} XP</p>
+        {item && <div className={`chest-item rarity-${item.rarity.toLowerCase()}`} aria-label={`Vật phẩm mới: ${item.name}`}>
+          <ItemArt artKey={item.artKey} name={item.name}/>
+          <div><span className="item-rarity">Vật phẩm mới · {RARITY_LABEL[item.rarity]}</span><strong>{item.name}</strong><small>{item.story}</small></div>
+        </div>}
         <ul className="chest-areas" aria-label="XP theo lĩnh vực">{ALL_CATEGORIES.map(c => <li key={c}>{categoryLabel(c)} <strong>+{each}</strong></li>)}</ul>
       </>}
       <button className="btn btn-primary" onClick={onClose} disabled={!revealed}>Tiếp tục</button>

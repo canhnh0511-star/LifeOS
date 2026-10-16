@@ -43,7 +43,7 @@ describe('TodayPage', () => {
   });
   it('shows the real chest states and how many quests remain for the next one', () => {
     const d = { ...dashboard([quest('a', 'COMPLETED'), quest('b', 'PENDING'), quest('c', 'PENDING'), quest('d', 'PENDING')]), dayStreak: 12,
-      dailyRewards: [{ tier: 'WOOD' as const, threshold: 2, xp: 10, state: 'EARNED' as const }, { tier: 'SILVER' as const, threshold: 4, xp: 20, state: 'LOCKED' as const }, { tier: 'GOLD' as const, threshold: 4, xp: 40, state: 'LOCKED' as const }] };
+      dailyRewards: [{ tier: 'WOOD' as const, threshold: 2, xp: 10, state: 'EARNED' as const, itemCode: null }, { tier: 'SILVER' as const, threshold: 4, xp: 20, state: 'LOCKED' as const, itemCode: null }, { tier: 'GOLD' as const, threshold: 4, xp: 40, state: 'LOCKED' as const, itemCode: null }] };
     render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={d}/>);
     const block = screen.getByLabelText('Phần thưởng hôm nay');
     expect(block.textContent).toContain('Còn 3 nhiệm vụ để mở Rương bạc');
@@ -54,7 +54,7 @@ describe('TodayPage', () => {
   it('opens an earned chest with a reveal of what it paid, then remembers it was opened', async () => {
     localStorage.clear();
     const d = { ...dashboard([quest('a', 'COMPLETED'), quest('b', 'COMPLETED')]),
-      dailyRewards: [{ tier: 'SILVER' as const, threshold: 1, xp: 20, state: 'EARNED' as const }, { tier: 'GOLD' as const, threshold: 2, xp: 40, state: 'LOCKED' as const }] };
+      dailyRewards: [{ tier: 'SILVER' as const, threshold: 1, xp: 20, state: 'EARNED' as const, itemCode: null }, { tier: 'GOLD' as const, threshold: 2, xp: 40, state: 'LOCKED' as const, itemCode: null }] };
     render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={d}/>);
     expect(screen.queryByRole('dialog')).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: /Rương bạc: chạm để mở/ }));
@@ -67,7 +67,7 @@ describe('TodayPage', () => {
     expect(screen.queryByRole('button', { name: /Rương vàng/ })).toBeNull(); // a locked chest is not a button
   });
   it('hints to open a ready chest even while another chest is still locked, and forgets a chest whose XP was taken back', async () => {
-    const earned = { ...dashboard([quest('a', 'COMPLETED'), quest('b', 'PENDING')]), dailyRewards: [{ tier: 'WOOD' as const, threshold: 1, xp: 10, state: 'EARNED' as const }, { tier: 'SILVER' as const, threshold: 2, xp: 20, state: 'LOCKED' as const }] };
+    const earned = { ...dashboard([quest('a', 'COMPLETED'), quest('b', 'PENDING')]), dailyRewards: [{ tier: 'WOOD' as const, threshold: 1, xp: 10, state: 'EARNED' as const, itemCode: null }, { tier: 'SILVER' as const, threshold: 2, xp: 20, state: 'LOCKED' as const, itemCode: null }] };
     const { rerender } = render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={earned}/>);
     expect(screen.getByLabelText('Phần thưởng hôm nay').textContent).toContain('Chạm vào rương để mở');
     await userEvent.click(screen.getByRole('button', { name: /Rương gỗ: chạm để mở/ }));
@@ -75,7 +75,7 @@ describe('TodayPage', () => {
     await waitFor(() => expect(go.disabled).toBe(false), { timeout: 3000 });
     await userEvent.click(go);
     expect(screen.getByRole('button', { name: /Rương gỗ: đã mở/ })).toBeTruthy();
-    const undone = { ...earned, dailyRewards: [{ tier: 'WOOD' as const, threshold: 1, xp: 10, state: 'LOCKED' as const }, earned.dailyRewards[1]] };
+    const undone = { ...earned, dailyRewards: [{ tier: 'WOOD' as const, threshold: 1, xp: 10, state: 'LOCKED' as const, itemCode: null }, earned.dailyRewards[1]] };
     rerender(<TodayPage {...props} onToggleQuest={() => {}} dashboard={undone}/>);
     rerender(<TodayPage {...props} onToggleQuest={() => {}} dashboard={earned}/>);
     expect(screen.getByRole('button', { name: /Rương gỗ: chạm để mở/ })).toBeTruthy();

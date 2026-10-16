@@ -16,7 +16,7 @@ const dashboard: DailyDashboardDto = {
 
 describe('CharacterPage and the Nhân vật tab', () => {
   it('shows level, the figure and the stat list, and only numbers that do not depend on the selected day', () => {
-    render(<CharacterPage dashboard={dashboard}/>);
+    render(<CharacterPage dashboard={dashboard} items={[]} busyItemCode={null} onEquip={() => {}} onUnequip={() => {}}/>);
     expect(screen.getByText(/Level 3/)).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Chỉ số nhân vật' })).toBeTruthy();
     expect(screen.getByText('Chuỗi hiện tại').parentElement!.textContent).toContain('4');
@@ -25,7 +25,7 @@ describe('CharacterPage and the Nhân vật tab', () => {
     expect(document.body.textContent).not.toContain('77');
   });
   it('renders safely before the dashboard has loaded', () => {
-    render(<CharacterPage dashboard={null}/>);
+    render(<CharacterPage dashboard={null} items={[]} busyItemCode={null} onEquip={() => {}} onUnequip={() => {}}/>);
     expect(screen.getByText(/Level 1/)).toBeTruthy();
   });
   it('is reachable by #character and listed in the navigation', () => {

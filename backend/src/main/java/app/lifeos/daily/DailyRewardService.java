@@ -39,7 +39,7 @@ public class DailyRewardService {
     public record Tier(String tier, int percent, int xp) {}
     static final List<Tier> TIERS = List.of(new Tier("WOOD", 50, 10), new Tier("SILVER", 80, 20), new Tier("GOLD", 100, 40));
     /** Mirrors the contract's `DailyReward`: `threshold` is the number of completed quests that opens the chest. */
-    public record RewardDto(String tier, int threshold, int xp, String state) {}
+    public record RewardDto(String tier, int threshold, int xp, String state, String itemCode) {}
 
     private final ScheduleHistoryLoader loader;
     private final QuestInstanceRepository instances;
@@ -47,10 +47,11 @@ public class DailyRewardService {
     private final UserClock clock;
     private final EntityManager em;
     private final boolean enabled;
+    private final app.lifeos.loot.service.LootService loot;
 
-    public DailyRewardService(ScheduleHistoryLoader loader, QuestInstanceRepository instances, XpTransactionRepository ledger, UserClock clock, EntityManager em,
+    public DailyRewardService(ScheduleHistoryLoader loader, QuestInstanceRepository instances, XpTransactionRepository ledger, UserClock clock, EntityManager em, app.lifeos.loot.service.LootService loot,
                               @org.springframework.beans.factory.annotation.Value("${lifeos.daily-rewards.enabled:true}") boolean enabled) {
-        this.enabled = enabled;
+        this.enabled = enabled; this.loot = loot;
         this.loader = loader; this.instances = instances; this.ledger = ledger; this.clock = clock; this.em = em;
     }
 
@@ -83,7 +84,7 @@ public class DailyRewardService {
     public List<RewardDto> rewards(UUID userId, LocalDate day) {
         int scheduled = counts(userId, loader.load(userId), day).scheduled();
         if (scheduled == 0) return List.of();
-        return TIERS.stream().map(t -> new RewardDto(t.tier(), threshold(scheduled, t.percent()), t.xp(), granted(sourceId(userId, day, t)) ? "EARNED" : "LOCKED")).toList();
+        return TIERS.stream().map(t -> new RewardDto(t.tier(), threshold(scheduled, t.percent()), t.xp(), granted(sourceId(userId, day, t)) ? "EARNED" : "LOCKED", loot.itemFor(userId, day, t.tier()).orElse(null))).toList();
     }
 
     /** Run inside the caller's quest transaction, after its own change was flushed: grants chests now reached, revokes chests no longer reached. */
@@ -106,6 +107,9 @@ public class DailyRewardService {
                 ledger.save(XpTransaction.daily(userId, source, want ? EventType.DAILY_REWARD_GRANT : EventType.DAILY_REWARD_REVOKE, (int) cycle, a, want ? each : -each, day, clock.now()));
             }
             effects.add(new RewardEffectDto(want ? "DAILY_REWARD_GRANTED" : "DAILY_REWARD_REVOKED", t.tier(), want ? t.xp() : -t.xp()));
+            // The chest's item goes and comes with the chest (no XP involved, so xpDelta is 0).
+            if (want) loot.drop(userId, day, t.tier()).ifPresent(code -> effects.add(new RewardEffectDto("ITEM_DROPPED", code, 0)));
+            else loot.revoke(userId, day, t.tier()).ifPresent(code -> effects.add(new RewardEffectDto("ITEM_REVOKED", code, 0)));
             log.info("daily.{} userId={} date={} tier={} cycle={}", want ? "granted" : "revoked", userId, day, t.tier(), cycle);
         }
         ledger.flush();

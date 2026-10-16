@@ -74,7 +74,7 @@ class DailyRewardIntegrationTest {
     @Test void chestsOpenAtHalfEightyAndAllAndPayPerArea() throws Exception {
         TestBrowser b = user();
         List<String> h = habits(b, 4, 0);
-        assertThat(dashboard(b, today())).contains("\"dailyRewards\":[{\"tier\":\"WOOD\",\"threshold\":2,\"xp\":10,\"state\":\"LOCKED\"}", "\"tier\":\"SILVER\",\"threshold\":4", "\"tier\":\"GOLD\",\"threshold\":4");
+        assertThat(dashboard(b, today())).contains("\"dailyRewards\":[{\"tier\":\"WOOD\",\"threshold\":2,\"xp\":10,\"state\":\"LOCKED\",\"itemCode\":null}", "\"tier\":\"SILVER\",\"threshold\":4", "\"tier\":\"GOLD\",\"threshold\":4");
 
         HttpResponse<String> r1 = done(b, h.get(0), today());
         assertThat(num(r1.body(), "xpAwarded")).isEqualTo(10);

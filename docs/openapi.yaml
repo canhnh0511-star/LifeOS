@@ -200,6 +200,23 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '422': {$ref: '#/components/responses/ValidationError', description: 'QUEST_TOO_OLD when the boss was defeated more than 7 days ago'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /items:
+    get:
+      summary: Item catalog with this user's ownership (locked entries have owned=false)
+      responses:
+        '200': {description: OK, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Item'}}}}}
+  /items/{code}/equipped:
+    parameters: [{name: code, in: path, required: true, schema: {type: string}}]
+    put:
+      summary: Wear an owned item; the item worn in the same slot is taken off
+      responses:
+        '200': {description: OK, content: {application/json: {schema: {$ref: '#/components/schemas/Item'}}}}
+        '404': {description: Not owned or unknown}
+    delete:
+      summary: Take an item off
+      responses:
+        '200': {description: OK, content: {application/json: {schema: {$ref: '#/components/schemas/Item'}}}}
+        '404': {description: Not owned or unknown}
   /achievements:
     get:
       tags: [Achievements]
@@ -473,8 +490,8 @@ components:
       type: object
       required: [type, code, xpDelta]
       properties:
-        type: {type: string, enum: [BOSS_REVERTED, ACHIEVEMENT_GRANTED, ACHIEVEMENT_REVOKED, DAILY_REWARD_GRANTED, DAILY_REWARD_REVOKED]}
-        # For DAILY_REWARD_*, `code` is the chest tier (WOOD, SILVER, GOLD).
+        type: {type: string, enum: [BOSS_REVERTED, ACHIEVEMENT_GRANTED, ACHIEVEMENT_REVOKED, DAILY_REWARD_GRANTED, DAILY_REWARD_REVOKED, ITEM_DROPPED, ITEM_REVOKED]}
+        # For DAILY_REWARD_*, `code` is the chest tier (WOOD, SILVER, GOLD); for ITEM_*, the item code and xpDelta is 0.
         code: {type: string}
         xpDelta: {type: integer}
     BossMutation:
@@ -506,12 +523,27 @@ components:
         dayStreak: {type: integer, minimum: 0, description: 'Consecutive days ending today with at least 50% of the scheduled quests completed; days without quests are skipped, a still-short today does not break it.'}
     DailyReward:
       type: object
-      required: [tier, threshold, xp, state]
+      required: [tier, threshold, xp, state, itemCode]
       properties:
         tier: {type: string, enum: [WOOD, SILVER, GOLD]}
+        itemCode: {type: [string, 'null'], description: 'The item this chest dropped while EARNED; null when none (pool exhausted) or LOCKED.'}
         threshold: {type: integer, minimum: 1}
         xp: {type: integer, enum: [10, 20, 40]}
         state: {type: string, enum: [LOCKED, EARNED]}
+    Item:
+      type: object
+      required: [code, name, story, slot, rarity, area, artKey, owned, equipped, acquiredDate]
+      properties:
+        code: {type: string}
+        name: {type: string}
+        story: {type: string}
+        slot: {type: string, enum: [WEAPON, HEAD, CLOAK, FEET, RELIC]}
+        rarity: {type: string, enum: [UNCOMMON, RARE, EPIC, LEGENDARY]}
+        area: {type: string, enum: [CAREER, CREATIVITY, HEALTH, KNOWLEDGE, MINDFULNESS]}
+        artKey: {type: string}
+        owned: {type: boolean}
+        equipped: {type: boolean}
+        acquiredDate: {oneOf: [{$ref: '#/components/schemas/LocalDate'}, {type: 'null'}]}
     QuestMutation:
       type: object
       required: [habitId, date, status, xpAwarded, totalXp, level, streak, effects, objectives]

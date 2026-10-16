@@ -643,4 +643,42 @@ describe('quest checklists (B-17)', () => {
       expect((await mockClient.getDashboard(D0)).dayStreak).toBe(base);
     });
   });
+
+  describe('chest items (B-22)', () => {
+    beforeEach(() => { setDailyRewardsEnabled(true); });
+    it('drops one item per opened chest, none twice, and takes it back with the chest', async () => {
+      freezeAt(D0);
+      const quests = (await mockClient.getDashboard(D0)).quests;
+      for (const q of quests) await mockClient.undoQuest(q.habitId, D0);
+      expect((await mockClient.getItems()).filter(i => i.owned)).toHaveLength(0);
+      const drops: string[] = [];
+      for (const q of quests) (await mockClient.completeQuest(q.habitId, D0)).effects.filter(e => e.type === 'ITEM_DROPPED').forEach(e => drops.push(e.code));
+      expect(drops).toHaveLength(3);
+      expect(new Set(drops).size).toBe(3);
+      expect((await mockClient.getItems()).filter(i => i.owned).map(i => i.code).sort()).toEqual([...drops].sort());
+      const chests = (await mockClient.getDashboard(D0)).dailyRewards;
+      expect(chests.map(c => c.itemCode)).toEqual(expect.arrayContaining(drops));
+      const undo = await mockClient.undoQuest(quests[0].habitId, D0);
+      // 3 of 4 done: only the 80% and 100% chests fall, the 50% chest (and its item) stays.
+      expect(undo.effects.filter(e => e.type === 'ITEM_REVOKED')).toHaveLength(2);
+      expect((await mockClient.getItems()).filter(i => i.owned).map(i => i.code)).toEqual([drops[0]]);
+      expect(undo.effects.filter(e => e.type === 'ITEM_REVOKED').every(e => e.xpDelta === 0)).toBe(true); // items carry no XP of their own
+      await mockClient.undoQuest(quests[1].habitId, D0);
+      await mockClient.undoQuest(quests[2].habitId, D0); // 1 of 4 left: below the 50% chest too
+      expect((await mockClient.getItems()).filter(i => i.owned)).toHaveLength(0);
+    });
+    it('wears one item per slot and refuses what you do not own', async () => {
+      freezeAt(D0);
+      const quests = (await mockClient.getDashboard(D0)).quests;
+      for (const q of quests) await mockClient.undoQuest(q.habitId, D0);
+      for (const q of quests) await mockClient.completeQuest(q.habitId, D0);
+      const mine = (await mockClient.getItems()).filter(i => i.owned);
+      const theirs = (await mockClient.getItems()).find(i => !i.owned)!;
+      expect((await rejection(mockClient.equipItem(theirs.code))).status).toBe(404);
+      const first = await mockClient.equipItem(mine[0].code);
+      expect(first.equipped).toBe(true);
+      expect((await mockClient.unequipItem(mine[0].code)).equipped).toBe(false);
+      expect((await rejection(mockClient.equipItem('NOPE'))).status).toBe(404);
+    });
+  });
 });

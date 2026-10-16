@@ -26,10 +26,14 @@ export interface ChapterDto { index: number; title: string; startDate: string; e
 export interface JourneyDto { id: string; title: string; startDate: string; durationDays: number; elapsedDays: number; totalScheduledToDate: number; completedToDate: number; status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED'; chapters: ChapterDto[]; }
 export type AchievementCode = 'STREAK_7' | 'BALANCED' | 'COMEBACK';
 export interface AchievementDto { code: AchievementCode; name: string; description: string; xpReward: number; status: 'LOCKED' | 'EARNED'; earnedAt: string | null; }
-export type RewardEffectType = 'BOSS_REVERTED' | 'ACHIEVEMENT_GRANTED' | 'ACHIEVEMENT_REVOKED' | 'DAILY_REWARD_GRANTED' | 'DAILY_REWARD_REVOKED';
+export type RewardEffectType = 'BOSS_REVERTED' | 'ACHIEVEMENT_GRANTED' | 'ACHIEVEMENT_REVOKED' | 'DAILY_REWARD_GRANTED' | 'DAILY_REWARD_REVOKED' | 'ITEM_DROPPED' | 'ITEM_REVOKED';
 export type DailyRewardTier = 'WOOD' | 'SILVER' | 'GOLD';
 /** A daily chest; `threshold` is the number of completed quests that opens it. Present only when the day has quests. */
-export interface DailyRewardDto { tier: DailyRewardTier; threshold: number; xp: number; state: 'LOCKED' | 'EARNED'; }
+export interface DailyRewardDto { tier: DailyRewardTier; threshold: number; xp: number; state: 'LOCKED' | 'EARNED'; /** The item this chest dropped (null when none, e.g. the pool was exhausted). */ itemCode: string | null; }
+export type ItemSlot = 'WEAPON' | 'HEAD' | 'CLOAK' | 'FEET' | 'RELIC';
+export type ItemRarity = 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
+/** A catalog item plus this user's ownership. `acquiredDate` is the chest day that dropped it. */
+export interface ItemDto { code: string; name: string; story: string; slot: ItemSlot; rarity: ItemRarity; area: GoalCategory; artKey: string; owned: boolean; equipped: boolean; acquiredDate: string | null; }
 export interface RewardEffectDto { type: RewardEffectType; code: string; xpDelta: number; }
 export interface DayStatDto { date: string; scheduled: number; completed: number; xpEarned: number; }
 export interface CategoryStatDto { category: GoalCategory; scheduled: number; completed: number; }

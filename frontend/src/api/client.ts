@@ -1,4 +1,4 @@
-import type { AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, AchievementDto, BossMutationDto, PatchHabit, QuestMutationDto, UserDto, RegisterRequest, LoginRequest } from './types';
+import type { ItemDto, AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, AchievementDto, BossMutationDto, PatchHabit, QuestMutationDto, UserDto, RegisterRequest, LoginRequest } from './types';
 export interface LifeOsApi {
   getMe(): Promise<UserDto>;
   /** Real mode only; the mock has no accounts and always acts as the demo user. */
@@ -22,6 +22,11 @@ export interface LifeOsApi {
   defeatBoss(bossId: string): Promise<BossMutationDto>;
   undoBoss(bossId: string): Promise<BossMutationDto>;
   getAchievements(): Promise<AchievementDto[]>;
+  /** The whole catalog with this user's ownership; locked entries have `owned: false`. */
+  getItems(): Promise<ItemDto[]>;
+  /** Wears an owned item; the item already worn in the same slot is taken off. 404 when not owned. */
+  equipItem(code: string): Promise<ItemDto>;
+  unequipItem(code: string): Promise<ItemDto>;
   getProgress(): Promise<ProgressDto>;
   getAnalytics(period: '7d'|'30d'): Promise<AnalyticsDto>;
   getCurrentJourney(): Promise<JourneyDto | null>;
