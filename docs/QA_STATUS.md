@@ -40,4 +40,4 @@
 89 test backend. Journey, boss (chỉ đọc) và streak chạy trên Postgres thật. Chưa kiểm trong Chrome. Boss/achievement mutation và analytics còn thiếu (B-06 và lớp RPG).
 
 ## Backend B-06
-98 test backend. Toàn bộ endpoint đọc của UI hiện đã có trên backend thật (dashboard, quests, progress, journey, analytics). Còn thiếu: achievements, hạ boss; backup/restore, a11y, Safari, PWA chưa kiểm.
+99 test backend. Chrome với backend thật đã đi hết luồng. Toàn bộ endpoint đọc của UI hiện đã có trên backend thật (dashboard, quests, progress, journey, analytics). Còn thiếu: achievements, hạ boss; backup/restore, a11y, Safari, PWA chưa kiểm.

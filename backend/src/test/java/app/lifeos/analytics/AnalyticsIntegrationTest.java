@@ -162,4 +162,19 @@ class AnalyticsIntegrationTest {
         assertThat(num(week, "scheduledCount")).isZero();
         assertThat(num(week, "earnedXp")).isZero();
     }
+
+    @Test
+    void progressAndAchievementEndpointsExistAndAreScopedToTheUser() throws Exception {
+        TestBrowser anon = new TestBrowser(port);
+        anon.get("/api/v1/me");
+        assertThat(anon.get("/api/v1/progress").statusCode()).isEqualTo(401);
+        assertThat(anon.get("/api/v1/achievements").statusCode()).isEqualTo(401);
+
+        TestBrowser alice = user(), bob = user();
+        put(alice, habit(alice, "CAREER", 50), today());
+        assertThat(num(alice.get("/api/v1/progress").body(), "totalXp")).isEqualTo(50);
+        assertThat(num(bob.get("/api/v1/progress").body(), "totalXp")).isZero();
+        String achievements = bob.get("/api/v1/achievements").body();
+        assertThat(achievements).contains("\"code\":\"STREAK_7\"", "\"code\":\"BALANCED\"", "\"code\":\"COMEBACK\"", "\"earnedAt\":null").doesNotContain("EARNED");
+    }
 }
