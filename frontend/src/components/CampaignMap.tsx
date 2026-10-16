@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { Award, Check, Lock, Swords, Undo2 } from 'lucide-react';
+import { Check, Lock, Swords, Undo2 } from 'lucide-react';
 import type { BossDto, ChapterDto } from '../api/types';
+import { Sigil } from './Sigil';
+import { RankBadge } from './RankBadge';
+import { gateRank } from '../domain/ranks';
 import { categoryLabel, formatDate, todayInTimezone } from '../domain/rules';
 
 const TIER_NAMES = ['', 'Minion', 'Elite', 'Champion', 'Legend', 'Mythic'];
@@ -17,12 +20,15 @@ interface Props { chapters: ChapterDto[]; busyBossId: string | null; onDefeat: (
 
 export function CampaignMap({ chapters, busyBossId, onDefeat, onUndo }: Props) {
   const today = todayInTimezone();
-  return <ol className="campaign" aria-label="Bản đồ chiến dịch">{chapters.map(chapter => {
+  const earned = chapters.filter(c => c.badge.earned).length;
+  return <>
+  <section className="sigil-shelf" aria-label="Bộ sưu tập ấn ký"><strong>Ấn ký {earned}/{chapters.length}</strong><ul>{chapters.map(c => <li key={c.index} className={c.badge.earned ? 'is-earned' : ''}><Sigil index={c.index} earned={c.badge.earned} size={34}/><span className="sr-only">{c.badge.name}: {c.badge.earned ? 'đã nhận' : `chưa nhận, hạ boss ở Cửa ải ${c.index}`}</span></li>)}</ul></section>
+  <ol className="campaign" aria-label="Bản đồ cửa ải">{chapters.map(chapter => {
     const { boss, badge } = chapter;
     const phase = today > chapter.endDate ? 'past' : today >= chapter.startDate ? 'current' : 'future';
     const busy = busyBossId === boss.id;
     return <li key={chapter.index} className={`chapter chapter-${phase}`}>
-      <div className="chapter-head"><span className="chapter-index">Chặng {chapter.index}</span><h3>{chapter.title}</h3><span className={`chapter-badge ${badge.earned ? 'is-earned' : ''}`} title={badge.earned ? 'Đã nhận huy hiệu' : 'Hạ boss để nhận huy hiệu'}><Award size={14} aria-hidden="true"/> {badge.name}<span className="sr-only">{badge.earned ? ' (đã nhận)' : ' (chưa nhận)'}</span></span><small>{formatDate(chapter.startDate, { day: 'numeric', month: 'short' })} – {formatDate(chapter.endDate, { day: 'numeric', month: 'short' })}{phase === 'current' && ' · đang diễn ra'}</small></div>
+      <div className="chapter-head"><span className="chapter-index">Cửa ải {chapter.index}</span><span className="gate-rank"><RankBadge level={gateRank(boss.tier)} size="sm"/><span className="sr-only">độ khó</span></span><h3>{chapter.title}</h3><span className={`chapter-badge ${badge.earned ? 'is-earned' : ''}`} title={badge.earned ? 'Đã nhận huy hiệu' : 'Hạ boss để nhận huy hiệu'}><Sigil index={chapter.index} earned={badge.earned} size={20}/> {badge.name}<span className="sr-only">{badge.earned ? ' (đã nhận)' : ' (chưa nhận)'}</span></span><small>{formatDate(chapter.startDate, { day: 'numeric', month: 'short' })} – {formatDate(chapter.endDate, { day: 'numeric', month: 'short' })}{phase === 'current' && ' · đang diễn ra'}</small></div>
       <article className={`boss-card status-${boss.status.toLowerCase()}`} aria-label={`Boss ${boss.name}`}>
         <BossArt boss={boss}/>
         <div className="boss-body">
@@ -36,5 +42,6 @@ export function CampaignMap({ chapters, busyBossId, onDefeat, onUndo }: Props) {
         </div>
       </article>
     </li>;
-  })}</ol>;
+  })}</ol>
+  </>;
 }

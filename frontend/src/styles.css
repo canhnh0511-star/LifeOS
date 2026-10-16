@@ -83,7 +83,7 @@
 .celebration-close{margin-top:10px}
 
 .chapter-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid #2a3743;color:#6f7d92}
-.chapter-badge.is-earned{border-color:#7a6a1c;background:#2a2410;color:#f5c518}
+
 .page-content:focus{outline:none}
 
 .character-layout{display:grid;grid-template-columns:minmax(260px,400px) 1fr;gap:20px;align-items:center}
@@ -190,3 +190,11 @@
 .toast{animation:system-in .25s ease-out}
 @media(prefers-reduced-motion:reduce){.toast{animation:none}}
 .toast-error{border-color:#a8505a;background:linear-gradient(160deg,#3a1b22,#2a141a);color:#ffd7db}.toast-error>svg,.toast-error .toast-tag{color:#ff9aa5}
+/* B-21: gates and sigils */
+.sigil{color:#5d6b80;flex:0 0 auto;vertical-align:middle}.sigil.is-earned{color:#a99cff;filter:drop-shadow(0 0 6px #7a6cf088)}
+.chapter-badge.is-earned{border-color:#5a4fb8;background:#1d1a3a;color:#c3b9ff}
+.gate-rank{display:inline-flex;align-items:center}
+.sigil-shelf{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 16px;margin-bottom:16px;border:1px solid #3b4a8a;border-radius:14px;background:linear-gradient(160deg,#171d3f,#101830);color:#c9d2ff}
+.sigil-shelf strong{font-size:13px}.sigil-shelf ul{list-style:none;display:flex;gap:10px;margin:0;padding:0}
+.sigil-shelf li{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;background:#0f1426;border:1px solid #28315e}.sigil-shelf li.is-earned{border-color:#5a4fb8}
+.chapter-future .boss-art{opacity:.8}

@@ -23,6 +23,6 @@
 | B-18 | Diện mạo RPG cho Hôm nay (ảnh nền, cuộn nhiệm vụ, header) | Xong; lát 2, chỉ frontend |
 | B-19 | Chuỗi ngày + Phần thưởng hôm nay (rương) | Xong; lát 3, sau B-17 |
 | B-20 | Giao diện Hệ thống và hạng E–S (cảm hứng thợ săn lên cấp), lát 1 | Xong; chỉ frontend |
-| B-21 | Cửa ải và ấn ký | Chưa làm; lát 2 |
+| B-21 | Cửa ải và ấn ký | Xong; lát 2, chỉ frontend |
 | B-22 | Vật phẩm rơi từ rương (thực hiện B-16) | Chưa làm; lát 3, chờ chốt phong cách hình |
 | B-23 | Quái ngẫu nhiên và sự kiện | Ý tưởng; lát 4 |
