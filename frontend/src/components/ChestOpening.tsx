@@ -1,5 +1,4 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { Gift } from 'lucide-react';
 import type { DailyRewardDto } from '../api/types';
 import { useDialog } from '../hooks/useDialog';
 import { tierName } from '../domain/dailyRewards';
@@ -7,8 +6,9 @@ import { ALL_CATEGORIES } from '../domain/insights';
 import { categoryLabel } from '../domain/rules';
 import { ITEM_CATALOG, RARITY_LABEL } from '../domain/items';
 import { ItemArt } from './ItemArt';
+import { ChestArt } from './ChestArt';
 
-const SHAKE_MS = 1100;
+const SHAKE_MS = 650;
 const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 const PARTICLES = Array.from({ length: 14 }, (_, i) => i);
 
@@ -32,7 +32,7 @@ export function ChestOpening({ reward, onRevealed, onClose }: { reward: DailyRew
   return <div className={`chest-opening chest-${reward.tier.toLowerCase()}`} onMouseDown={e => { if (e.target === e.currentTarget && revealed) onClose(); }}>
     <div ref={card} className={`chest-opening-card ${revealed ? 'is-revealed' : 'is-opening'}`} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
       <div className="chest-box" aria-hidden="true">
-        <Gift size={72}/>
+        <ChestArt tier={reward.tier} open={revealed} size={150}/>
         {revealed && <span className="chest-burst">{PARTICLES.map(i => <i key={i} style={{ ['--a' as string]: `${i * (360 / PARTICLES.length)}deg` }}/>)}</span>}
       </div>
       <h2 id={titleId}>{revealed ? `${tierName(reward.tier)} đã mở!` : `Đang mở ${tierName(reward.tier)}…`}</h2>

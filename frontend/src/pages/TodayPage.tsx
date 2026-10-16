@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Circle, Clock3, Flame, Gift, Lock, PartyPopper, Plus, Zap } from 'lucide-react';
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Circle, Clock3, Flame, Lock, PartyPopper, Plus, Zap } from 'lucide-react';
 import type { DailyDashboardDto, DailyRewardDto, QuestDto, QuestObjectiveDto } from '../api/types';
 import { RankBadge } from '../components/RankBadge';
 import { rankForLevel } from '../domain/ranks';
+import { ChestArt } from '../components/ChestArt';
 import { ChestOpening } from '../components/ChestOpening';
 import { isOpened, loadOpened, withOpened } from '../ui/openedChests';
 import { tierName } from '../domain/dailyRewards';
@@ -59,7 +60,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
         <ul>{rewards.map(r => {
           const ready = r.state === 'EARNED' && !isOpened(opened, selectedDate, r.tier);
           const label = `${tierName(r.tier)}: ${r.state === 'LOCKED' ? `mở khi xong ${r.threshold} nhiệm vụ` : ready ? 'chạm để mở' : 'đã mở'}, +${r.xp} XP`;
-          const body = <>{r.state === 'EARNED' ? <Gift size={22}/> : <Lock size={20}/>}<strong>{tierName(r.tier)}</strong><small>{r.state === 'LOCKED' ? `${r.threshold} nhiệm vụ · +${r.xp} XP` : ready ? 'Chạm để mở!' : `+${r.xp} XP`}</small></>;
+          const body = <><span className="chest-pic"><ChestArt tier={r.tier} open={r.state === 'EARNED' && !ready} size={64}/>{r.state === 'LOCKED' && <Lock className="chest-lock" size={16} aria-hidden="true"/>}</span><strong>{tierName(r.tier)}</strong><small>{r.state === 'LOCKED' ? `${r.threshold} nhiệm vụ · +${r.xp} XP` : ready ? 'Chạm để mở!' : `+${r.xp} XP`}</small></>;
           return <li key={r.tier}>{r.state === 'EARNED'
             ? <button className={`chest chest-${r.tier.toLowerCase()} is-open ${ready ? 'is-ready' : ''}`} aria-label={label} onClick={() => setOpening(r)}>{body}</button>
             : <div className={`chest chest-${r.tier.toLowerCase()}`} aria-label={label} role="group">{body}</div>}</li>;
