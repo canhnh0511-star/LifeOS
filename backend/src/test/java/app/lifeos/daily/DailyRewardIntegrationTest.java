@@ -96,54 +96,86 @@ class DailyRewardIntegrationTest {
 
     @Test void repeatedCompletionNeverPaysTwice() throws Exception {
         TestBrowser b = user();
-        List<String> h = habits(b, 2, 0);
+        List<String> h = habits(b, 3, 0);
         done(b, h.get(0), today());
+        done(b, h.get(1), today());
         assertThat(events(userId(b), "DAILY_REWARD_GRANT")).isEqualTo(5);
-        HttpResponse<String> again = done(b, h.get(0), today());
+        HttpResponse<String> again = done(b, h.get(1), today());
         assertThat(num(again.body(), "xpAwarded")).isZero();
         assertThat(events(userId(b), "DAILY_REWARD_GRANT")).isEqualTo(5);
     }
 
     @Test void undoRevokesTheChestAndCompletingAgainGrantsItAgain() throws Exception {
         TestBrowser b = user();
-        List<String> h = habits(b, 2, 0);
+        List<String> h = habits(b, 3, 0);
         done(b, h.get(0), today());
-        HttpResponse<String> undo = undone(b, h.get(0), today());
+        done(b, h.get(1), today());
+        HttpResponse<String> undo = undone(b, h.get(1), today());
         assertThat(undo.body()).contains("\"type\":\"DAILY_REWARD_REVOKED\",\"code\":\"WOOD\",\"xpDelta\":-10");
         assertThat(num(undo.body(), "xpAwarded")).isEqualTo(-20);
-        assertThat(ledger(userId(b))).isZero();
+        assertThat(ledger(userId(b))).isEqualTo(10); // the one quest still done
         assertThat(dashboard(b, today())).contains("\"state\":\"LOCKED\"");
 
-        HttpResponse<String> again = done(b, h.get(0), today());
+        HttpResponse<String> again = done(b, h.get(1), today());
         assertThat(again.body()).contains("\"type\":\"DAILY_REWARD_GRANTED\",\"code\":\"WOOD\"");
-        assertThat(ledger(userId(b))).isEqualTo(20);
+        assertThat(ledger(userId(b))).isEqualTo(30);
         assertTotalsMatchLedger(b);
     }
 
     @Test void pastDayInsideTheWindowRevokesAndOutsideItIsLocked() throws Exception {
         TestBrowser b = user();
-        List<String> h = habits(b, 2, 10);
+        List<String> h = habits(b, 3, 10);
         done(b, h.get(0), ago(3));
-        assertThat(dashboard(b, ago(3))).contains("\"tier\":\"WOOD\",\"threshold\":1,\"xp\":10,\"state\":\"EARNED\"");
-        undone(b, h.get(0), ago(3));
-        assertThat(ledger(userId(b))).isZero();
+        done(b, h.get(1), ago(3));
+        assertThat(dashboard(b, ago(3))).contains("\"tier\":\"WOOD\",\"threshold\":2,\"xp\":10,\"state\":\"EARNED\"");
+        undone(b, h.get(1), ago(3));
+        assertThat(ledger(userId(b))).isEqualTo(10); // only the one quest that is still done
         assertThat(b.send("PUT", "/api/v1/quests/" + h.get(0) + "/dates/" + ago(9) + "/completion", null, true).statusCode()).isEqualTo(422);
-        assertThat(ledger(userId(b))).isZero();
+        assertThat(ledger(userId(b))).isEqualTo(10);
     }
 
     @Test void twoQuestsFinishingTogetherOpenTheChestOnce() throws Exception {
         TestBrowser b = user();
-        List<String> h = habits(b, 2, 0);
-        ExecutorService pool = Executors.newFixedThreadPool(2);
+        List<String> h = habits(b, 3, 0);
+        ExecutorService pool = Executors.newFixedThreadPool(3);
         try {
             List<Future<HttpResponse<String>>> calls = new ArrayList<>();
             for (String id : h) calls.add(pool.submit(() -> done(b, id, today())));
             for (Future<HttpResponse<String>> f : calls) f.get();
         } finally { pool.shutdown(); }
-        // 2 quests: WOOD at 1, SILVER and GOLD at 2. Each chest exactly once, five area events each.
+        // 3 quests: WOOD at 2, SILVER and GOLD at 3. Each chest exactly once, five area events each.
         assertThat(events(userId(b), "DAILY_REWARD_GRANT")).isEqualTo(15);
-        assertThat(ledger(userId(b))).isEqualTo(20 + 10 + 20 + 40);
+        assertThat(ledger(userId(b))).isEqualTo(30 + 10 + 20 + 40);
         assertTotalsMatchLedger(b);
+    }
+
+    @Test void aDayWithOneOrTwoQuestsHasNoChests() throws Exception {
+        TestBrowser b = user();
+        List<String> h = habits(b, 2, 0);
+        assertThat(dashboard(b, today())).contains("\"dailyRewards\":[]");
+        done(b, h.get(0), today());
+        HttpResponse<String> both = done(b, h.get(1), today());
+        assertThat(both.body()).doesNotContain("DAILY_REWARD");
+        assertThat(ledger(userId(b))).as("just the two quests").isEqualTo(20);
+        assertThat(num(dashboard(b, today()), "dayStreak")).as("the day still counts for the streak").isEqualTo(1);
+    }
+
+    @Test void chestsPaidBeforeTheMinimumExistedAreKeptNotTakenBack() throws Exception {
+        TestBrowser b = user();
+        List<String> h = habits(b, 2, 0);
+        done(b, h.get(0), today());
+        // Simulate a chest paid when single-quest days still had chests (old rule): five GRANT rows for WOOD today.
+        UUID u = userId(b);
+        UUID source = UUID.nameUUIDFromBytes(("daily:" + u + ":" + today() + ":WOOD").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        for (String area : new String[] {"CAREER", "CREATIVITY", "HEALTH", "KNOWLEDGE", "MINDFULNESS"}) {
+            jdbc.update("INSERT INTO xp_transactions (id, user_id, source_type, source_id, event_type, cycle, category, amount, scheduled_date, created_at) VALUES (?,?,?,?,?,?,?,?,?,now())",
+                UUID.randomUUID(), u, "DAILY", source, "DAILY_REWARD_GRANT", 1, area, 2, java.sql.Date.valueOf(today()));
+        }
+        assertThat(dashboard(b, today())).as("still shown: it is in the ledger").contains("\"tier\":\"WOOD\"", "\"state\":\"EARNED\"");
+        int before = ledger(u);
+        HttpResponse<String> undo = undone(b, h.get(0), today());
+        assertThat(undo.body()).doesNotContain("DAILY_REWARD_REVOKED");
+        assertThat(ledger(u)).as("only the quest XP was taken back").isEqualTo(before - 10);
     }
 
     @Test void aDayWithoutQuestsHasNoChestAndNoStreak() throws Exception {

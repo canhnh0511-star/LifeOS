@@ -2,7 +2,7 @@ import type { LifeOsApi } from './client';
 import type { AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, DailyRewardDto, ItemDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday, HabitObjectiveDto, ObjectiveInput, QuestObjectiveDto } from './types';
 import { ApiError, ErrorCode } from './errors';
 import { ALL_CATEGORIES } from '../domain/insights';
-import { DAILY_TIERS, rewardThreshold } from '../domain/dailyRewards';
+import { DAILY_TIERS, hasChests, rewardThreshold } from '../domain/dailyRewards';
 import { ITEM_CATALOG, POOL } from '../domain/items';
 import { ACHIEVEMENT_CATALOG, STREAK_TARGET, balancedAchieved, comebackAchieved, spreadAcrossAreas } from '../domain/achievements';
 import { BOSS_CATALOG, CHAPTERS } from '../domain/bosses';
@@ -233,7 +233,7 @@ function reconcileDaily(db:Db,date:string):RewardEffectDto[]{
   if(!dailyRewardsEnabled)return [];
   const {scheduled,completed}=dayCounts(db,date);const effects:RewardEffectDto[]=[];
   for(const t of DAILY_TIERS){
-    const want=scheduled>0&&completed>=rewardThreshold(scheduled,t.percent);const have=chestGranted(db,date,t.tier);
+    const want=hasChests(scheduled)&&completed>=rewardThreshold(scheduled,t.percent);const have=chestGranted(db,date,t.tier);
     if(want===have)continue;
     const cycle=chestEvents(db,date,t.tier,'DAILY_REWARD_GRANT')+(want?1:0);const each=t.xp/ALL_CATEGORIES.length;
     for(const category of ALL_CATEGORIES)db.xpTransactions.push({id:id(),dailyKey:`${date}:${t.tier}`,date,category,type:want?'DAILY_REWARD_GRANT':'DAILY_REWARD_REVOKE',cycle,amount:want?each:-each,createdAt:now()});
@@ -244,7 +244,7 @@ function reconcileDaily(db:Db,date:string):RewardEffectDto[]{
   return effects;
 }
 function dailyRewards(db:Db,date:string):DailyRewardDto[]{
-  const {scheduled}=dayCounts(db,date);if(scheduled===0)return [];
+  const {scheduled}=dayCounts(db,date);if(!hasChests(scheduled))return [];
   return DAILY_TIERS.map(t=>({tier:t.tier,threshold:rewardThreshold(scheduled,t.percent),xp:t.xp,state:chestGranted(db,date,t.tier)?'EARNED':'LOCKED',itemCode:(db.items??[]).find(i=>i.sourceKey===`${date}:${t.tier}`)?.code??null}));
 }
 /** Consecutive days ending today with >= 50% of the scheduled quests done; empty days are skipped, a still-short today does not break it. */

@@ -38,6 +38,8 @@ public class DailyRewardService {
 
     public record Tier(String tier, int percent, int xp) {}
     static final List<Tier> TIERS = List.of(new Tier("WOOD", 50, 10), new Tier("SILVER", 80, 20), new Tier("GOLD", 100, 40));
+    /** A day needs at least this many scheduled quests to have chests: with 1 or 2 the three chests would open together and pay more than the quests themselves (ADR-033). */
+    public static final int MIN_QUESTS_FOR_CHESTS = 3;
     /** Mirrors the contract's `DailyReward`: `threshold` is the number of completed quests that opens the chest. */
     public record RewardDto(String tier, int threshold, int xp, String state, String itemCode) {}
 
@@ -83,8 +85,9 @@ public class DailyRewardService {
     @Transactional(readOnly = true)
     public List<RewardDto> rewards(UUID userId, LocalDate day) {
         int scheduled = counts(userId, loader.load(userId), day).scheduled();
-        if (scheduled == 0) return List.of();
-        return TIERS.stream().map(t -> new RewardDto(t.tier(), threshold(scheduled, t.percent()), t.xp(), granted(sourceId(userId, day, t)) ? "EARNED" : "LOCKED", loot.itemFor(userId, day, t.tier()).orElse(null))).toList();
+        List<RewardDto> all = TIERS.stream().map(t -> new RewardDto(t.tier(), Math.max(1, threshold(scheduled, t.percent())), t.xp(), granted(sourceId(userId, day, t)) ? "EARNED" : "LOCKED", loot.itemFor(userId, day, t.tier()).orElse(null))).toList();
+        // A small day has no chests, except ones paid before this rule existed: those stay visible (they are in the ledger).
+        return scheduled >= MIN_QUESTS_FOR_CHESTS || all.stream().anyMatch(r -> r.state().equals("EARNED")) ? all : List.of();
     }
 
     /** Run inside the caller's quest transaction, after its own change was flushed: grants chests now reached, revokes chests no longer reached. */
@@ -94,10 +97,12 @@ public class DailyRewardService {
         // Two quests of the same day can finish at the same moment; the lock makes the second one see the first one's chest.
         em.createNativeQuery("select pg_advisory_xact_lock(hashtext(:k))").setParameter("k", "daily:" + userId).getSingleResult();
         Counts c = counts(userId, loader.load(userId), day);
+        // Days below the minimum neither earn nor lose chests: ones paid before the rule existed are kept, not taken back (no retroactive change).
+        if (c.scheduled() < MIN_QUESTS_FOR_CHESTS) return List.of();
         List<RewardEffectDto> effects = new ArrayList<>();
         for (Tier t : TIERS) {
             UUID source = sourceId(userId, day, t);
-            boolean want = c.scheduled() > 0 && c.completed() >= threshold(c.scheduled(), t.percent());
+            boolean want = c.completed() >= threshold(c.scheduled(), t.percent());
             boolean have = granted(source);
             if (want == have) continue;
             Category[] areas = Category.values();

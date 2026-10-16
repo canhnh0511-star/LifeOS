@@ -518,7 +518,7 @@ components:
         journey: {oneOf: [{$ref: '#/components/schemas/Journey'}, {type: 'null'}]}
         dailyRewards:
           type: array
-          description: Chests of the requested day with their real state; empty when the day has no quests. `threshold` = completed quests needed (50%/80%/100% of the scheduled, rounded up).
+          description: Chests of the requested day with their real state; empty when the day has fewer than 3 scheduled quests. `threshold` = completed quests needed (50%/80%/100% of the scheduled, rounded up).
           items: {$ref: '#/components/schemas/DailyReward'}
         dayStreak: {type: integer, minimum: 0, description: 'Consecutive days ending today with at least 50% of the scheduled quests completed; days without quests are skipped, a still-short today does not break it.'}
     DailyReward:

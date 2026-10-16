@@ -35,13 +35,23 @@ class LootIntegrationTest {
     private TestBrowser user() throws Exception { TestBrowser b = new TestBrowser(port); b.signUp(); return b; }
     private UUID userId(TestBrowser b) throws Exception { return UUID.fromString(TestBrowser.idOf(b.get("/api/v1/me").body())); }
 
-    /** One daily habit started `backdate` days ago: with a single scheduled quest a day, one completion opens all three chests. */
-    private String habit(TestBrowser b, int backdate) throws Exception {
+    /** Three daily habits started `backdate` days ago (the minimum for a day to have chests); finishing all three opens every chest. */
+    private List<String> habit(TestBrowser b, int backdate) throws Exception {
         String goal = TestBrowser.idOf(b.post("/api/v1/goals", "{\"title\":\"G\",\"category\":\"HEALTH\",\"description\":\"\"}").body());
-        String id = TestBrowser.idOf(b.post("/api/v1/habits", "{\"goalId\":\"" + goal + "\",\"title\":\"H\",\"targetMinutes\":30,\"xpReward\":10,\"weekdays\":[1,2,3,4,5,6,7],\"startDate\":\"" + today() + "\"}").body());
-        jdbc.update("UPDATE habits SET start_date = start_date - ? WHERE id = ?", backdate, UUID.fromString(id));
-        jdbc.update("UPDATE habit_schedule_versions SET effective_from = effective_from - ? WHERE habit_id = ?", backdate, UUID.fromString(id));
-        return id;
+        List<String> ids = new java.util.ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            String id = TestBrowser.idOf(b.post("/api/v1/habits", "{\"goalId\":\"" + goal + "\",\"title\":\"H" + i + "\",\"targetMinutes\":30,\"xpReward\":10,\"weekdays\":[1,2,3,4,5,6,7],\"startDate\":\"" + today() + "\"}").body());
+            jdbc.update("UPDATE habits SET start_date = start_date - ? WHERE id = ?", backdate, UUID.fromString(id));
+            jdbc.update("UPDATE habit_schedule_versions SET effective_from = effective_from - ? WHERE habit_id = ?", backdate, UUID.fromString(id));
+            ids.add(id);
+        }
+        return ids;
+    }
+    /** Completes all three quests of a day and returns the bodies joined (chests open on different completions, so the effects are spread over them). */
+    private String doneAll(TestBrowser b, List<String> habits, LocalDate d) throws Exception {
+        StringBuilder all = new StringBuilder();
+        for (String h : habits) all.append(done(b, h, d).body());
+        return all.toString();
     }
     private HttpResponse<String> done(TestBrowser b, String habit, LocalDate d) throws Exception { return ok(b.send("PUT", "/api/v1/quests/" + habit + "/dates/" + d + "/completion", null, true)); }
     private HttpResponse<String> undone(TestBrowser b, String habit, LocalDate d) throws Exception { return ok(b.send("DELETE", "/api/v1/quests/" + habit + "/dates/" + d + "/completion", null, true)); }
@@ -55,9 +65,8 @@ class LootIntegrationTest {
 
     @Test void aChestDropsOneItemFromItsPoolAndTheDashboardNamesIt() throws Exception {
         TestBrowser b = user();
-        String h = habit(b, 0);
-        HttpResponse<String> r = done(b, h, today());
-        Matcher m = DROPPED.matcher(r.body());
+        String r = doneAll(b, habit(b, 0), today());
+        Matcher m = DROPPED.matcher(r);
         List<String> codes = new java.util.ArrayList<>();
         while (m.find()) codes.add(m.group(1));
         assertThat(codes).as("one item per chest: WOOD, SILVER and GOLD all opened").hasSize(3).doesNotHaveDuplicates();
@@ -66,15 +75,15 @@ class LootIntegrationTest {
         assertThat(dash).contains("\"itemCode\":\"" + codes.get(0) + "\"");
         String items = b.get("/api/v1/items").body();
         assertThat(items).contains("\"code\":\"" + codes.get(0) + "\"").contains("\"owned\":true");
-        assertThat(r.body()).as("items carry no XP").doesNotContain("\"code\":\"" + codes.get(0) + "\",\"xpDelta\":1");
+        assertThat(r).as("items carry no XP").doesNotContain("\"code\":\"" + codes.get(0) + "\",\"xpDelta\":1");
     }
 
     @Test void theDropIsReproducibleAndDoesNotRepeatWhatYouOwn() throws Exception {
         assertThat(app.lifeos.loot.service.LootService.pick(UUID.fromString("00000000-0000-0000-0000-000000000001"), LocalDate.parse("2026-10-16"), "WOOD", 5))
             .isEqualTo(app.lifeos.loot.service.LootService.pick(UUID.fromString("00000000-0000-0000-0000-000000000001"), LocalDate.parse("2026-10-16"), "WOOD", 5));
         TestBrowser b = user();
-        String h = habit(b, 3);
-        for (int i = 3; i >= 0; i--) done(b, h, ago(i));
+        List<String> h = habit(b, 3);
+        for (int i = 3; i >= 0; i--) doneAll(b, h, ago(i));
         UUID u = userId(b);
         // 4 days x 3 chests asked for 12 items from a catalog of 6: never a duplicate, the rest simply do not drop.
         assertThat(ownedCodes(u)).doesNotHaveDuplicates();
@@ -83,21 +92,22 @@ class LootIntegrationTest {
 
     @Test void undoTakesTheItemBackAndUnequipsItAndRedoDropsTheSameOne() throws Exception {
         TestBrowser b = user();
-        String h = habit(b, 0);
-        HttpResponse<String> first = done(b, h, today());
-        Matcher m = DROPPED.matcher(first.body());
+        List<String> h = habit(b, 0);
+        String first = doneAll(b, h, today());
+        Matcher m = DROPPED.matcher(first);
         assertThat(m.find()).isTrue();
         String code = m.group(1);
         ok(b.send("PUT", "/api/v1/items/" + code + "/equipped", null, true));
         assertThat(jdbc.queryForObject("SELECT count(*) FROM user_items WHERE user_id = ? AND equipped", Integer.class, userId(b))).isEqualTo(1);
 
-        HttpResponse<String> undo = undone(b, h, today());
-        assertThat(undo.body()).contains("\"type\":\"ITEM_REVOKED\"");
+        // 3 quests: undoing one drops SILVER and GOLD, undoing a second drops WOOD (the item we are wearing).
+        String undo = undone(b, h.get(0), today()).body() + undone(b, h.get(1), today()).body();
+        assertThat(undo).contains("\"type\":\"ITEM_REVOKED\"");
         assertThat(owned(userId(b))).isZero();
         assertThat(b.get("/api/v1/items").body()).doesNotContain("\"owned\":true");
 
-        HttpResponse<String> again = done(b, h, today());
-        Matcher m2 = DROPPED.matcher(again.body());
+        String again = done(b, h.get(0), today()).body() + done(b, h.get(1), today()).body();
+        Matcher m2 = DROPPED.matcher(again);
         assertThat(m2.find()).isTrue();
         assertThat(m2.group(1)).as("same chest, same inventory, same item").isEqualTo(code);
     }
