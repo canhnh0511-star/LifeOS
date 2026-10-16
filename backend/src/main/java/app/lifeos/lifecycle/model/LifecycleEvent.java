@@ -30,6 +30,9 @@ public class LifecycleEvent {
         this.effectiveDate = effectiveDate; this.status = status; this.createdAt = createdAt;
     }
 
+    public Subject getSubjectType() { return subjectType; }
+    public UUID getSubjectId() { return subjectId; }
+    public Instant getCreatedAt() { return createdAt; }
     public LocalDate getEffectiveDate() { return effectiveDate; }
     public RecordStatus getStatus() { return status; }
 }

@@ -6,5 +6,6 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface LifecycleEventRepository extends JpaRepository<LifecycleEvent, UUID> {
+    List<LifecycleEvent> findByUserId(UUID userId);
     List<LifecycleEvent> findBySubjectTypeAndSubjectIdOrderByEffectiveDateAscCreatedAtAsc(LifecycleEvent.Subject type, UUID subjectId);
 }

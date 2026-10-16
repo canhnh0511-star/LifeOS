@@ -29,3 +29,6 @@
 
 ## Backend B-02
 32 integration test backend (auth, tracing, goals/habits). Chrome: tạo goal/habit qua modal trên backend thật, reload còn dữ liệu, tạm dừng goal. Today/Insights chưa có endpoint (B-03+).
+
+## Backend B-03
+51 test backend (thêm 13 integration + 6 unit cho luật quest). `GET /quests` và `GET /dashboard/today` chạy trên Postgres thật. Chưa kiểm trong Chrome. Hoàn thành/undo quest (PUT/DELETE) thuộc B-04 nên Today hiện chỉ xem được; `progress` là placeholder rỗng.
