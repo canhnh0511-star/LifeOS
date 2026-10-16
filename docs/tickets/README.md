@@ -18,3 +18,4 @@
 | B-13 | Hiệu năng và dọn điểm lệch | Chưa làm, ưu tiên thấp |
 | B-14 | Sinh quest theo chỉ số | Cần thiết kế với owner |
 | B-15 | Nhập kế hoạch thói quen hàng loạt | Xong phần API (ADR-029), chưa có UI; owner yêu cầu 2026-10-16 |
+| B-16 | Trang bị: màn Trang bị, kho đồ, phần thưởng đeo/tháo | Chưa làm; trang bị đã gỡ khỏi thẻ nhân vật 2026-10-16, cần owner chốt phong cách ảnh |

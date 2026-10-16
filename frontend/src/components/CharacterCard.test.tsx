@@ -10,27 +10,13 @@ afterEach(cleanup);
 
 const areas: AreaStatDto[] = ALL_CATEGORIES.map((category, i) => ({ category, xp: 100 * (i + 1), level: i + 1, levelStartXp: 0, nextLevelXp: 400 }));
 
-describe('CharacterCard gear preview (demo only)', () => {
-  it('offers no preview control outside demo mode and shows gear for the real level', () => {
+describe('CharacterCard without equipment (B-16 will bring it back)', () => {
+  it('shows no gear preview, no gear tooltips and plain level hints', () => {
     render(<CharacterCard areas={areas} totalXp={1500}/>);
-    expect(screen.queryByRole('group', { name: /Xem thử bậc trang bị/ })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Sự nghiệp, level 1' }).getAttribute('title')).toBe('Đệm vai');
-  });
-  it('starts at real levels in demo mode, and lets the viewer preview another tier', async () => {
-    render(<CharacterCard areas={areas} totalXp={1500} allowPreview/>);
-    const chip = () => screen.getByRole('button', { name: 'Sự nghiệp, level 1' });
-    expect(chip().getAttribute('title')).toBe('Đệm vai');
-    expect(screen.getByRole('button', { name: 'Thật' }).getAttribute('aria-pressed')).toBe('true');
-    await userEvent.click(screen.getByRole('button', { name: 'Bậc 4' }));
-    expect(chip().getAttribute('title')).toBe('Giáp vai kèm gorget');
-    await userEvent.click(screen.getByRole('button', { name: 'Bậc 2' }));
-    expect(chip().getAttribute('title')).toBe('Giáp vai');
-    expect(screen.getByRole('button', { name: 'Bậc 2' }).getAttribute('aria-pressed')).toBe('true');
-  });
-  it('does not change the real levels that the chips and list report', async () => {
-    render(<CharacterCard areas={areas} totalXp={1500} allowPreview/>);
-    expect(screen.getByRole('button', { name: 'Sự nghiệp, level 1' })).toBeTruthy();
-    expect(screen.getAllByText(/Lv 1 ·/).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('group', { name: /trang bị/i })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Sự nghiệp, level 1' }).getAttribute('title')).toBeNull();
+    expect(screen.getAllByText(/XP nữa lên Lv/).length).toBe(5);
+    expect(screen.queryByText(/Đệm vai|Giáp/)).toBeNull();
   });
 });
 

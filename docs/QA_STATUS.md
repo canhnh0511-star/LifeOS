@@ -41,3 +41,6 @@
 
 ## Backend B-06
 99 test backend. Chrome với backend thật đã đi hết luồng. Toàn bộ endpoint đọc của UI hiện đã có trên backend thật (dashboard, quests, progress, journey, analytics). Còn thiếu: achievements, hạ boss; backup/restore, a11y, Safari, PWA chưa kiểm.
+
+## Trang bị nhân vật (2026-10-16)
+Trang bị đã được gỡ khỏi thẻ "Chỉ số nhân vật" (owner thấy xấu khi vẽ bằng code). Mô hình dây, hover chỉ số và danh sách chỉ số giữ nguyên; gợi ý "XP nữa lên Lv" không còn tên món đồ. Kế hoạch làm lại: ticket B-16.

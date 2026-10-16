@@ -1,3 +1,7 @@
+/**
+ * NOT RENDERED right now: the equipment look was removed from the character card until ticket B-16 decides how gear is drawn
+ * (art assets, slots, inventory). Kept as reference for that work; nothing imports it except its own tests.
+ */
 import type { GoalCategory } from '../api/types';
 import type { Vec3 } from './characterModel';
 
