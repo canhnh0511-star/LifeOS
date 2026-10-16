@@ -42,6 +42,9 @@ class SecurityConfig {
     }
 
     @Bean
+    java.time.Clock clock() { return java.time.Clock.systemUTC(); }
+
+    @Bean
     PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(12); }
 
     @Bean

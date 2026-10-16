@@ -16,9 +16,18 @@ export function useLifeOsData(selectedDate: string, period: '7d' | '30d') {
   const refresh = useCallback(() => setRevision(n => n + 1), []);
   useEffect(() => {
     let alive = true;
-    Promise.all([api.getDashboard(selectedDate), api.getGoals(), api.getHabits(), api.getAnalytics('7d'), period === '30d' ? api.getAnalytics('30d') : Promise.resolve(null), api.getAchievements()])
-      .then(([d, g, h, w, m, a]) => { if (alive) { setDashboard(d); setAchievements(a); setGoals(g); setHabits(h); setWeekly(w); setAnalytics(m ?? w); setError(''); } })
-      .catch((e: Error) => { if (alive) setError(e.message || 'Không tải được dữ liệu.'); })
+    // Each resource lands on its own, so one failing endpoint (e.g. one the backend has not shipped yet) never blanks the rest.
+    Promise.allSettled([api.getDashboard(selectedDate), api.getGoals(), api.getHabits(), api.getAnalytics('7d'), period === '30d' ? api.getAnalytics('30d') : Promise.resolve(null), api.getAchievements()])
+      .then(([d, g, h, w, m, a]) => {
+        if (!alive) return;
+        if (d.status === 'fulfilled') setDashboard(d.value);
+        if (g.status === 'fulfilled') setGoals(g.value);
+        if (h.status === 'fulfilled') setHabits(h.value);
+        if (a.status === 'fulfilled') setAchievements(a.value);
+        if (w.status === 'fulfilled') { setWeekly(w.value); if (m.status === 'fulfilled') setAnalytics(m.value ?? w.value); }
+        const failed = [d, g, h, w, m, a].find((r): r is PromiseRejectedResult => r.status === 'rejected');
+        setError(failed ? (failed.reason instanceof Error && failed.reason.message) || 'Không tải được dữ liệu.' : '');
+      })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [selectedDate, period, revision]);

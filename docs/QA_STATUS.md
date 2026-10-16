@@ -26,3 +26,6 @@
 
 ## Backend B-01
 21 integration test (HTTP thật, PostgreSQL thật) cho auth/CSRF/cookie; 112 test frontend. Chưa chạy: Docker Compose, Testcontainers, rate limit.
+
+## Backend B-02
+32 integration test backend (auth, tracing, goals/habits). Chrome: tạo goal/habit qua modal trên backend thật, reload còn dữ liệu, tạm dừng goal. Today/Insights chưa có endpoint (B-03+).
