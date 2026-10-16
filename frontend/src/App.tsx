@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { CalendarDays, Layers3, Menu, RotateCcw, Settings2, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { api, isDemo } from './api';
 import { exportDemoData, resetDemoData } from './api/mockClient';
-import type { BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, QuestDto } from './api/types';
+import type { BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, PatchHabit, QuestDto } from './api/types';
 import { formatDate, todayInTimezone } from './domain/rules';
 import { Celebration, hasCelebration, type CelebrationData } from './components/Celebration';
 import { levelUps } from './domain/levelUps';
-import { GoalForm, HabitForm } from './components/forms';
+import { EditHabitForm, GoalForm, HabitForm } from './components/forms';
 import { Modal } from './components/Modal';
 import { Logo } from './components/primitives';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -18,8 +18,8 @@ import { withEffects } from './ui/messages';
 import { primaryNav, tabFromHash, type Tab } from './ui/nav';
 import './styles.css';
 
-type ModalKind = 'goal' | 'habit' | 'settings' | null;
-const MODAL_TITLES = { goal: 'Mục tiêu mới', habit: 'Thói quen mới', settings: 'Cài đặt hệ thống' } as const;
+type ModalKind = 'goal' | 'habit' | 'editHabit' | 'settings' | null;
+const MODAL_TITLES = { goal: 'Mục tiêu mới', habit: 'Thói quen mới', editHabit: 'Sửa thói quen', settings: 'Cài đặt hệ thống' } as const;
 const failure = (e: unknown, fallback: string) => e instanceof Error ? e.message : fallback;
 /** Fresh progress for level-up detection; a failure here must not hide that the action itself succeeded. */
 const latestProgress = () => api.getProgress().catch(() => undefined);
@@ -30,6 +30,7 @@ export default function App() {
   const [period, setPeriod] = useState<'7d' | '30d'>('7d');
   const { dashboard, goals, habits, achievements, analytics, weekly, loading, error, refresh } = useLifeOsData(selectedDate, period);
   const [modal, setModal] = useState<ModalKind>(null);
+  const [editing, setEditing] = useState<HabitDto | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyBossId, setBusyBossId] = useState<string | null>(null);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
@@ -66,6 +67,13 @@ export default function App() {
   };
   const saveGoal = async (v: CreateGoalRequest) => { try { await api.createGoal(v); setModal(null); setNotice('Đã tạo mục tiêu mới.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi xảy ra.')); } };
   const saveHabit = async (v: CreateHabitRequest) => { try { await api.createHabit(v); setModal(null); setNotice('Đã tạo thói quen mới.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi xảy ra.')); } };
+  const saveHabitEdit = async (patch: PatchHabit) => {
+    if (!editing) return;
+    try {
+      await api.updateHabit(editing.id, patch); setModal(null); setEditing(null);
+      setNotice(patch.status === 'ARCHIVED' ? 'Đã lưu trữ thói quen. Thói quen biến khỏi Today từ ngày mai.' : patch.weekdays ? 'Đã cập nhật thói quen. Lịch mới có hiệu lực từ ngày mai.' : 'Đã cập nhật thói quen.'); refresh();
+    } catch (e) { setNotice(failure(e, 'Có lỗi xảy ra.')); }
+  };
   const toggleGoal = async (goal: GoalDto) => { try { await api.updateGoal(goal.id, { status: goal.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' }); setNotice('Đã cập nhật mục tiêu. Có hiệu lực từ ngày mai.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi.')); } };
   const toggleHabit = async (habit: HabitDto) => { try { await api.updateHabit(habit.id, { status: habit.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' }); setNotice('Đã cập nhật thói quen. Có hiệu lực từ ngày mai.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi.')); } };
   const goTo = (screen: Tab) => { setTab(screen); window.location.hash = screen; setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
@@ -93,7 +101,7 @@ export default function App() {
         {error && <div role="alert" className="error-banner">{error}<button onClick={refresh}>Thử lại <RotateCcw size={14}/></button></div>}
         {loading && !dashboard ? <div className="loading-shell"><div className="loader"/><p>Đang chuẩn bị hành trình của bạn...</p></div> : <>
           {tab === 'today' && <TodayPage dashboard={dashboard} weekly={weekly} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onNewHabit={() => setModal('habit')} goTo={goTo}/>}
-          {tab === 'journey' && <JourneyPage journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')}/>}
+          {tab === 'journey' && <JourneyPage journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')}/>}
           {tab === 'insights' && <InsightsPage analytics={analytics} period={period} onPeriod={setPeriod} currentStreak={dashboard?.progress.currentStreak || 0}/>}
         </>}
         <footer className="footer"><span>© Life OS · Built for progress, not perfection.</span><span>Version 0.1.0 · {isDemo ? 'Mock API' : 'Real API'} · Asia/Ho_Chi_Minh</span></footer>
@@ -103,6 +111,7 @@ export default function App() {
     {modal && <Modal title={MODAL_TITLES[modal]} onClose={() => setModal(null)}>
       {modal === 'goal' && <GoalForm onClose={() => setModal(null)} onSave={saveGoal}/>}
       {modal === 'habit' && <HabitForm goals={goals} onClose={() => setModal(null)} onSave={saveHabit}/>}
+      {modal === 'editHabit' && editing && <EditHabitForm habit={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={saveHabitEdit}/>}
       {modal === 'settings' && <SettingsPanel isDemo={isDemo} onExport={exportData} onReset={reset} onLogout={logout}/>}
     </Modal>}
     {celebration && <Celebration data={celebration} onClose={() => setCelebration(null)}/>}

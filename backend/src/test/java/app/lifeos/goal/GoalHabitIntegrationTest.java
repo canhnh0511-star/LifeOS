@@ -177,7 +177,7 @@ class GoalHabitIntegrationTest {
         assertThat(b.patch("/api/v1/goals/" + goal, "{}").body()).contains("\"patch\":");
         assertThat(b.patch("/api/v1/goals/" + goal, "{\"category\":\"HEALTH\"}").statusCode()).isEqualTo(422);
         assertThat(b.patch("/api/v1/goals/" + goal, "{\"status\":\"DONE\"}").body()).contains("\"status\":");
-        assertThat(b.patch("/api/v1/habits/" + habit, "{\"title\":\"x\"}").body()).contains("\"patch\":");
+        assertThat(b.patch("/api/v1/habits/" + habit, "{\"goalId\":\"x\"}").body()).contains("\"patch\":");
         assertThat(b.patch("/api/v1/habits/" + habit, "{\"status\":\"nope\"}").statusCode()).isEqualTo(422);
     }
 

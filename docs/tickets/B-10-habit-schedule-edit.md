@@ -1,6 +1,6 @@
 # B-10 — Sửa lịch tuần của habit, archive, sửa thông tin
 
-Trạng thái: **chưa làm** · **Cần owner duyệt UI/contract trước** (mock cũng chưa có).
+Trạng thái: **xong** (ADR-030), owner đã duyệt đề xuất UI/contract ngày 2026-10-16.
 
 Hiện tại: `PATCH /habits/{id}` chỉ nhận `status`; habit không đổi được `weekdays`, `endDate`, tên, thời lượng, XP. Bảng `habit_schedule_versions` đã sẵn sàng cho phiên bản thứ hai.
 

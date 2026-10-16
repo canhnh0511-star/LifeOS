@@ -12,7 +12,7 @@ DTO nguồn: `frontend/src/api/types.ts`. OpenAPI 3.1 dạng máy đọc đượ
 | PATCH | `/goals/{id}` | partial `title`,`description`,`status` | `GoalDto` |
 | GET | `/habits` | — | `HabitDto[]` |
 | POST | `/habits` | `CreateHabitRequest` | `HabitDto` (201) |
-| PATCH | `/habits/{id}` | partial `status` | `HabitDto` |
+| PATCH | `/habits/{id}` | partial `title`,`targetMinutes`,`xpReward`,`weekdays`,`endDate`,`status` | `HabitDto` |
 | POST | `/imports/habit-plans` | `ImportHabitPlanRequest` | `ImportedHabitPlanDto` (201; atomic; ≤ 10 goal, ≤ 50 habit; 409 `PLAN_ALREADY_IMPORTED`) |
 | GET | `/quests?date=YYYY-MM-DD` | bắt buộc có date | `QuestDto[]` |
 | PUT | `/quests/{habitId}/dates/{date}/completion` | rỗng | `QuestMutationDto` |
@@ -103,6 +103,9 @@ HTTP status chuẩn: 400 validation, 401 chưa xác thực, 403 không có quy�
 | 409 | `BOSS_LOCKED` | Level lĩnh vực của boss chưa đạt `requiredLevel` |
 
 Chỉ có `HTTP_ERROR`, `NETWORK_ERROR`, `REQUEST_TIMEOUT` (status 0) là mã phía client, khi không có response hợp lệ từ server.
+
+### Sửa habit (B-10)
+`weekdays` mới tạo một phiên bản lịch hiệu lực từ ngày local kế tiếp (đổi hai lần trong một ngày thì lần sau thay lần trước; lịch không đổi thì không tạo phiên bản). `xpReward` mới chỉ áp dụng từ ngày kế tiếp; quest của các ngày đã sống (hôm nay và cửa sổ sửa 7 ngày) giữ reward cũ. `title`, `targetMinutes` áp dụng ngay. `endDate` là hôm nay trở đi hoặc `null`; thói quen đã kết thúc thì không đổi được `endDate`. `status: ARCHIVED` có hiệu lực từ ngày kế tiếp và là cuối cùng: habit đã lưu trữ không sửa, không kích hoạt lại được (422 trên `patch`).
 
 ### Pause/resume và hiệu lực
 `PATCH /goals/{id}` và `PATCH /habits/{id}` đổi `status` có hiệu lực từ **ngày local kế tiếp**. Response trả `status` mới được yêu cầu. Các ngày đã qua và ngày hôm nay không bị thay đổi: quest, analytics, journey và streak của chúng giữ nguyên. Ngày bị pause không phải session bắt buộc nên không làm đứt streak.

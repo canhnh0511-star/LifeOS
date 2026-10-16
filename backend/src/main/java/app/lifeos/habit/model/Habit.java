@@ -17,9 +17,9 @@ public class Habit {
     @Id private UUID id;
     @Column(name = "user_id", nullable = false, updatable = false) private UUID userId;
     @Column(name = "goal_id", nullable = false, updatable = false) private UUID goalId;
-    @Column(nullable = false, updatable = false) private String title;
-    @Column(name = "target_minutes", nullable = false, updatable = false) private int targetMinutes;
-    @Column(name = "xp_reward", nullable = false, updatable = false) private int xpReward;
+    @Column(nullable = false) private String title;
+    @Column(name = "target_minutes", nullable = false) private int targetMinutes;
+    @Column(name = "xp_reward", nullable = false) private int xpReward;
     @Column(name = "start_date", nullable = false, updatable = false) private LocalDate startDate;
     @Column(name = "end_date") private LocalDate endDate;
     @Enumerated(EnumType.STRING) @Column(nullable = false) private RecordStatus status;
@@ -42,4 +42,9 @@ public class Habit {
     public LocalDate getEndDate() { return endDate; }
     public RecordStatus getStatus() { return status; }
     public void setStatus(RecordStatus status) { this.status = status; }
+    public void setTitle(String title) { this.title = title; }
+    public void setTargetMinutes(int targetMinutes) { this.targetMinutes = targetMinutes; }
+    /** Only affects quests not yet materialized; materialized quests keep the reward they were created with. */
+    public void setXpReward(int xpReward) { this.xpReward = xpReward; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
 }

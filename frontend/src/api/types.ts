@@ -32,6 +32,8 @@ export interface AnalyticsDto { period: '7d' | '30d'; days: DayStatDto[]; comple
 export interface QuestMutationDto { habitId: string; date: string; status: 'PENDING' | 'COMPLETED'; xpAwarded: number; totalXp: number; level: number; streak: number; effects: RewardEffectDto[]; }
 export interface BossMutationDto { bossId: string; status: BossStatus; xpAwarded: number; totalXp: number; level: number; effects: RewardEffectDto[]; }
 export interface CreateGoalRequest { title: string; category: GoalCategory; description: string; }
+/** Any subset of these. `weekdays` and `status` apply from the next local day; an ARCHIVED habit is final. */
+export type PatchHabit = Partial<Pick<HabitDto, 'title' | 'targetMinutes' | 'xpReward' | 'weekdays' | 'endDate' | 'status'>>;
 export interface CreateHabitRequest { title: string; goalId: string; targetMinutes: number; xpReward: number; weekdays: Weekday[]; startDate: string; }
 export interface ImportHabitPlanRequest { startDate: string; goals: Array<{ title: string; category: GoalCategory; description: string; habits: Array<{ title: string; targetMinutes: number; xpReward: number; weekdays: Weekday[] }> }>; }
 export interface ImportedHabitPlanDto { goals: GoalDto[]; habits: HabitDto[]; }

@@ -73,6 +73,22 @@ public class QuestService {
         return new DailyDashboardDto(day, UserDto.of(user), list, progress.progressFor(userId), completed, list.size(), (int) ledger.sumForDate(userId, day), journeys.current(userId));
     }
 
+    /**
+     * Creates (with today's reward) every quest of this habit inside the 7-day edit window that does not exist yet, so a later reward
+     * edit cannot change what a lived day is worth. Called right before `xpReward` changes.
+     */
+    @Transactional
+    public void freezeRewards(UUID userId, UUID habitId) {
+        User user = users.findById(userId).orElseThrow();
+        ScheduleHistory history = loader.load(userId);
+        Habit habit = history.habits().stream().filter(h -> h.getId().equals(habitId)).findFirst().orElse(null);
+        if (habit == null) return;
+        LocalDate today = clock.today(user.getTimezone());
+        for (LocalDate d = today.minusDays(7); !d.isAfter(today); d = d.plusDays(1)) {
+            if (history.hasQuest(habit, d)) instances.materialize(UUID.randomUUID(), userId, habitId, d, history.goalOf(habit).getCategory().name(), habit.getXpReward(), clock.now());
+        }
+    }
+
     private List<QuestDto> questsOn(User user, LocalDate day) {
         UUID userId = user.getId();
         ScheduleHistory history = loader.load(userId);

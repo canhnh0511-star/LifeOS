@@ -1,5 +1,5 @@
 import type { LifeOsApi } from './client';
-import type { ApiErrorDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto } from './types';
+import type { ApiErrorDto, PatchHabit, CreateGoalRequest, CreateHabitRequest, GoalDto } from './types';
 import { ApiError, ErrorCode } from './errors';
 const base = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
 const TIMEOUT_MS = 15000;
@@ -45,7 +45,7 @@ export const httpClient: LifeOsApi = {
   updateGoal: (id: string, patch: Partial<Pick<GoalDto,'title'|'description'|'status'>>) => request(`/goals/${id}`, { method:'PATCH', body: JSON.stringify(patch) }),
   getHabits: () => request('/habits'),
   createHabit: (input: CreateHabitRequest) => request('/habits', { method: 'POST', body: JSON.stringify(input) }),
-  updateHabit: (id: string, patch: Partial<Pick<HabitDto,'status'>>) => request(`/habits/${id}`, { method:'PATCH', body: JSON.stringify(patch) }),
+  updateHabit: (id: string, patch: PatchHabit) => request(`/habits/${id}`, { method:'PATCH', body: JSON.stringify(patch) }),
   importHabitPlan: input => request('/imports/habit-plans', { method: 'POST', body: JSON.stringify(input) }),
   getQuests: date => request(`/quests?date=${encodeURIComponent(date)}`),
   completeQuest: (habitId, date) => request(`/quests/${habitId}/dates/${date}/completion`, { method:'PUT' }),

@@ -373,7 +373,7 @@ describe('input validation', () => {
     const blank = await rejection(mockClient.updateGoal('goal-career', { title: '' }));
     expect(blank.fields).toHaveProperty('title');
     expect((await mockClient.getGoals()).some(g => g.id === 'goal-career')).toBe(true);
-    const habitPatch = await rejection(mockClient.updateHabit('habit-code', { title: 'x' } as never));
+    const habitPatch = await rejection(mockClient.updateHabit('habit-code', { goalId: 'x' } as never));
     expect(habitPatch.code).toBe('VALIDATION_FAILED');
     const missing = await rejection(mockClient.updateHabit('nope', { status: 'PAUSED' }));
     expect([missing.status, missing.code]).toEqual([404, 'NOT_FOUND']);
@@ -448,5 +448,75 @@ describe('mock importHabitPlan', () => {
     expect((await rejection(mockClient.importHabitPlan({ startDate, goals: tooManyGoals }))).fields).toHaveProperty('goals');
     const tooManyHabits = Array.from({ length: 51 }, () => habit());
     expect((await rejection(mockClient.importHabitPlan({ startDate, goals: [goal('Nhiều', tooManyHabits)] }))).fields).toHaveProperty('goals');
+  });
+});
+
+describe('editing a habit (B-10)', () => {
+  const has = async (habitId: string, date: string) => (await mockClient.getQuests(date)).some(q => q.habitId === habitId);
+
+  it('a new weekly schedule starts tomorrow and never rewrites lived days', async () => {
+    freezeAt(D0);
+    const before = await mockClient.getAnalytics('7d');
+    const updated = await mockClient.updateHabit('habit-piano', { weekdays: [3] });
+    expect(updated.weekdays).toEqual([3]);
+    expect(await has('habit-piano', D0)).toBe(true);                    // today unchanged
+    expect(await has('habit-piano', moveDate(D0, 1))).toBe(false);      // only Wednesdays from tomorrow
+    expect(await has('habit-piano', moveDate(D0, 7))).toBe(true);
+    expect(await has('habit-piano', moveDate(D0, -3))).toBe(true);      // the past keeps its daily quests
+    expect((await mockClient.getAnalytics('7d')).days).toEqual(before.days);
+  });
+  it('two changes in one day leave one pending schedule; an unchanged schedule adds nothing', async () => {
+    freezeAt(D0);
+    await mockClient.updateHabit('habit-piano', { weekdays: [3] });
+    await mockClient.updateHabit('habit-piano', { weekdays: [6] });
+    expect(await has('habit-piano', moveDate(D0, 3))).toBe(true);       // Saturday
+    expect(await has('habit-piano', moveDate(D0, 7))).toBe(false);      // Wednesday is no longer scheduled
+    const history = (JSON.parse(exportDemoData()) as { scheduleHistory: Record<string, unknown[]> }).scheduleHistory['habit-piano'];
+    expect(history).toHaveLength(2);
+    await mockClient.updateHabit('habit-piano', { weekdays: [6] });
+    expect((JSON.parse(exportDemoData()) as { scheduleHistory: Record<string, unknown[]> }).scheduleHistory['habit-piano']).toHaveLength(2);
+  });
+  it('a quest that already exists keeps its reward when the reward is edited', async () => {
+    freezeAt(D0);
+    const reward = (await mockClient.getQuests(D0)).find(q => q.habitId === 'habit-piano')!.xpReward;
+    await mockClient.completeQuest('habit-piano', D0);
+    await mockClient.updateHabit('habit-piano', { xpReward: 90, title: 'Piano pro', targetMinutes: 50 });
+    const today = (await mockClient.getQuests(D0)).find(q => q.habitId === 'habit-piano')!;
+    expect([today.title, today.targetMinutes]).toEqual(['Piano pro', 50]);
+    expect((await mockClient.undoQuest('habit-piano', D0)).xpAwarded).toBe(-reward);
+  });
+  it('editing the reward never changes what a lived day is worth', async () => {
+    freezeAt(D0);
+    const before = (await mockClient.getQuests(moveDate(D0, -2))).find(q => q.habitId === 'habit-piano')!.xpReward;
+    await mockClient.updateHabit('habit-piano', { xpReward: 100 });
+    expect((await mockClient.getQuests(moveDate(D0, -2))).find(q => q.habitId === 'habit-piano')!.xpReward).toBe(before);
+    expect((await mockClient.getQuests(moveDate(D0, 1))).find(q => q.habitId === 'habit-piano')!.xpReward).toBe(100);
+  });
+  it('endDate ends future quests, can be moved or cleared, and cannot reach into the past', async () => {
+    freezeAt(D0);
+    await mockClient.updateHabit('habit-piano', { endDate: moveDate(D0, 2) });
+    expect(await has('habit-piano', moveDate(D0, 2))).toBe(true);
+    expect(await has('habit-piano', moveDate(D0, 3))).toBe(false);
+    await mockClient.updateHabit('habit-piano', { endDate: null });
+    expect(await has('habit-piano', moveDate(D0, 3))).toBe(true);
+    expect((await rejection(mockClient.updateHabit('habit-piano', { endDate: moveDate(D0, -1) }))).fields).toHaveProperty('endDate');
+  });
+  it('archiving applies from tomorrow, keeps history and is final', async () => {
+    freezeAt(D0);
+    const total = (await mockClient.completeQuest('habit-piano', D0)).totalXp;
+    await mockClient.updateHabit('habit-piano', { status: 'ARCHIVED' });
+    expect(await has('habit-piano', D0)).toBe(true);
+    expect(await has('habit-piano', moveDate(D0, 1))).toBe(false);
+    expect((await mockClient.getProgress()).totalXp).toBe(total);
+    expect((await rejection(mockClient.updateHabit('habit-piano', { title: 'again' }))).fields).toHaveProperty('patch');
+    expect((await rejection(mockClient.updateHabit('habit-piano', { status: 'ACTIVE' }))).status).toBe(422);
+  });
+  it('rejects invalid edits without changing anything', async () => {
+    freezeAt(D0);
+    for (const bad of [{}, { id: 'x' }, { title: ' ' }, { targetMinutes: 0 }, { targetMinutes: 481 }, { xpReward: 101 }, { weekdays: [] }, { weekdays: [8] }, { status: 'DONE' }]) {
+      expect((await rejection(mockClient.updateHabit('habit-piano', bad as never))).status, JSON.stringify(bad)).toBe(422);
+    }
+    expect((await rejection(mockClient.updateHabit('habit-piano', { title: 'New', xpReward: 500 }))).status).toBe(422);
+    expect((await mockClient.getHabits()).find(h => h.id === 'habit-piano')!.title).not.toBe('New');
   });
 });

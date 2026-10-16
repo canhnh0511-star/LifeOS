@@ -1,5 +1,5 @@
 import type { LifeOsApi } from './client';
-import type { AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto } from './types';
+import type { AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday } from './types';
 import { ApiError, ErrorCode } from './errors';
 import { ALL_CATEGORIES } from '../domain/insights';
 import { ACHIEVEMENT_CATALOG, STREAK_TARGET, balancedAchieved, comebackAchieved, spreadAcrossAreas } from '../domain/achievements';
@@ -23,7 +23,7 @@ type BossState = { bossId: string; status: 'AVAILABLE' | 'DEFEATED'; cycle: numb
 type AchievementState = { code: AchievementCode; status: 'EARNED' | 'LOCKED'; cycle: number; earnedDate: string | null; earnedAt: string | null };
 type StoredJourney = Omit<JourneyDto, 'chapters'>;
 type Lifecycle = { goals: Record<string, LifecycleEvent[]>; habits: Record<string, LifecycleEvent[]> };
-type Db = { version: typeof DB_VERSION; goals: GoalDto[]; habits: HabitDto[]; lifecycle: Lifecycle; questStates: QuestState[]; xpTransactions: XpEvent[]; bossStates: BossState[]; achievementStates: AchievementState[]; journey: StoredJourney };
+type Db = { version: typeof DB_VERSION; goals: GoalDto[]; habits: HabitDto[]; lifecycle: Lifecycle; questStates: QuestState[]; xpTransactions: XpEvent[]; bossStates: BossState[]; achievementStates: AchievementState[]; journey: StoredJourney; scheduleHistory?: Record<string, { from: string; weekdays: Weekday[] }[]>; rewardSnapshots?: Record<string, number> };
 
 const id = () => typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `mock-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const now = () => new Date().toISOString();
@@ -64,8 +64,18 @@ function lifecycleActive(db: Db, habit: HabitDto, date: string): boolean {
   return statusOn(db.lifecycle.habits[habit.id], date) === 'ACTIVE' && statusOn(db.lifecycle.goals[habit.goalId], date) === 'ACTIVE' && db.goals.some(g => g.id === habit.goalId);
 }
 /** The single definition of "a quest exists for this habit on this date", used by every read and write. */
+/** The weekly schedule in force on `date`: a habit whose schedule was edited keeps its older versions, so past days never change. */
+function scheduledOn(db: Db, habit: HabitDto, date: string): boolean {
+  const versions = db.scheduleHistory?.[habit.id];
+  if (!versions) return isScheduled(habit, date);
+  let weekdays = versions[0].weekdays;
+  for (const v of versions) if (v.from <= date) weekdays = v.weekdays;
+  return isScheduled({ ...habit, weekdays }, date);
+}
+/** XP a quest on `date` is worth: the reward frozen when the habit's reward was edited, otherwise the current one. */
+function rewardFor(db: Db, habit: HabitDto, date: string): number { return db.rewardSnapshots?.[`${habit.id}|${date}`] ?? habit.xpReward; }
 function isQuestOn(db: Db, habit: HabitDto, date: string): boolean {
-  return isScheduled(habit, date) && lifecycleActive(db, habit, date);
+  return scheduledOn(db, habit, date) && lifecycleActive(db, habit, date);
 }
 /** Records a status change that applies from tomorrow, so already-lived days are never rewritten. */
 function recordStatus(db: Db, kind: keyof Lifecycle, record: GoalDto | HabitDto, status: RecordStatus) {
@@ -165,7 +175,7 @@ function quests(db:Db,date:string):QuestDto[]{
   return db.habits.filter(h=>isQuestOn(db,h,date)).map(h=>{
     const goal=db.goals.find(g=>g.id===h.goalId);
     const state=stateOf(db,h.id,date);
-    return {habitId:h.id,goalId:h.goalId,goalTitle:goal?.title??'',title:h.title,targetMinutes:h.targetMinutes,xpReward:h.xpReward,category:goal?.category??'CAREER',date,status:state?.status??'PENDING',completedAt:state?.completedAt??null};
+    return {habitId:h.id,goalId:h.goalId,goalTitle:goal?.title??'',title:h.title,targetMinutes:h.targetMinutes,xpReward:rewardFor(db,h,date),category:goal?.category??'CAREER',date,status:state?.status??'PENDING',completedAt:state?.completedAt??null};
   });
 }
 // ---------- achievements ----------
@@ -274,7 +284,7 @@ async function mutateQuest(habitId:string,date:string,complete:boolean):Promise<
   await delay(); assertLocalDate(date); const db=load();
   const habit=requireHabit(db,habitId);
   assertEditableDate(date);
-  if(!isScheduled(habit,date))throw new ApiError(422,ErrorCode.questOutsideSchedule,'Ngày này không thuộc lịch thực hiện của thói quen.');
+  if(!scheduledOn(db,habit,date))throw new ApiError(422,ErrorCode.questOutsideSchedule,'Ngày này không thuộc lịch thực hiện của thói quen.');
   if(!lifecycleActive(db,habit,date))throw new ApiError(409,ErrorCode.questNotActive,'Thói quen hoặc mục tiêu đang tạm dừng vào ngày này.');
   let state=stateOf(db,habitId,date);
   if(!state){state={habitId,date,status:'PENDING',cycle:0,completedAt:null};db.questStates.push(state);}
@@ -282,7 +292,7 @@ async function mutateQuest(habitId:string,date:string,complete:boolean):Promise<
   let xpAwarded=0;let changed=false;
   if(complete&&state.status==='PENDING'){
     changed=true;state.status='COMPLETED';state.cycle++;state.completedAt=now();
-    xpAwarded=habit.xpReward;
+    xpAwarded=rewardFor(db,habit,date);
     if(xpAwarded>0)db.xpTransactions.push({id:id(),habitId,date,category,type:'QUEST_COMPLETE',cycle:state.cycle,amount:xpAwarded,createdAt:now()});
   } else if(!complete&&state.status==='COMPLETED'){
     changed=true;state.status='PENDING';state.completedAt=null;
@@ -407,11 +417,46 @@ export const mockClient:LifeOsApi={
     db.goals.push(...goals);db.habits.push(...habits);save(db);return {goals,habits};
   },
   async updateHabit(habitId,patch){
-    await delay();assertOnlyKeys(patch,['status']);
-    const db=load();const habit=requireHabit(db,habitId);
-    const fields:Record<string,string>={};checkStatus(fields,patch.status);
+    await delay();assertOnlyKeys(patch,['status','title','targetMinutes','xpReward','weekdays','endDate']);
+    const db=load();const habit=requireHabit(db,habitId);const today=todayInTimezone();
+    const p=patch as Record<string,unknown>;const fields:Record<string,string>={};
+    if(habit.status==='ARCHIVED')fields.patch='Thói quen đã lưu trữ nên không thể chỉnh sửa.';
+    if('title' in p)checkTitle(fields,p.title,'Tên thói quen');
+    if('targetMinutes' in p&&!isInt(p.targetMinutes,1,480))fields.targetMinutes='Thời lượng phải là số nguyên từ 1 đến 480 phút.';
+    if('xpReward' in p&&!isInt(p.xpReward,0,100))fields.xpReward='XP thưởng phải là số nguyên từ 0 đến 100.';
+    if('weekdays' in p&&(!Array.isArray(p.weekdays)||p.weekdays.length===0||!p.weekdays.every(d=>isInt(d,1,7))))fields.weekdays='Chọn ít nhất một ngày trong tuần (1 đến 7).';
+    if('status' in p)checkStatus(fields,p.status);
+    if('endDate' in p){
+      if(habit.endDate&&habit.endDate<today)fields.endDate='Thói quen đã kết thúc nên không thể đổi ngày kết thúc.';
+      else if(p.endDate!==null){
+        if(!isLocalDate(p.endDate))fields.endDate='Ngày kết thúc phải có dạng YYYY-MM-DD.';
+        else if(p.endDate<today)fields.endDate='Ngày kết thúc không được ở quá khứ.';
+        else if(p.endDate<habit.startDate)fields.endDate='Ngày kết thúc phải sau ngày bắt đầu.';
+      }
+    }
     if(Object.keys(fields).length)fail(fields);
-    recordStatus(db,'habits',habit,patch.status!);save(db);return habit;
+    if('title' in p)habit.title=(p.title as string).trim();
+    if('targetMinutes' in p)habit.targetMinutes=p.targetMinutes as number;
+    if('xpReward' in p&&p.xpReward!==habit.xpReward){
+      // Lived days inside the edit window keep what they were worth; only later days get the new reward.
+      const snaps=db.rewardSnapshots??(db.rewardSnapshots={});
+      for(let d=moveDate(today,-7);d<=today;d=moveDate(d,1))if(isQuestOn(db,habit,d)&&snaps[`${habit.id}|${d}`]===undefined)snaps[`${habit.id}|${d}`]=habit.xpReward;
+      habit.xpReward=p.xpReward as number;
+    }
+    if('endDate' in p)habit.endDate=p.endDate as string|null;
+    if('weekdays' in p){
+      const days=[...new Set(p.weekdays as Weekday[])].sort((a,b)=>a-b);
+      const history=db.scheduleHistory??(db.scheduleHistory={});
+      const versions=history[habit.id]??(history[habit.id]=[{from:habit.startDate,weekdays:[...habit.weekdays]}]);
+      if(versions[versions.length-1].weekdays.join()!==days.join()){
+        const tomorrow=moveDate(today,1);const from=tomorrow<habit.startDate?habit.startDate:tomorrow; // starts tomorrow (or at the start date); a second change today replaces the first
+        const same=versions.findIndex(v=>v.from===from);if(same>=0)versions.splice(same,1);
+        versions.push({from,weekdays:days});versions.sort((a,b)=>a.from.localeCompare(b.from));
+      }
+      habit.weekdays=days;
+    }
+    if('status' in p)recordStatus(db,'habits',habit,p.status as RecordStatus);
+    save(db);return habit;
   },
   async getQuests(date){await delay();assertLocalDate(date);return quests(load(),date);},
   completeQuest:(habitId,date)=>mutateQuest(habitId,date,true),

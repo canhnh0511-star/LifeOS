@@ -16,6 +16,7 @@ import app.lifeos.identity.repository.UserRepository;
 import app.lifeos.lifecycle.model.LifecycleEvent;
 import app.lifeos.lifecycle.model.RecordStatus;
 import app.lifeos.lifecycle.service.LifecycleService;
+import app.lifeos.quest.service.QuestService;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -40,10 +41,11 @@ public class HabitService {
     private final UserRepository users;
     private final LifecycleService lifecycle;
     private final UserClock clock;
+    private final QuestService quests;
 
-    public HabitService(HabitRepository habits, HabitScheduleVersionRepository schedules, GoalRepository goals, UserRepository users,
+    public HabitService(QuestService quests, HabitRepository habits, HabitScheduleVersionRepository schedules, GoalRepository goals, UserRepository users,
                         LifecycleService lifecycle, UserClock clock) {
-        this.habits = habits; this.schedules = schedules; this.goals = goals; this.users = users; this.lifecycle = lifecycle; this.clock = clock;
+        this.quests = quests; this.habits = habits; this.schedules = schedules; this.goals = goals; this.users = users; this.lifecycle = lifecycle; this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -79,20 +81,86 @@ public class HabitService {
         return HabitDto.of(habit, List.copyOf(days));
     }
 
-    /** Only `status` is patchable; a change applies from the user's next local day. */
+    private static final Set<String> PATCHABLE = Set.of("status", "title", "targetMinutes", "xpReward", "weekdays", "endDate");
+
+    /**
+     * Edits a habit (B-10, ADR-030). Nothing here rewrites a lived day: a new weekly schedule and status changes apply from the user's
+     * next local day (a new immutable schedule version / lifecycle event), `endDate` can only shorten or set the future, `xpReward`
+     * affects only quests not yet created, and name/duration are display data. An archived habit is final.
+     */
     @Transactional
     public HabitDto update(UUID userId, UUID habitId, Map<String, Object> patch) {
-        PatchRules.requireKeys(patch, Set.of("status"));
-        Habit habit = habits.findByIdAndUserId(habitId, userId).orElseThrow(() -> FieldErrors.notFound("thói quen"));
-        RecordStatus status = RecordStatus.parse(patch.get("status"));
-        if (status == null) new FieldErrors().add("status", "Trạng thái không hợp lệ.").throwIfAny();
-        if (status != habit.getStatus()) {
-            User user = users.findById(userId).orElseThrow();
+        PatchRules.requireKeys(patch, PATCHABLE);
+        Habit habit = habits.lockByIdAndUserId(habitId, userId).orElseThrow(() -> FieldErrors.notFound("thói quen"));
+        // Re-sending the archive request is a no-op, so a client retry after a timeout does not look like a failure.
+        if (habit.getStatus() == RecordStatus.ARCHIVED && patch.size() == 1 && "ARCHIVED".equals(patch.get("status"))) {
+            return HabitDto.of(habit, latestWeekdays(Set.of(habitId)).getOrDefault(habitId, List.of()));
+        }
+        User user = users.findById(userId).orElseThrow();
+        LocalDate today = clock.today(user.getTimezone());
+        FieldErrors errors = new FieldErrors();
+        if (habit.getStatus() == RecordStatus.ARCHIVED) errors.add("patch", "Thói quen đã lưu trữ nên không thể chỉnh sửa.");
+
+        String title = null; Integer minutes = null, xp = null; Set<Integer> days = null; RecordStatus status = null;
+        if (patch.containsKey("title")) {
+            if (!(patch.get("title") instanceof String t) || t.isBlank()) errors.add("title", "Tên thói quen không được để trống.");
+            else if (t.trim().length() > 150) errors.add("title", "Tên thói quen tối đa 150 ký tự.");
+            else title = t.trim();
+        }
+        if (patch.containsKey("targetMinutes")) {
+            if (!(patch.get("targetMinutes") instanceof Integer m) || m < 1 || m > 480) errors.add("targetMinutes", "Thời lượng phải là số nguyên từ 1 đến 480 phút.");
+            else minutes = m;
+        }
+        if (patch.containsKey("xpReward")) {
+            if (!(patch.get("xpReward") instanceof Integer x) || x < 0 || x > 100) errors.add("xpReward", "XP thưởng phải là số nguyên từ 0 đến 100.");
+            else xp = x;
+        }
+        if (patch.containsKey("weekdays")) {
+            if (patch.get("weekdays") instanceof List<?> list && !list.isEmpty() && list.stream().allMatch(d -> d instanceof Integer i && i >= 1 && i <= 7)) {
+                days = new TreeSet<>(); for (Object d : list) days.add((Integer) d);
+            } else errors.add("weekdays", "Chọn ít nhất một ngày trong tuần (1 đến 7).");
+        }
+        if (patch.containsKey("status")) {
+            status = RecordStatus.parse(patch.get("status"));
+            if (status == null) errors.add("status", "Trạng thái không hợp lệ.");
+        }
+        boolean endDateGiven = patch.containsKey("endDate");
+        LocalDate endDate = null;
+        if (endDateGiven) {
+            Object raw = patch.get("endDate");
+            if (habit.getEndDate() != null && habit.getEndDate().isBefore(today)) errors.add("endDate", "Thói quen đã kết thúc nên không thể đổi ngày kết thúc.");
+            else if (raw != null) {
+                endDate = raw instanceof String s ? parseDate(s) : null;
+                if (endDate == null) errors.add("endDate", "Ngày kết thúc phải có dạng YYYY-MM-DD.");
+                else if (endDate.isBefore(today)) errors.add("endDate", "Ngày kết thúc không được ở quá khứ.");
+                else if (endDate.isBefore(habit.getStartDate())) errors.add("endDate", "Ngày kết thúc phải sau ngày bắt đầu.");
+            }
+        }
+        errors.throwIfAny();
+
+        if (title != null) habit.setTitle(title);
+        if (minutes != null) habit.setTargetMinutes(minutes);
+        if (xp != null && xp != habit.getXpReward()) { quests.freezeRewards(userId, habitId); habit.setXpReward(xp); }
+        if (endDateGiven) habit.setEndDate(endDate);
+        if (days != null) changeSchedule(habit, days, today.plusDays(1).isBefore(habit.getStartDate()) ? habit.getStartDate() : today.plusDays(1));
+        if (status != null && status != habit.getStatus()) {
             var effective = lifecycle.recordChange(user, LifecycleEvent.Subject.HABIT, habitId, status);
             log.info("habit.status_changed userId={} habitId={} from={} to={} effectiveDate={}", userId, habitId, habit.getStatus(), status, effective);
             habit.setStatus(status);
         }
+        log.info("habit.updated userId={} habitId={} fields={}", userId, habitId, patch.keySet());
         return HabitDto.of(habit, latestWeekdays(Set.of(habitId)).getOrDefault(habitId, List.of()));
+    }
+
+    /** Adds a schedule version from `effective`. A second change on the same day replaces the first (it has not applied to any day yet). */
+    private void changeSchedule(Habit habit, Set<Integer> days, LocalDate effective) {
+        List<HabitScheduleVersion> versions = schedules.findByHabitIdInOrderByEffectiveFromAsc(Set.of(habit.getId()));
+        if (!versions.isEmpty() && versions.get(versions.size() - 1).weekdays().equals(List.copyOf(days))) return;
+        for (HabitScheduleVersion v : versions) {
+            if (v.getEffectiveFrom().equals(effective)) { schedules.delete(v); schedules.flush(); }
+        }
+        schedules.save(new HabitScheduleVersion(habit.getId(), effective, days));
+        log.info("habit.schedule_changed habitId={} weekdays={} effectiveFrom={}", habit.getId(), days, effective);
     }
 
     private Goal findGoal(UUID userId, String goalId) {
