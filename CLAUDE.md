@@ -2,7 +2,7 @@
 
 Bắt đầu với `docs/agent/AGENT_PROMPT.md`. Repository này phát triển theo hướng **contract-first, frontend-first**: các vertical slice nhỏ, ledger XP bất biến (immutable), streak theo scheduled session có xét timezone, và mỗi behavior đều có test.
 
-## Milestone hiện tại: B-06 (analytics) xong (UI-00 đã được duyệt)
+## Milestone hiện tại: B-17 (nhiệm vụ có danh sách mục tiêu) xong; B-01 → B-10, B-15, B-17 đã xong (UI-00 đã được duyệt)
 
 **UI-00 được owner duyệt rõ ràng ngày 2026-10-15** ("oke duyệt ticket 00"). Backend (B-01 → B-06) được mở khóa, làm lần lượt từng ticket, bắt đầu từ B-01. Giao diện frontend coi như đã chốt: đổi UI cần owner đồng ý.
 
@@ -10,7 +10,7 @@ Bắt đầu với `docs/agent/AGENT_PROMPT.md`. Repository này phát triển t
 - Mock backend: `frontend/src/api/mockClient.ts` (localStorage, không có tài khoản thật).
 - API contract: `docs/openapi.yaml` và `frontend/src/api/types.ts`. Khi đề xuất đổi contract, phải cập nhật CẢ HAI.
 - Quy tắc sản phẩm: `docs/DOMAIN_RULES.md`.
-- Ticket: `docs/tickets/00_FRONTEND_REVIEW.md`, sau đó `B-01` đến `B-06` (đã xong). Ticket còn lại `B-07` đến `B-14`, danh sách và trạng thái ở `docs/tickets/README.md`.
+- Ticket: `docs/tickets/00_FRONTEND_REVIEW.md`, sau đó `B-01` đến `B-17`. Ticket còn lại và trạng thái ở `docs/tickets/README.md` (Today kiểu RPG: B-17 xong, B-18 giao diện RPG, B-19 chuỗi ngày và phần thưởng hôm nay; trang bị: B-16).
 - Ghi lại các đánh đổi kiến trúc trong `docs/agent/DECISIONS.md`.
 
 ## Nguyên tắc làm việc

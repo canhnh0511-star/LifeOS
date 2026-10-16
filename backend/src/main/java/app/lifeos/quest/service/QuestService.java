@@ -18,7 +18,12 @@ import app.lifeos.journey.dto.JourneyDto;
 import app.lifeos.journey.service.JourneyService;
 import app.lifeos.progress.service.ProgressService;
 import app.lifeos.quest.dto.DailyDashboardDto;
+import app.lifeos.habit.model.HabitObjective;
+import app.lifeos.habit.repository.HabitObjectiveRepository;
 import app.lifeos.quest.dto.QuestDto;
+import app.lifeos.quest.dto.QuestObjectiveDto;
+import app.lifeos.quest.model.QuestObjective;
+import app.lifeos.quest.repository.QuestObjectiveRepository;
 import app.lifeos.quest.model.QuestInstance;
 import app.lifeos.quest.repository.QuestInstanceRepository;
 import java.time.DateTimeException;
@@ -50,9 +55,13 @@ public class QuestService {
     private final ProgressService progress;
     private final XpTransactionRepository ledger;
     private final UserClock clock;
+    private final QuestMaterializer materializer;
+    private final QuestObjectiveRepository questObjectives;
+    private final HabitObjectiveRepository habitObjectives;
 
-    public QuestService(ScheduleHistoryLoader loader, JourneyService journeys,
+    public QuestService(QuestMaterializer materializer, QuestObjectiveRepository questObjectives, HabitObjectiveRepository habitObjectives, ScheduleHistoryLoader loader, JourneyService journeys,
                         QuestInstanceRepository instances, UserRepository users, ProgressService progress, XpTransactionRepository ledger, UserClock clock) {
+        this.materializer = materializer; this.questObjectives = questObjectives; this.habitObjectives = habitObjectives;
         this.ledger = ledger;
         this.loader = loader; this.journeys = journeys;
         this.instances = instances; this.users = users; this.progress = progress; this.clock = clock;
@@ -74,18 +83,18 @@ public class QuestService {
     }
 
     /**
-     * Creates (with today's reward) every quest of this habit inside the 7-day edit window that does not exist yet, so a later reward
-     * edit cannot change what a lived day is worth. Called right before `xpReward` changes.
+     * Creates (with today's reward and checklist) every quest of this habit inside the 7-day edit window that does not exist yet, so a later
+     * edit of the reward or checklist cannot change what a lived day is worth. Called right before `xpReward` or `objectives` change.
      */
     @Transactional
-    public void freezeRewards(UUID userId, UUID habitId) {
+    public void freezeLivedDays(UUID userId, UUID habitId) {
         User user = users.findById(userId).orElseThrow();
         ScheduleHistory history = loader.load(userId);
         Habit habit = history.habits().stream().filter(h -> h.getId().equals(habitId)).findFirst().orElse(null);
         if (habit == null) return;
         LocalDate today = clock.today(user.getTimezone());
         for (LocalDate d = today.minusDays(7); !d.isAfter(today); d = d.plusDays(1)) {
-            if (history.hasQuest(habit, d)) instances.materialize(UUID.randomUUID(), userId, habitId, d, history.goalOf(habit).getCategory().name(), habit.getXpReward(), clock.now());
+            if (history.hasQuest(habit, d)) materializer.ensure(userId, habit, history.goalOf(habit).getCategory().name(), d);
         }
     }
 
@@ -99,20 +108,35 @@ public class QuestService {
         Map<UUID, QuestInstance> stored = new HashMap<>();
         if (lived) {
             for (Habit h : due) {
-                int created = instances.materialize(UUID.randomUUID(), userId, h.getId(), day, history.goalOf(h).getCategory().name(), h.getXpReward(), clock.now());
-                if (created > 0) log.info("quest.materialized userId={} habitId={} date={}", userId, h.getId(), day);
+                if (materializer.ensure(userId, h, history.goalOf(h).getCategory().name(), day)) log.info("quest.materialized userId={} habitId={} date={}", userId, h.getId(), day);
             }
             instances.findByUserIdAndScheduledDate(userId, day).forEach(q -> stored.put(q.getHabitId(), q));
         }
-        return due.stream().map(h -> toDto(h, history.goalOf(h), stored.get(h.getId()), day)).toList();
+        Map<UUID, List<QuestObjectiveDto>> checklists = new HashMap<>();
+        if (!stored.isEmpty()) {
+            for (QuestObjective o : questObjectives.findByQuestIdInOrderByQuestIdAscPositionAsc(stored.values().stream().map(QuestInstance::getId).toList())) {
+                checklists.computeIfAbsent(o.getQuestId(), k -> new ArrayList<>()).add(QuestObjectiveDto.of(o));
+            }
+        }
+        Map<UUID, List<QuestObjectiveDto>> previews = new HashMap<>();
+        if (!lived) {
+            for (HabitObjective o : habitObjectives.findByHabitIdInOrderByHabitIdAscPositionAsc(due.stream().map(Habit::getId).toList())) {
+                previews.computeIfAbsent(o.getHabitId(), k -> new ArrayList<>()).add(QuestObjectiveDto.preview(o));
+            }
+        }
+        return due.stream().map(h -> {
+            QuestInstance q = stored.get(h.getId());
+            List<QuestObjectiveDto> list = q != null ? checklists.getOrDefault(q.getId(), List.of()) : previews.getOrDefault(h.getId(), List.of());
+            return toDto(h, history.goalOf(h), q, day, list);
+        }).toList();
     }
 
-    private static QuestDto toDto(Habit h, Goal goal, QuestInstance q, LocalDate day) {
+    private static QuestDto toDto(Habit h, Goal goal, QuestInstance q, LocalDate day, List<QuestObjectiveDto> objectives) {
         // The snapshot wins for reward/category once it exists; a future preview uses the current definitions.
         int reward = q != null ? q.getXpReward() : h.getXpReward();
         String category = (q != null ? q.getCategory() : goal.getCategory()).name();
         return new QuestDto(h.getId().toString(), goal.getId().toString(), goal.getTitle(), h.getTitle(), h.getTargetMinutes(), reward, category,
-            day, q != null ? q.getStatus().name() : "PENDING", q != null ? q.getCompletedAt() : null);
+            day, q != null ? q.getStatus().name() : "PENDING", q != null ? q.getCompletedAt() : null, objectives);
     }
 
     private static LocalDate parse(String value, String field) {

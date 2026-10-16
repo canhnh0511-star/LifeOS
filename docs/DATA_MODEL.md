@@ -16,6 +16,7 @@
 | `xp_transactions` | UUID id PK, user_id FK, source_type (QUEST/BOSS/ACHIEVEMENT), source_id UUID, category, cycle INTEGER, event_type, amount (+/-, khác 0), created_at, UNIQUE(source_type,source_id,cycle,event_type,category) (category thêm ở B-09 để BALANCED có 5 event) |
 | `chapters` | UUID id PK, journey_id FK, idx, start_date, end_date |
 | `boss_definitions` | code PK, name, category, target_minutes, xp_reward 1..100, tier 1..5, required_level, art_key (dữ liệu seed/cấu hình) |
+| `habit_objectives` / `quest_objectives` (B-17) | `habit_objectives`: id, habit_id, position, title, target, unit, step. `quest_objectives`: bản chụp theo quest + `value` tiến độ; quest hoàn thành khi mọi dòng `value >= target` |
 | `boss_states` (triển khai B-08, thay `campaign_bosses`) | UUID id PK, user_id FK, journey_id FK, boss_code, status (AVAILABLE/DEFEATED), cycle, defeated_date, defeated_at; UNIQUE(journey_id, boss_code); chỉ có dòng khi boss đã được đánh | 
 | `campaign_bosses` (thiết kế ban đầu) | UUID id PK, user_id FK, journey_id FK, chapter_id FK, definition_code FK, boss_date, status, defeated_date, cycle; UNIQUE(chapter_id) |
 | `achievement_grants` | UUID id PK, user_id FK, journey_id FK, code, status (EARNED/REVOKED), cycle, earned_at; UNIQUE(journey_id, code, cycle) |

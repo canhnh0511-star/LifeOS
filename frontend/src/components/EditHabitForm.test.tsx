@@ -6,7 +6,7 @@ import { EditHabitForm } from './forms';
 import type { HabitDto } from '../api/types';
 
 afterEach(cleanup);
-const habit: HabitDto = { id: 'h1', goalId: 'g1', title: 'Gym', targetMinutes: 60, xpReward: 50, weekdays: [1, 3, 5], startDate: '2026-10-01', endDate: null, status: 'ACTIVE' };
+const habit: HabitDto = { id: 'h1', goalId: 'g1', title: 'Gym', targetMinutes: 60, xpReward: 50, weekdays: [1, 3, 5], startDate: '2026-10-01', endDate: null, status: 'ACTIVE', objectives: [] };
 
 describe('EditHabitForm', () => {
   it('sends only the fields that changed', async () => {

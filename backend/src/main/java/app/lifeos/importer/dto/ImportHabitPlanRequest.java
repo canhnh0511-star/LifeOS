@@ -6,5 +6,5 @@ import java.util.List;
 public record ImportHabitPlanRequest(String startDate, List<PlanGoal> goals) {
     public record PlanGoal(String title, String category, String description, List<PlanHabit> habits) {}
 
-    public record PlanHabit(String title, Integer targetMinutes, Integer xpReward, List<Integer> weekdays) {}
+    public record PlanHabit(String title, Integer targetMinutes, Integer xpReward, List<Integer> weekdays, List<java.util.Map<String, Object>> objectives) {}
 }

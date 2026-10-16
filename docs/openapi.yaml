@@ -159,6 +159,21 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
         '422': {$ref: '#/components/responses/ValidationError'}
+  /quests/{habitId}/dates/{date}/objectives/{objectiveId}:
+    parameters:
+      - {name: habitId, in: path, required: true, schema: {type: string}}
+      - {name: date, in: path, required: true, schema: {$ref: '#/components/schemas/LocalDate'}}
+      - {name: objectiveId, in: path, required: true, schema: {type: string}}
+    put:
+      tags: [Quests]
+      operationId: setObjective
+      description: Sets the progress of one checklist line to an absolute value (idempotent). The quest completes itself, with the usual ledger event and XP once, when every line has reached its target, and undoes itself when one drops below it. A change that does not flip the quest awards nothing. Same window, schedule and pause rules as the completion endpoints; an unknown line, or one of another quest or user, is 404.
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [value], properties: {value: {type: integer, minimum: 0, maximum: 100000}}}}}}
+      responses:
+        '200': {description: Mutation result, content: {application/json: {schema: {$ref: '#/components/schemas/QuestMutation'}}}}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/ValidationError'}
   /progress:
     get:
       tags: [Progress]
@@ -265,8 +280,9 @@ components:
         status: {$ref: '#/components/schemas/RecordStatus'}
     Habit:
       type: object
-      required: [id, goalId, title, targetMinutes, xpReward, weekdays, startDate, endDate, status]
+      required: [id, goalId, title, targetMinutes, xpReward, weekdays, startDate, endDate, status, objectives]
       properties:
+        objectives: {type: array, items: {$ref: '#/components/schemas/HabitObjective'}, description: 'Checklist; empty = a plain one-tick habit.'}
         id: {type: string}
         goalId: {type: string}
         title: {type: string}
@@ -286,6 +302,31 @@ components:
         xpReward: {type: integer, minimum: 0, maximum: 100}
         weekdays: {type: array, uniqueItems: true, minItems: 1, items: {$ref: '#/components/schemas/Weekday'}}
         startDate: {$ref: '#/components/schemas/LocalDate'}
+        objectives: {type: array, maxItems: 20, items: {$ref: '#/components/schemas/ObjectiveInput'}}
+    HabitObjective:
+      type: object
+      required: [id, title, target, unit, step]
+      properties:
+        id: {type: string}
+        title: {type: string, minLength: 1, maxLength: 100}
+        target: {type: integer, minimum: 1, maximum: 10000}
+        unit: {type: string, maxLength: 20, description: 'Free text (rep, cốc, phút, bước...). Empty with target 1 = a plain tick.'}
+        step: {type: integer, minimum: 1, description: 'Size of the quick + / - button; at most target.'}
+    ObjectiveInput:
+      type: object
+      required: [title, target]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 100}
+        target: {type: integer, minimum: 1, maximum: 10000}
+        unit: {type: string, maxLength: 20}
+        step: {type: integer, minimum: 1}
+    QuestObjective:
+      allOf:
+        - {$ref: '#/components/schemas/HabitObjective'}
+        - type: object
+          required: [value]
+          properties:
+            value: {type: integer, minimum: 0, maximum: 100000, description: 'Progress on this day; the quest completes when every line has value >= target.'}
     ImportHabitPlan:
       type: object
       required: [startDate, goals]
@@ -313,6 +354,7 @@ components:
                     targetMinutes: {type: integer, minimum: 1, maximum: 480}
                     xpReward: {type: integer, minimum: 0, maximum: 100}
                     weekdays: {type: array, uniqueItems: true, minItems: 1, items: {$ref: '#/components/schemas/Weekday'}}
+                    objectives: {type: array, maxItems: 20, items: {$ref: '#/components/schemas/ObjectiveInput'}}
     ImportedHabitPlan:
       type: object
       required: [goals, habits]
@@ -331,10 +373,12 @@ components:
         weekdays: {type: array, uniqueItems: true, minItems: 1, items: {$ref: '#/components/schemas/Weekday'}, description: 'Adds a schedule version effective from the next local day; a second change on the same day replaces the first.'}
         endDate: {oneOf: [{$ref: '#/components/schemas/LocalDate'}, {type: 'null'}], description: 'Today or later, or null to clear. Rejected once the habit has already ended (it would bring back lived days).'}
         status: {$ref: '#/components/schemas/RecordStatus'}
+        objectives: {type: array, maxItems: 20, items: {$ref: '#/components/schemas/ObjectiveInput'}, description: 'Replaces the whole checklist from the next local day; lived days keep the list they had. [] turns the habit back into a plain tick.'}
     Quest:
       type: object
-      required: [habitId, goalId, goalTitle, title, targetMinutes, xpReward, category, date, status, completedAt]
+      required: [habitId, goalId, goalTitle, title, targetMinutes, xpReward, category, date, status, completedAt, objectives]
       properties:
+        objectives: {type: array, items: {$ref: '#/components/schemas/QuestObjective'}, description: 'The checklist as it was when the quest was created; empty for a plain tick quest.'}
         habitId: {type: string}
         goalId: {type: string}
         goalTitle: {type: string}
@@ -456,8 +500,9 @@ components:
         journey: {oneOf: [{$ref: '#/components/schemas/Journey'}, {type: 'null'}]}
     QuestMutation:
       type: object
-      required: [habitId, date, status, xpAwarded, totalXp, level, streak, effects]
+      required: [habitId, date, status, xpAwarded, totalXp, level, streak, effects, objectives]
       properties:
+        objectives: {type: array, items: {$ref: '#/components/schemas/QuestObjective'}, description: 'The quest checklist after this change.'}
         habitId: {type: string}
         date: {$ref: '#/components/schemas/LocalDate'}
         status: {type: string, enum: [PENDING, COMPLETED]}

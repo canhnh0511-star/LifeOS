@@ -1,6 +1,6 @@
 # B-17 — Nhiệm vụ có danh sách mục tiêu (checklist có số lượng)
 
-Trạng thái: **chưa làm** · Lát 1/3 của "Today kiểu RPG" (owner duyệt hướng 2026-10-16) · Cần owner duyệt UI trước khi sửa giao diện.
+Trạng thái: **xong** (ADR-032; chưa có giao diện sửa danh sách mục trong app, dùng import/PATCH) · Lát 1/3 của "Today kiểu RPG" (owner duyệt hướng 2026-10-16) · Cần owner duyệt UI trước khi sửa giao diện.
 
 Yêu cầu của owner: một nhiệm vụ không chỉ là "làm một việc trong X phút" mà có **danh sách việc cần đạt**, mỗi mục có số đã làm / mục tiêu (ví dụ Gym tập chân: Squat 24/40 rep, Lunge 0/30 rep; Uống nước 6/10 cốc). Đơn vị **linh động theo loại nhiệm vụ**.
 

@@ -7,13 +7,13 @@ import { TodayPage } from './TodayPage';
 
 afterEach(cleanup);
 
-const quest = (id: string, status: QuestDto['status'], title = id): QuestDto => ({ habitId: id, goalId: 'g', goalTitle: 'G', title, targetMinutes: 30, xpReward: 20, category: 'HEALTH', date: '2026-10-16', status, completedAt: null });
+const quest = (id: string, status: QuestDto['status'], title = id): QuestDto => ({ habitId: id, goalId: 'g', goalTitle: 'G', title, targetMinutes: 30, xpReward: 20, category: 'HEALTH', date: '2026-10-16', status, completedAt: null, objectives: [] });
 const dashboard = (quests: QuestDto[]): DailyDashboardDto => ({
   date: '2026-10-16', user: { id: 'u', displayName: 'C', email: 'c@x.co', timezone: 'Asia/Ho_Chi_Minh' }, quests,
   progress: { totalXp: 500, level: 2, levelStartXp: 400, nextLevelXp: 900, currentStreak: 3, longestStreak: 5, areas: [] },
   completedCount: quests.filter(q => q.status === 'COMPLETED').length, scheduledCount: quests.length, earnedXpToday: 20, journey: null
 });
-const props = { today: '2026-10-16', selectedDate: '2026-10-16', busyId: null, onSelectDate: () => {}, onNewHabit: () => {}, goTo: () => {} };
+const props = { today: '2026-10-16', selectedDate: '2026-10-16', busyId: null, onSelectDate: () => {}, onNewHabit: () => {}, onSetObjective: () => {}, goTo: () => {} };
 
 describe('TodayPage', () => {
   it('puts the first unfinished quest up front with one button, and completing it calls the handler with that quest', async () => {
@@ -48,4 +48,20 @@ describe('TodayPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /Level 2, xem nhân vật/ }));
     expect(goTo).toHaveBeenCalledWith('character');
   });
+  it('shows a quest that has a checklist as a card with its lines, and offers a quick "all done" instead of a plain button', async () => {
+    const onSetObjective = vi.fn(); const onToggleQuest = vi.fn();
+    const withList: QuestDto = { ...quest('gym', 'PENDING', 'Tập chân'), objectives: [
+      { id: 'o1', title: 'Squat', target: 40, unit: 'rep', step: 5, value: 10 }, { id: 'o2', title: 'Ghi lại', target: 1, unit: '', step: 1, value: 0 }] };
+    render(<TodayPage {...props} onSetObjective={onSetObjective} onToggleQuest={onToggleQuest} dashboard={dashboard([withList])}/>);
+    const next = screen.getByLabelText('Việc tiếp theo');
+    expect(next.textContent).toContain('0/2 việc');
+    expect(next.querySelectorAll('.objective')).toHaveLength(2);
+    await userEvent.click(next.querySelector('button[aria-label^="Tăng Squat"]')!);
+    expect(onSetObjective).toHaveBeenCalledWith(expect.objectContaining({ habitId: 'gym' }), expect.objectContaining({ id: 'o1' }), 15);
+    await userEvent.click(screen.getByRole('button', { name: /Đánh dấu xong tất cả/ }));
+    expect(onToggleQuest).toHaveBeenCalledWith(expect.objectContaining({ habitId: 'gym' }));
+    expect(document.querySelector('.quests-panel .quest-card')).not.toBeNull();
+    expect(document.querySelector('.quests-panel button.quest-row')).toBeNull();
+  });
 });
+

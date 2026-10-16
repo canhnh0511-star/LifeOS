@@ -1,5 +1,5 @@
 import type { LifeOsApi } from './client';
-import type { AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday } from './types';
+import type { AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday, HabitObjectiveDto, ObjectiveInput, QuestObjectiveDto } from './types';
 import { ApiError, ErrorCode } from './errors';
 import { ALL_CATEGORIES } from '../domain/insights';
 import { ACHIEVEMENT_CATALOG, STREAK_TARGET, balancedAchieved, comebackAchieved, spreadAcrossAreas } from '../domain/achievements';
@@ -14,7 +14,7 @@ const user: UserDto = { id: 'demo-user-001', displayName: 'Cảnh', email: 'demo
 /** A status change that takes effect on `effectiveDate` (the next local day after the request). */
 type LifecycleEvent = { effectiveDate: string; status: RecordStatus };
 /** Mutable state of one materialized quest (habit + local date). `cycle` counts completions, as in docs/DATA_MODEL.md. */
-type QuestState = { habitId: string; date: string; status: 'PENDING' | 'COMPLETED'; cycle: number; completedAt: string | null };
+type QuestState = { habitId: string; date: string; status: 'PENDING' | 'COMPLETED'; cycle: number; completedAt: string | null; /** the checklist as it was when the quest was created, with progress */ objectives?: QuestObjectiveDto[] };
 /** Append-only ledger entry. Never edited or removed. `date` is the quest's local date. */
 type XpEvent = { id: string; habitId?: string; bossId?: string; achievementCode?: AchievementCode; date: string; category: GoalCategory; type: 'QUEST_COMPLETE' | 'QUEST_REVERT' | 'BOSS_COMPLETE' | 'BOSS_REVERT' | 'ACHIEVEMENT_GRANT' | 'ACHIEVEMENT_REVOKE'; cycle: number; amount: number; createdAt: string };
 /** Mutable state of one boss. `cycle` counts defeats; `defeatedDate` is the local date of the current defeat. */
@@ -50,6 +50,27 @@ function checkStatus(fields: Record<string, string>, value: unknown) {
 function assertOnlyKeys(patch: object, allowed: string[]) {
   const keys = Object.keys(patch);
   if (!keys.length || keys.some(key => !allowed.includes(key))) fail({ patch: `Chỉ được cập nhật: ${allowed.join(', ')}.` });
+}
+
+/** Same rules and messages as the backend's ObjectiveRules. Errors are keyed `<prefix>objectives[i].field`. */
+function checkObjectives(fields: Record<string, string>, raw: unknown, prefix = ''): HabitObjectiveDto[] {
+  const out: HabitObjectiveDto[] = [];
+  if (raw === undefined || raw === null) return out;
+  if (!Array.isArray(raw)) { fields[`${prefix}objectives`] = 'Danh sách mục tiêu không hợp lệ.'; return out; }
+  if (raw.length > 20) { fields[`${prefix}objectives`] = 'Tối đa 20 mục tiêu cho một thói quen.'; return out; }
+  raw.forEach((item: Partial<ObjectiveInput> | null, i) => {
+    const at = `${prefix}objectives[${i}].`;
+    if (!item || typeof item !== 'object') { fields[`${prefix}objectives[${i}]`] = 'Mục tiêu không hợp lệ.'; return; }
+    let ok = true;
+    if (typeof item.title !== 'string' || !item.title.trim()) { fields[`${at}title`] = 'Tên mục tiêu không được để trống.'; ok = false; }
+    else if (item.title.trim().length > 100) { fields[`${at}title`] = 'Tên mục tiêu tối đa 100 ký tự.'; ok = false; }
+    if (!isInt(item.target, 1, 10000)) { fields[`${at}target`] = 'Mục tiêu phải là số nguyên từ 1 đến 10000.'; ok = false; }
+    if (item.unit !== undefined && typeof item.unit !== 'string') { fields[`${at}unit`] = 'Đơn vị không hợp lệ.'; ok = false; }
+    else if (typeof item.unit === 'string' && item.unit.trim().length > 20) { fields[`${at}unit`] = 'Đơn vị tối đa 20 ký tự.'; ok = false; }
+    if (item.step !== undefined && !(isInt(item.target, 1, 10000) ? isInt(item.step, 1, item.target) : isInt(item.step, 1, 100000))) { fields[`${at}step`] = 'Bước phải là số nguyên từ 1 đến mục tiêu.'; ok = false; }
+    if (ok) out.push({ id: id(), title: item.title!.trim(), target: item.target!, unit: (item.unit ?? '').trim(), step: item.step ?? 1 });
+  });
+  return out;
 }
 
 // ---------- history-aware rules ----------
@@ -97,11 +118,11 @@ function seed(): Db {
     { id:'goal-mindfulness', title:'Calm mind', category:'MINDFULNESS', description:'Giữ đầu óc tĩnh và tập trung qua thiền và nghỉ không màn hình.', status:'ACTIVE', createdAt:now() }
   ];
   const habits: HabitDto[] = [
-    { id:'habit-code', goalId:'goal-career', title:'Deep work · Java & AI', targetMinutes:45, xpReward:50, weekdays:[1,2,3,4,5], startDate:start, endDate:null, status:'ACTIVE' },
-    { id:'habit-piano', goalId:'goal-creativity', title:'Practice piano', targetMinutes:30, xpReward:35, weekdays:[1,2,3,4,5,6,7], startDate:start, endDate:null, status:'ACTIVE' },
-    { id:'habit-reading', goalId:'goal-knowledge', title:'Read & reflect', targetMinutes:15, xpReward:20, weekdays:[1,2,3,4,5,6,7], startDate:start, endDate:null, status:'ACTIVE' },
-    { id:'habit-workout', goalId:'goal-health', title:'Move your body', targetMinutes:30, xpReward:40, weekdays:[2,4,6], startDate:start, endDate:null, status:'ACTIVE' },
-    { id:'habit-meditate', goalId:'goal-mindfulness', title:'Meditate', targetMinutes:10, xpReward:20, weekdays:[1,2,3,4,5,6,7], startDate:start, endDate:null, status:'ACTIVE' }
+    { id:'habit-code', goalId:'goal-career', title:'Deep work · Java & AI', targetMinutes:45, xpReward:50, weekdays:[1,2,3,4,5], startDate:start, endDate:null, status:'ACTIVE', objectives:[] },
+    { id:'habit-piano', goalId:'goal-creativity', title:'Practice piano', targetMinutes:30, xpReward:35, weekdays:[1,2,3,4,5,6,7], startDate:start, endDate:null, status:'ACTIVE', objectives:[{ id:'obj-scales', title:'Gam & arpeggio', target:10, unit:'phút', step:5 },{ id:'obj-piece', title:'Bài đang học', target:3, unit:'lần', step:1 },{ id:'obj-record', title:'Ghi âm lại bản chơi', target:1, unit:'', step:1 }] },
+    { id:'habit-reading', goalId:'goal-knowledge', title:'Read & reflect', targetMinutes:15, xpReward:20, weekdays:[1,2,3,4,5,6,7], startDate:start, endDate:null, status:'ACTIVE', objectives:[{ id:'obj-pages', title:'Đọc sách', target:20, unit:'trang', step:5 },{ id:'obj-notes', title:'Ghi lại điều học được', target:1, unit:'', step:1 }] },
+    { id:'habit-workout', goalId:'goal-health', title:'Move your body', targetMinutes:30, xpReward:40, weekdays:[2,4,6], startDate:start, endDate:null, status:'ACTIVE', objectives:[{ id:'obj-squat', title:'Squat', target:40, unit:'rep', step:5 },{ id:'obj-lunge', title:'Lunge', target:30, unit:'rep', step:5 },{ id:'obj-plank', title:'Plank', target:3, unit:'phút', step:1 }] },
+    { id:'habit-meditate', goalId:'goal-mindfulness', title:'Meditate', targetMinutes:10, xpReward:20, weekdays:[1,2,3,4,5,6,7], startDate:start, endDate:null, status:'ACTIVE', objectives:[] }
   ];
   const questStates: QuestState[] = []; const xpTransactions: XpEvent[] = [];
   for (let x=0; x<=20; x++) {
@@ -141,9 +162,13 @@ function migrateV1(old: DbV1): Db {
   const questStates: QuestState[] = old.completions.map(c => ({ habitId: c.habitId, date: c.date, status: 'COMPLETED', cycle: cycles.get(`${c.habitId}|${c.date}`) ?? 1, completedAt: c.completedAt }));
   return { version: DB_VERSION, goals: old.goals, habits: old.habits, lifecycle, questStates, xpTransactions, bossStates: [], achievementStates: [], journey: old.journey };
 }
-function load():Db {
+/** Older saved demo data has habits without a checklist. */
+function normalize(db:Db):Db{db.habits.forEach(h=>{(h as Partial<HabitDto>).objectives??=[];});return db;}
+function load():Db{return normalize(loadRaw());}
+function loadRaw():Db {
   try { const stored=localStorage.getItem(DB_KEY); if (stored) {
     const parsed=JSON.parse(stored) as Db | DbV1 | DbV2 | DbV3;
+    (parsed as { habits?: Partial<HabitDto>[] }).habits?.forEach(h=>{h.objectives??=[];}); // saved before checklists existed: migrations below read habits too
     if ((parsed.version===2||parsed.version===3) && Array.isArray(parsed.goals) && Array.isArray(parsed.xpTransactions) && Array.isArray(parsed.questStates)) { const migrated:Db={...parsed,version:DB_VERSION,bossStates:(parsed as DbV3).bossStates??[],achievementStates:[]}; reconcileAchievements(migrated); save(migrated); return migrated; }
     if (parsed.version===DB_VERSION && Array.isArray(parsed.goals) && Array.isArray(parsed.xpTransactions) && Array.isArray((parsed as Db).questStates)) return parsed as Db;
     if (parsed.version===1 && Array.isArray(parsed.goals) && Array.isArray(parsed.habits) && Array.isArray(parsed.completions) && Array.isArray(parsed.xpTransactions)) { const migrated=migrateV1(parsed); reconcileAchievements(migrated); save(migrated); return migrated; }
@@ -175,7 +200,7 @@ function quests(db:Db,date:string):QuestDto[]{
   return db.habits.filter(h=>isQuestOn(db,h,date)).map(h=>{
     const goal=db.goals.find(g=>g.id===h.goalId);
     const state=stateOf(db,h.id,date);
-    return {habitId:h.id,goalId:h.goalId,goalTitle:goal?.title??'',title:h.title,targetMinutes:h.targetMinutes,xpReward:rewardFor(db,h,date),category:goal?.category??'CAREER',date,status:state?.status??'PENDING',completedAt:state?.completedAt??null};
+    return {habitId:h.id,goalId:h.goalId,goalTitle:goal?.title??'',title:h.title,targetMinutes:h.targetMinutes,xpReward:rewardFor(db,h,date),category:goal?.category??'CAREER',date,status:state?.status??'PENDING',completedAt:state?.completedAt??null,objectives:(state?state.objectives??[]:h.objectives.map(o=>({...o,value:0}))).map(o=>({...o}))};
   });
 }
 // ---------- achievements ----------
@@ -280,21 +305,45 @@ function assertEditableDate(date:string) {
   if(date>today)throw new ApiError(422,ErrorCode.questInFuture,'Chưa thể hoàn thành nhiệm vụ trong tương lai.');
   if(diffDays(date,today)>MAX_BACKDATE_DAYS)throw new ApiError(422,ErrorCode.questTooOld,'Chỉ có thể điều chỉnh nhiệm vụ trong 7 ngày gần nhất.');
 }
-async function mutateQuest(habitId:string,date:string,complete:boolean):Promise<QuestMutationDto>{
-  await delay(); assertLocalDate(date); const db=load();
+/** Creates the quest's state with a copy of the habit's checklist (like the backend does when a quest is first created). */
+function ensureState(db:Db,habit:HabitDto,date:string):QuestState{
+  let state=stateOf(db,habit.id,date);
+  if(!state){state={habitId:habit.id,date,status:'PENDING',cycle:0,completedAt:null,objectives:habit.objectives.map(o=>({...o,value:0}))};db.questStates.push(state);}
+  return state;
+}
+/** Before the habit's checklist changes, every lived day in the 7-day window that has no state yet gets one that keeps the old checklist. */
+function freezeLivedDays(db:Db,habit:HabitDto){
+  const today=todayInTimezone();
+  for(let d=moveDate(today,-7);d<=today;d=moveDate(d,1))if(isQuestOn(db,habit,d))ensureState(db,habit,d);
+}
+async function mutateQuest(habitId:string,date:string,complete:boolean|null,objectiveId?:string,value?:unknown):Promise<QuestMutationDto>{
+  await delay(); assertLocalDate(date);
+  if(objectiveId!==undefined&&!isInt(value,0,100000))fail({value:'Tiến độ phải là số nguyên từ 0 đến 100000.'});
+  const db=load();
   const habit=requireHabit(db,habitId);
   assertEditableDate(date);
   if(!scheduledOn(db,habit,date))throw new ApiError(422,ErrorCode.questOutsideSchedule,'Ngày này không thuộc lịch thực hiện của thói quen.');
   if(!lifecycleActive(db,habit,date))throw new ApiError(409,ErrorCode.questNotActive,'Thói quen hoặc mục tiêu đang tạm dừng vào ngày này.');
-  let state=stateOf(db,habitId,date);
-  if(!state){state={habitId,date,status:'PENDING',cycle:0,completedAt:null};db.questStates.push(state);}
+  const state=ensureState(db,habit,date);
+  const checklist=state.objectives??[];
+  let target:boolean;
+  if(objectiveId===undefined){
+    target=complete as boolean;
+    // Undo only empties the lines of a quest that is actually done; on a pending one it keeps partial progress.
+    if(target||state.status==='COMPLETED')for(const o of checklist)o.value=target?Math.max(o.value,o.target):0;
+  } else {
+    const line=checklist.find(o=>o.id===objectiveId);
+    if(!line)throw notFound('mục tiêu');
+    line.value=value as number;
+    target=checklist.every(o=>o.value>=o.target);
+  }
   const category=db.goals.find(g=>g.id===habit.goalId)!.category;
   let xpAwarded=0;let changed=false;
-  if(complete&&state.status==='PENDING'){
+  if(target&&state.status==='PENDING'){
     changed=true;state.status='COMPLETED';state.cycle++;state.completedAt=now();
     xpAwarded=rewardFor(db,habit,date);
     if(xpAwarded>0)db.xpTransactions.push({id:id(),habitId,date,category,type:'QUEST_COMPLETE',cycle:state.cycle,amount:xpAwarded,createdAt:now()});
-  } else if(!complete&&state.status==='COMPLETED'){
+  } else if(!target&&state.status==='COMPLETED'){
     changed=true;state.status='PENDING';state.completedAt=null;
     // Reverse exactly what this cycle awarded, not the habit's current reward.
     const awarded=db.xpTransactions.find(e=>e.habitId===habitId&&e.date===date&&e.cycle===state.cycle&&e.type==='QUEST_COMPLETE');
@@ -303,9 +352,8 @@ async function mutateQuest(habitId:string,date:string,complete:boolean):Promise<
   }
   const effects=changed?reconcileAchievements(db):[];xpAwarded+=effects.reduce((a,e)=>a+e.xpDelta,0);
   save(db);const p=progress(db);
-  return {habitId,date,status:state.status,xpAwarded,effects,totalXp:p.totalXp,level:p.level,streak:streakForHabit(habit,completedDates(db,habitId),todayInTimezone(),d=>isQuestOn(db,habit,d))};
+  return {habitId,date,status:state.status,xpAwarded,effects,totalXp:p.totalXp,level:p.level,streak:streakForHabit(habit,completedDates(db,habitId),todayInTimezone(),d=>isQuestOn(db,habit,d)),objectives:checklist.map(o=>({...o}))};
 }
-
 async function mutateBoss(target:string,defeat:boolean):Promise<BossMutationDto>{
   await delay();const db=load();
   const boss=chaptersOf(db).map(c=>c.boss).find(b=>b.id===target);
@@ -372,10 +420,11 @@ export const mockClient:LifeOsApi={
     if(!isInt(input.targetMinutes,1,480))fields.targetMinutes='Thời lượng phải là số nguyên từ 1 đến 480 phút.';
     if(!isInt(input.xpReward,0,100))fields.xpReward='XP thưởng phải là số nguyên từ 0 đến 100.';
     if(!Array.isArray(input.weekdays)||input.weekdays.length===0||!input.weekdays.every(d=>isInt(d,1,7)))fields.weekdays='Chọn ít nhất một ngày trong tuần (1 đến 7).';
+    const checklist=checkObjectives(fields,input.objectives);
     if(!isLocalDate(input.startDate))fields.startDate='Ngày bắt đầu phải có dạng YYYY-MM-DD.';
     else if(input.startDate<todayInTimezone())fields.startDate='Thói quen chỉ có thể bắt đầu từ hôm nay trở đi.';
     if(Object.keys(fields).length)fail(fields);
-    const habit:HabitDto={id:id(),title:input.title.trim(),goalId:input.goalId,targetMinutes:input.targetMinutes,xpReward:input.xpReward,weekdays:[...new Set(input.weekdays)].sort((a,b)=>a-b),startDate:input.startDate,endDate:null,status:'ACTIVE'};
+    const habit:HabitDto={id:id(),title:input.title.trim(),goalId:input.goalId,targetMinutes:input.targetMinutes,xpReward:input.xpReward,weekdays:[...new Set(input.weekdays)].sort((a,b)=>a-b),startDate:input.startDate,endDate:null,status:'ACTIVE',objectives:checklist};
     db.habits.push(habit);save(db);return habit;
   },
   async importHabitPlan(input:ImportHabitPlanRequest):Promise<ImportedHabitPlanDto>{
@@ -409,15 +458,16 @@ export const mockClient:LifeOsApi={
         if(!Array.isArray(h.weekdays)||h.weekdays.length===0||!h.weekdays.every(d=>isInt(d,1,7)))hf.weekdays='Chọn ít nhất một ngày trong tuần (1 đến 7).';
         if(!isLocalDate(input.startDate))hf.startDate='Ngày bắt đầu phải có dạng YYYY-MM-DD.';
         else if(input.startDate<todayInTimezone())hf.startDate='Thói quen chỉ có thể bắt đầu từ hôm nay trở đi.';
+        const parsed=checkObjectives(hf,h.objectives);
         put(hp,hf);if(Object.keys(hf).length)return;
-        habits.push({id:id(),title:h.title.trim(),goalId:goal.id,targetMinutes:h.targetMinutes,xpReward:h.xpReward,weekdays:[...new Set(h.weekdays)].sort((a,b)=>a-b),startDate:input.startDate,endDate:null,status:'ACTIVE'});
+        habits.push({id:id(),title:h.title.trim(),goalId:goal.id,targetMinutes:h.targetMinutes,xpReward:h.xpReward,weekdays:[...new Set(h.weekdays)].sort((a,b)=>a-b),startDate:input.startDate,endDate:null,status:'ACTIVE',objectives:parsed});
       });
     });
     if(Object.keys(errors).length)fail(errors);
     db.goals.push(...goals);db.habits.push(...habits);save(db);return {goals,habits};
   },
   async updateHabit(habitId,patch){
-    await delay();assertOnlyKeys(patch,['status','title','targetMinutes','xpReward','weekdays','endDate']);
+    await delay();assertOnlyKeys(patch,['status','title','targetMinutes','xpReward','weekdays','endDate','objectives']);
     const db=load();const habit=requireHabit(db,habitId);const today=todayInTimezone();
     const p=patch as Record<string,unknown>;const fields:Record<string,string>={};
     if(habit.status==='ARCHIVED')fields.patch='Thói quen đã lưu trữ nên không thể chỉnh sửa.';
@@ -426,6 +476,7 @@ export const mockClient:LifeOsApi={
     if('xpReward' in p&&!isInt(p.xpReward,0,100))fields.xpReward='XP thưởng phải là số nguyên từ 0 đến 100.';
     if('weekdays' in p&&(!Array.isArray(p.weekdays)||p.weekdays.length===0||!p.weekdays.every(d=>isInt(d,1,7))))fields.weekdays='Chọn ít nhất một ngày trong tuần (1 đến 7).';
     if('status' in p)checkStatus(fields,p.status);
+    const checklist='objectives' in p?checkObjectives(fields,p.objectives):null;
     if('endDate' in p){
       if(habit.endDate&&habit.endDate<today)fields.endDate='Thói quen đã kết thúc nên không thể đổi ngày kết thúc.';
       else if(p.endDate!==null){
@@ -435,6 +486,8 @@ export const mockClient:LifeOsApi={
       }
     }
     if(Object.keys(fields).length)fail(fields);
+    const sameList=(a:HabitObjectiveDto[],b:HabitObjectiveDto[])=>a.length===b.length&&a.every((o,i)=>o.title===b[i].title&&o.target===b[i].target&&o.unit===b[i].unit&&o.step===b[i].step);
+    if(checklist&&!sameList(habit.objectives,checklist)){freezeLivedDays(db,habit);habit.objectives=checklist;} // lived days keep their copy; the new list starts tomorrow
     if('title' in p)habit.title=(p.title as string).trim();
     if('targetMinutes' in p)habit.targetMinutes=p.targetMinutes as number;
     if('xpReward' in p&&p.xpReward!==habit.xpReward){
@@ -461,6 +514,7 @@ export const mockClient:LifeOsApi={
   async getQuests(date){await delay();assertLocalDate(date);return quests(load(),date);},
   completeQuest:(habitId,date)=>mutateQuest(habitId,date,true),
   undoQuest:(habitId,date)=>mutateQuest(habitId,date,false),
+  setObjective:(habitId,date,objectiveId,value)=>mutateQuest(habitId,date,null,objectiveId,value),
   defeatBoss:bossId=>mutateBoss(bossId,true),
   undoBoss:bossId=>mutateBoss(bossId,false),
   async getAchievements(){await delay();return achievements(load());},

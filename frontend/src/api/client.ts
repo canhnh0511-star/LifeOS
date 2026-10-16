@@ -17,6 +17,8 @@ export interface LifeOsApi {
   getQuests(date: string): Promise<QuestDto[]>;
   completeQuest(habitId: string, date: string): Promise<QuestMutationDto>;
   undoQuest(habitId: string, date: string): Promise<QuestMutationDto>;
+  /** Sets one checklist line to an absolute value; the quest completes/undoes itself when every line reaches/leaves its target. */
+  setObjective(habitId: string, date: string, objectiveId: string, value: number): Promise<QuestMutationDto>;
   defeatBoss(bossId: string): Promise<BossMutationDto>;
   undoBoss(bossId: string): Promise<BossMutationDto>;
   getAchievements(): Promise<AchievementDto[]>;

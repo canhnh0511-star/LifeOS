@@ -1,7 +1,7 @@
 import { describe,expect,it } from 'vitest';
 import { isScheduled, levelAtXp, levelProgress, longestStreakForHabit, moveDate, streakForHabit, titleForLevel } from './rules';
 import type { HabitDto } from '../api/types';
-const habit:HabitDto={id:'h',goalId:'g',title:'Work',targetMinutes:30,xpReward:35,weekdays:[1,2,3,4,5],startDate:'2026-10-05',endDate:null,status:'ACTIVE'};
+const habit:HabitDto={id:'h',goalId:'g',title:'Work',targetMinutes:30,xpReward:35,weekdays:[1,2,3,4,5],startDate:'2026-10-05',endDate:null,status:'ACTIVE',objectives:[]};
 describe('Level progression',()=>{
  it('uses quadratic total thresholds',()=>{expect(levelAtXp(0)).toBe(1);expect(levelAtXp(399)).toBe(1);expect(levelAtXp(400)).toBe(2);expect(levelAtXp(1600)).toBe(4);expect(levelProgress(1850).nextLevelXp).toBe(2500);});
 });

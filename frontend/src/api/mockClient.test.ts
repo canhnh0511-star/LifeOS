@@ -520,3 +520,89 @@ describe('editing a habit (B-10)', () => {
     expect((await mockClient.getHabits()).find(h => h.id === 'habit-piano')!.title).not.toBe('New');
   });
 });
+
+describe('quest checklists (B-17)', () => {
+  const LEGS = [{ title: 'Squat', target: 40, unit: 'rep', step: 5 }, { title: 'Lunge', target: 30, unit: 'rep' }];
+  async function legHabit(xp = 30, objectives = LEGS) {
+    const h = await mockClient.createHabit({ goalId: 'goal-health', title: 'Tập chân', targetMinutes: 45, xpReward: xp, weekdays: [1, 2, 3, 4, 5, 6, 7], startDate: D0, objectives });
+    const lines = (await mockClient.getQuests(D0)).find(q => q.habitId === h.id)!.objectives;
+    return { h, lines };
+  }
+
+  it('the quest completes once every line is met, not before, and awards once', async () => {
+    freezeAt(D0);
+    const { h, lines } = await legHabit();
+    const half = await mockClient.setObjective(h.id, D0, lines[0].id, 40);
+    expect([half.status, half.xpAwarded]).toEqual(['PENDING', 0]);
+    expect(half.objectives.map(o => o.value)).toEqual([40, 0]);
+    const done = await mockClient.setObjective(h.id, D0, lines[1].id, 30);
+    expect([done.status, done.xpAwarded]).toEqual(['COMPLETED', 30]);
+    expect((await mockClient.setObjective(h.id, D0, lines[1].id, 30)).xpAwarded).toBe(0);
+    expect(ledger().filter(e => e.habitId === h.id)).toHaveLength(1);
+  });
+  it('dropping a line below its target undoes the quest, and reaching it again starts a new cycle', async () => {
+    freezeAt(D0);
+    const { h, lines } = await legHabit();
+    await mockClient.setObjective(h.id, D0, lines[0].id, 40); await mockClient.setObjective(h.id, D0, lines[1].id, 30);
+    const back = await mockClient.setObjective(h.id, D0, lines[1].id, 29);
+    expect([back.status, back.xpAwarded]).toEqual(['PENDING', -30]);
+    expect((await mockClient.setObjective(h.id, D0, lines[1].id, 30)).xpAwarded).toBe(30);
+    expect(ledger().filter(e => e.habitId === h.id).map(e => [e.type, e.cycle])).toEqual([['QUEST_COMPLETE', 1], ['QUEST_REVERT', 1], ['QUEST_COMPLETE', 2]]);
+  });
+  it('undo on a quest that is not done keeps partial progress; a wrong target does not also blame the step', async () => {
+    freezeAt(D0);
+    const { h, lines } = await legHabit();
+    await mockClient.setObjective(h.id, D0, lines[0].id, 30);
+    const r = await mockClient.undoQuest(h.id, D0);
+    expect([r.xpAwarded, r.objectives.map(o => o.value)]).toEqual([0, [30, 0]]);
+    const e = await rejection(mockClient.createHabit({ goalId: 'goal-health', title: 'X', targetMinutes: 10, xpReward: 10, weekdays: [1], startDate: D0, objectives: [{ title: 'x', target: 0, step: 5 }] }));
+    expect(Object.keys(e.fields ?? {})).toEqual(['objectives[0].target']);
+  });
+  it('the quick endpoints fill or empty every line', async () => {
+    freezeAt(D0);
+    const { h } = await legHabit();
+    const all = await mockClient.completeQuest(h.id, D0);
+    expect(all.objectives.map(o => o.value)).toEqual([40, 30]);
+    const none = await mockClient.undoQuest(h.id, D0);
+    expect([none.status, none.objectives.map(o => o.value)]).toEqual(['PENDING', [0, 0]]);
+  });
+  it('rejects bad progress values and unknown lines, and a habit without a checklist keeps working as a tick', async () => {
+    freezeAt(D0);
+    const { h, lines } = await legHabit();
+    for (const bad of [-1, 100001, 1.5, '3', null]) expect((await rejection(mockClient.setObjective(h.id, D0, lines[0].id, bad as never))).status, String(bad)).toBe(422);
+    expect((await rejection(mockClient.setObjective(h.id, D0, 'nope', 5))).status).toBe(404);
+    expect((await rejection(mockClient.setObjective('habit-meditate', D0, lines[0].id, 5))).status).toBe(404);
+    expect((await mockClient.completeQuest('habit-meditate', D0)).objectives).toEqual([]);
+  });
+  it('validates a checklist when creating a habit', async () => {
+    freezeAt(D0);
+    const make = (objectives: unknown) => mockClient.createHabit({ goalId: 'goal-health', title: 'X', targetMinutes: 10, xpReward: 10, weekdays: [1], startDate: D0, objectives: objectives as never });
+    for (const bad of [[{ title: '', target: 5 }], [{ title: 'x', target: 0 }], [{ title: 'x', target: 10001 }], [{ title: 'x', target: 5, step: 6 }], [{ title: 'x', target: 5, unit: 'u'.repeat(21) }], Array(21).fill({ title: 'x', target: 1 })]) {
+      const e = await rejection(make(bad));
+      expect(e.status).toBe(422); expect(Object.keys(e.fields ?? {}).join()).toContain('objectives');
+    }
+  });
+  it('editing the checklist starts tomorrow; a lived day keeps the list it had', async () => {
+    freezeAt(D0);
+    const { h } = await legHabit();
+    await mockClient.updateHabit(h.id, { objectives: [{ title: 'Leg press', target: 12, unit: 'lần' }] });
+    const todayList = (await mockClient.getQuests(D0)).find(q => q.habitId === h.id)!.objectives.map(o => o.title);
+    expect(todayList).toEqual(['Squat', 'Lunge']);
+    expect((await mockClient.getQuests(moveDate(D0, 1))).find(q => q.habitId === h.id)!.objectives.map(o => o.title)).toEqual(['Leg press']);
+    expect((await mockClient.getHabits()).find(x => x.id === h.id)!.objectives.map(o => o.title)).toEqual(['Leg press']);
+  });
+  it('an import carries checklists and rejects the whole plan when one is invalid', async () => {
+    freezeAt(D0);
+    const plan = (target: number) => ({ startDate: D0, goals: [{ title: `Kế hoạch ${target}`, category: 'HEALTH' as const, description: '', habits: [{ title: 'Uống nước', targetMinutes: 5, xpReward: 20, weekdays: [1, 2, 3, 4, 5, 6, 7] as Weekday[], objectives: [{ title: 'Cốc 250ml', target, unit: 'cốc' }] }] }] });
+    expect((await rejection(mockClient.importHabitPlan(plan(0)))).fields).toHaveProperty(['goals[0].habits[0].objectives[0].target']);
+    const ok = await mockClient.importHabitPlan(plan(10));
+    expect(ok.habits[0].objectives.map(o => [o.title, o.target])).toEqual([['Cốc 250ml', 10]]);
+  });
+  it('old saved data without checklists still loads', async () => {
+    const saved = JSON.parse(exportDemoData()) as { habits: { objectives?: unknown }[] };
+    saved.habits.forEach(h => { delete h.objectives; });
+    store.set('life-os.mock.v1', JSON.stringify(saved));
+    freezeAt(D0);
+    expect((await mockClient.getHabits()).every(h => Array.isArray(h.objectives))).toBe(true);
+  });
+});

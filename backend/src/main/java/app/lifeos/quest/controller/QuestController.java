@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,6 +35,14 @@ class QuestController {
     QuestMutationDto undo(Authentication auth, @PathVariable String habitId, @PathVariable String date) {
         return completion.undo(UUID.fromString(auth.getName()), habitId, date);
     }
+
+    @PutMapping("/quests/{habitId}/dates/{date}/objectives/{objectiveId}")
+    QuestMutationDto setObjective(Authentication auth, @PathVariable String habitId, @PathVariable String date, @PathVariable String objectiveId, @RequestBody ObjectiveProgressRequest body) {
+        return completion.setObjective(UUID.fromString(auth.getName()), habitId, date, objectiveId, body.value());
+    }
+
+    /** `value` stays an Object so 1.5 or "x" is a field error (422) here instead of being coerced or rejected as unreadable JSON. */
+    record ObjectiveProgressRequest(Object value) {}
 
     @GetMapping("/quests")
     List<QuestDto> quests(Authentication auth, @RequestParam(required = false) String date) {

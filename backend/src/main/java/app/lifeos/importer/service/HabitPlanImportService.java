@@ -63,7 +63,7 @@ public class HabitPlanImportService {
                 if (h == null) { errors.add(goalPrefix + "habits[" + j + "]", "Thói quen không hợp lệ."); continue; }
                 String habitPrefix = goalPrefix + "habits[" + j + "].";
                 HabitDto habit = attempt(errors, habitPrefix, () -> habits.create(userId,
-                    new CreateHabitRequest(goal.id(), h.title(), h.targetMinutes(), h.xpReward(), h.weekdays(), req.startDate())));
+                    new CreateHabitRequest(goal.id(), h.title(), h.targetMinutes(), h.xpReward(), h.weekdays(), req.startDate(), h.objectives())));
                 if (habit != null) createdHabits.add(habit);
             }
         }

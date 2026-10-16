@@ -50,6 +50,7 @@ export const httpClient: LifeOsApi = {
   getQuests: date => request(`/quests?date=${encodeURIComponent(date)}`),
   completeQuest: (habitId, date) => request(`/quests/${habitId}/dates/${date}/completion`, { method:'PUT' }),
   undoQuest: (habitId, date) => request(`/quests/${habitId}/dates/${date}/completion`, { method:'DELETE' }),
+  setObjective: (habitId, date, objectiveId, value) => request(`/quests/${habitId}/dates/${date}/objectives/${objectiveId}`, { method:'PUT', body: JSON.stringify({ value }) }),
   defeatBoss: bossId => request(`/bosses/${bossId}/completion`, { method:'PUT' }),
   undoBoss: bossId => request(`/bosses/${bossId}/completion`, { method:'DELETE' }),
   getAchievements: () => request('/achievements'),

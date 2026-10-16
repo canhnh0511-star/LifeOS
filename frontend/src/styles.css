@@ -129,3 +129,19 @@
 .character-page{display:flex;flex-direction:column;gap:20px;max-width:1000px}
 @media (max-width:700px){.today-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.today-progress{grid-column:1 / -1}.next-up .btn{width:100%;justify-content:center}}
 .metric-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.objective-list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.objective{background:#101823;border:1px solid #27333f;border-radius:12px;padding:10px 12px}.objective.is-met{border-color:#3d5a43;background:#12201c}
+.objective-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13px;color:#dbe5ee}.objective-title{display:flex;align-items:center;gap:6px;min-width:0}
+.objective.is-met .objective-title{color:#c6fa55}.objective-count{color:#9fb0c3;font-size:12px;white-space:nowrap}.objective-count strong{color:#f4f8fd;font-size:15px}
+.objective-controls{display:flex;align-items:center;gap:8px;margin-top:8px}.objective-controls .progress{flex:1}.objective-controls>div{flex:1;min-width:60px}
+.objective-controls button{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #3a4a58;background:#1a2530;color:#d3e0cc;border-radius:9px}.objective-controls button:hover:not(:disabled){background:#243342;border-color:#6f8f66}
+.objective-controls input{width:68px;height:34px;border:1px solid #3a4a58;background:#0e141e;color:#f4f8fd;border-radius:9px;text-align:center}
+.objective-tick{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;color:#dbe5ee;font-size:13px;text-align:left;padding:2px 0}
+.quest-card{background:#151e2a;border:1px solid #283340;border-radius:14px;padding:14px 16px;margin:10px 0}.quest-card.is-done{border-color:#2f4a40}.quest-card.is-next{border-color:#6f8f66}
+.quest-card-head{display:flex;align-items:center;gap:12px}.quest-card-head .quest-body{flex:1;min-width:0}
+.next-up .objective-list{flex:0 0 100%}.next-up-quick{align-self:flex-start}
+.objectives-editor{border:1px solid #283340;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}.objectives-editor legend{padding:0 6px;font-size:13px;color:#dbe5ee}
+.objective-edit-row{display:grid;grid-template-columns:minmax(0,1fr) 78px 92px 64px 36px;gap:6px;align-items:center}.objective-edit-row input{min-width:0;height:36px;border:1px solid #3a4a58;background:#0e141e;color:#f4f8fd;border-radius:8px;padding:0 8px}.objective-edit-problem{grid-column:1 / -1;color:#ff9b9b;font-size:11px}
+@media (max-width:560px){.objective-edit-row{grid-template-columns:minmax(0,1fr) 70px 36px}.objective-edit-row input[list]{grid-column:1 / 3}.objective-edit-row input[aria-label^="Bước"]{grid-column:3 / 4}}
+.objective-edit-head{font-size:11px;color:#8798ab}
+@media (max-width:560px){.objective-edit-head{display:none}}

@@ -7,6 +7,9 @@ import app.lifeos.goal.repository.GoalRepository;
 import app.lifeos.goal.service.PatchRules;
 import app.lifeos.habit.dto.CreateHabitRequest;
 import app.lifeos.habit.dto.HabitDto;
+import app.lifeos.habit.dto.HabitObjectiveDto;
+import app.lifeos.habit.model.HabitObjective;
+import app.lifeos.habit.repository.HabitObjectiveRepository;
 import app.lifeos.habit.model.Habit;
 import app.lifeos.habit.model.HabitScheduleVersion;
 import app.lifeos.habit.repository.HabitRepository;
@@ -42,17 +45,19 @@ public class HabitService {
     private final LifecycleService lifecycle;
     private final UserClock clock;
     private final QuestService quests;
+    private final HabitObjectiveRepository objectives;
 
-    public HabitService(QuestService quests, HabitRepository habits, HabitScheduleVersionRepository schedules, GoalRepository goals, UserRepository users,
+    public HabitService(HabitObjectiveRepository objectives, QuestService quests, HabitRepository habits, HabitScheduleVersionRepository schedules, GoalRepository goals, UserRepository users,
                         LifecycleService lifecycle, UserClock clock) {
-        this.quests = quests; this.habits = habits; this.schedules = schedules; this.goals = goals; this.users = users; this.lifecycle = lifecycle; this.clock = clock;
+        this.objectives = objectives; this.quests = quests; this.habits = habits; this.schedules = schedules; this.goals = goals; this.users = users; this.lifecycle = lifecycle; this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     public List<HabitDto> list(UUID userId) {
         List<Habit> mine = habits.findByUserIdOrderByCreatedAtAsc(userId);
         Map<UUID, List<Integer>> latest = latestWeekdays(mine.stream().map(Habit::getId).collect(Collectors.toSet()));
-        return mine.stream().map(h -> HabitDto.of(h, latest.getOrDefault(h.getId(), List.of()))).toList();
+        Map<UUID, List<HabitObjectiveDto>> lists = objectivesOf(mine.stream().map(Habit::getId).collect(Collectors.toSet()));
+        return mine.stream().map(h -> HabitDto.of(h, latest.getOrDefault(h.getId(), List.of()), lists.getOrDefault(h.getId(), List.of()))).toList();
     }
 
     @Transactional
@@ -69,6 +74,7 @@ public class HabitService {
         if (req.weekdays() == null || req.weekdays().isEmpty() || req.weekdays().stream().anyMatch(d -> d == null || d < 1 || d > 7)) {
             errors.add("weekdays", "Chọn ít nhất một ngày trong tuần (1 đến 7).");
         }
+        List<ObjectiveRules.Parsed> checklist = ObjectiveRules.parse(req.objectives(), errors, "");
         LocalDate start = parseDate(req.startDate());
         if (start == null) errors.add("startDate", "Ngày bắt đầu phải có dạng YYYY-MM-DD.");
         else if (start.isBefore(clock.today(user.getTimezone()))) errors.add("startDate", "Thói quen chỉ có thể bắt đầu từ hôm nay trở đi.");
@@ -77,11 +83,12 @@ public class HabitService {
         Habit habit = habits.save(new Habit(userId, goal.getId(), req.title().trim(), req.targetMinutes(), req.xpReward(), start, clock.now()));
         Set<Integer> days = new TreeSet<>(req.weekdays());
         schedules.save(new HabitScheduleVersion(habit.getId(), start, days));
-        log.info("habit.created userId={} habitId={} goalId={} weekdays={} startDate={}", userId, habit.getId(), goal.getId(), days, start);
-        return HabitDto.of(habit, List.copyOf(days));
+        List<HabitObjectiveDto> saved = saveObjectives(habit.getId(), checklist);
+        log.info("habit.created userId={} habitId={} goalId={} weekdays={} startDate={} objectives={}", userId, habit.getId(), goal.getId(), days, start, saved.size());
+        return HabitDto.of(habit, List.copyOf(days), saved);
     }
 
-    private static final Set<String> PATCHABLE = Set.of("status", "title", "targetMinutes", "xpReward", "weekdays", "endDate");
+    private static final Set<String> PATCHABLE = Set.of("status", "title", "targetMinutes", "xpReward", "weekdays", "endDate", "objectives");
 
     /**
      * Edits a habit (B-10, ADR-030). Nothing here rewrites a lived day: a new weekly schedule and status changes apply from the user's
@@ -94,7 +101,7 @@ public class HabitService {
         Habit habit = habits.lockByIdAndUserId(habitId, userId).orElseThrow(() -> FieldErrors.notFound("thói quen"));
         // Re-sending the archive request is a no-op, so a client retry after a timeout does not look like a failure.
         if (habit.getStatus() == RecordStatus.ARCHIVED && patch.size() == 1 && "ARCHIVED".equals(patch.get("status"))) {
-            return HabitDto.of(habit, latestWeekdays(Set.of(habitId)).getOrDefault(habitId, List.of()));
+            return dto(habit);
         }
         User user = users.findById(userId).orElseThrow();
         LocalDate today = clock.today(user.getTimezone());
@@ -124,6 +131,8 @@ public class HabitService {
             status = RecordStatus.parse(patch.get("status"));
             if (status == null) errors.add("status", "Trạng thái không hợp lệ.");
         }
+        boolean objectivesGiven = patch.containsKey("objectives");
+        List<ObjectiveRules.Parsed> checklist = objectivesGiven ? ObjectiveRules.parse(patch.get("objectives") == null ? List.of() : patch.get("objectives"), errors, "") : null;
         boolean endDateGiven = patch.containsKey("endDate");
         LocalDate endDate = null;
         if (endDateGiven) {
@@ -140,7 +149,11 @@ public class HabitService {
 
         if (title != null) habit.setTitle(title);
         if (minutes != null) habit.setTargetMinutes(minutes);
-        if (xp != null && xp != habit.getXpReward()) { quests.freezeRewards(userId, habitId); habit.setXpReward(xp); }
+        boolean checklistChanges = objectivesGiven && !sameChecklist(habit.getId(), checklist);
+        // Lived days that were never opened would otherwise pick up the new reward/checklist when they are first created.
+        if ((xp != null && xp != habit.getXpReward()) || checklistChanges) quests.freezeLivedDays(userId, habitId);
+        if (xp != null && xp != habit.getXpReward()) habit.setXpReward(xp);
+        if (checklistChanges) { objectives.deleteByHabitId(habitId); objectives.flush(); saveObjectives(habitId, checklist); }
         if (endDateGiven) habit.setEndDate(endDate);
         if (days != null) changeSchedule(habit, days, today.plusDays(1).isBefore(habit.getStartDate()) ? habit.getStartDate() : today.plusDays(1));
         if (status != null && status != habit.getStatus()) {
@@ -149,7 +162,7 @@ public class HabitService {
             habit.setStatus(status);
         }
         log.info("habit.updated userId={} habitId={} fields={}", userId, habitId, patch.keySet());
-        return HabitDto.of(habit, latestWeekdays(Set.of(habitId)).getOrDefault(habitId, List.of()));
+        return dto(habit);
     }
 
     /** Adds a schedule version from `effective`. A second change on the same day replaces the first (it has not applied to any day yet). */
@@ -161,6 +174,33 @@ public class HabitService {
         }
         schedules.save(new HabitScheduleVersion(habit.getId(), effective, days));
         log.info("habit.schedule_changed habitId={} weekdays={} effectiveFrom={}", habit.getId(), days, effective);
+    }
+
+    private HabitDto dto(Habit habit) {
+        UUID id = habit.getId();
+        return HabitDto.of(habit, latestWeekdays(Set.of(id)).getOrDefault(id, List.of()), objectivesOf(Set.of(id)).getOrDefault(id, List.of()));
+    }
+
+    private Map<UUID, List<HabitObjectiveDto>> objectivesOf(Set<UUID> habitIds) {
+        Map<UUID, List<HabitObjectiveDto>> out = new HashMap<>();
+        if (habitIds.isEmpty()) return out;
+        for (HabitObjective o : objectives.findByHabitIdInOrderByHabitIdAscPositionAsc(habitIds)) out.computeIfAbsent(o.getHabitId(), k -> new java.util.ArrayList<>()).add(HabitObjectiveDto.of(o));
+        return out;
+    }
+
+    private List<HabitObjectiveDto> saveObjectives(UUID habitId, List<ObjectiveRules.Parsed> checklist) {
+        List<HabitObjectiveDto> saved = new java.util.ArrayList<>();
+        for (int i = 0; i < checklist.size(); i++) {
+            ObjectiveRules.Parsed p = checklist.get(i);
+            saved.add(HabitObjectiveDto.of(objectives.save(new HabitObjective(habitId, i, p.title(), p.target(), p.unit(), p.step()))));
+        }
+        return saved;
+    }
+
+    private boolean sameChecklist(UUID habitId, List<ObjectiveRules.Parsed> next) {
+        List<ObjectiveRules.Parsed> current = objectivesOf(Set.of(habitId)).getOrDefault(habitId, List.of()).stream()
+            .map(o -> new ObjectiveRules.Parsed(o.title(), o.target(), o.unit(), o.step())).toList();
+        return current.equals(next);
     }
 
     private Goal findGoal(UUID userId, String goalId) {

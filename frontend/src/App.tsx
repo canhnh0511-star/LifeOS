@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CalendarDays, Layers3, Menu, RotateCcw, Settings2, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { api, isDemo } from './api';
 import { exportDemoData, resetDemoData } from './api/mockClient';
-import type { BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, PatchHabit, QuestDto } from './api/types';
+import type { BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, PatchHabit, QuestDto, QuestObjectiveDto, RewardEffectDto } from './api/types';
 import { formatDate, todayInTimezone } from './domain/rules';
 import { Celebration, hasCelebration, type CelebrationData } from './components/Celebration';
 import { levelUps } from './domain/levelUps';
@@ -29,7 +29,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>(tabFromHash);
   const [selectedDate, setSelectedDate] = useState(todayInTimezone());
   const [period, setPeriod] = useState<'7d' | '30d'>('7d');
-  const { dashboard, goals, habits, achievements, analytics, weekly, loading, error, refresh } = useLifeOsData(selectedDate, period);
+  const { dashboard, goals, habits, achievements, analytics, weekly, loading, error, refresh: refreshNow } = useLifeOsData(selectedDate, period);
   const [modal, setModal] = useState<ModalKind>(null);
   const [editing, setEditing] = useState<HabitDto | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -46,15 +46,48 @@ export default function App() {
   }, []);
   useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(''), 4200); return () => clearTimeout(timer); }, [notice]);
 
+  // Checklist taps go out one after another, each carrying an absolute value, so quick repeated taps cannot overtake each other.
+  // Anything else that wants fresh data waits until the queue is empty, so a refresh can never show older numbers than the taps just made.
+  const objectiveQueue = useRef<Promise<void>>(Promise.resolve());
+  const objectivesInFlight = useRef(0);
+  const refreshWanted = useRef(false);
+  const dashboardRef = useRef(dashboard); dashboardRef.current = dashboard;
+  const queueResult = useRef<{ xp: number; effects: RewardEffectDto[]; titles: string[] }>({ xp: 0, effects: [], titles: [] });
+  const refresh = useCallback(() => { if (objectivesInFlight.current > 0) refreshWanted.current = true; else refreshNow(); }, [refreshNow]);
+
   const completion = useCallback(async (quest: QuestDto) => {
     if (busyId) return; setBusyId(quest.habitId);
     try {
+      await objectiveQueue.current; // let pending checklist taps land first, so this does not run ahead of them and get overwritten
       const r = quest.status === 'COMPLETED' ? await api.undoQuest(quest.habitId, selectedDate) : await api.completeQuest(quest.habitId, selectedDate);
       const next = await latestProgress(); const ups = next ? levelUps(dashboard?.progress, next) : null; if (ups && hasCelebration(ups)) setCelebration(ups);
       setNotice(withEffects(r.xpAwarded > 0 ? `Hoàn thành! +${r.xpAwarded} XP` : r.xpAwarded < 0 ? `Đã hoàn tác ${r.xpAwarded} XP` : 'Đã cập nhật nhiệm vụ.', r.effects)); refresh();
     } catch (e) { setNotice(failure(e, 'Không thể cập nhật nhiệm vụ.')); }
     finally { setBusyId(null); }
   }, [busyId, selectedDate, dashboard, refresh]);
+
+  const setObjective = (quest: QuestDto, objective: QuestObjectiveDto, value: number) => {
+    objectivesInFlight.current++;
+    objectiveQueue.current = objectiveQueue.current.then(async () => {
+      try {
+        const r = await api.setObjective(quest.habitId, selectedDate, objective.id, value);
+        if (r.xpAwarded !== 0 || r.effects.length) {
+          const acc = queueResult.current; acc.xp += r.xpAwarded; acc.effects.push(...r.effects); acc.titles.push(quest.title);
+        }
+      } catch (e) { setNotice(failure(e, 'Không thể cập nhật tiến độ.')); }
+      finally {
+        if (--objectivesInFlight.current === 0) {
+          // One celebration and one message for the whole burst of taps, measured against what the screen showed before it.
+          const acc = queueResult.current; queueResult.current = { xp: 0, effects: [], titles: [] };
+          refreshWanted.current = false; refreshNow();
+          if (acc.xp !== 0 || acc.effects.length) {
+            const next = await latestProgress(); const ups = next ? levelUps(dashboardRef.current?.progress, next) : null; if (ups && hasCelebration(ups)) setCelebration(ups);
+            setNotice(withEffects(acc.xp > 0 ? `Hoàn thành "${acc.titles[acc.titles.length - 1]}"! +${acc.xp} XP` : acc.xp < 0 ? `Nhiệm vụ trở lại dang dở: ${acc.xp} XP` : 'Đã cập nhật tiến độ.', acc.effects));
+          }
+        }
+      }
+    });
+  };
   const bossAction = async (boss: BossDto, defeat: boolean) => {
     if (busyBossId) return; setBusyBossId(boss.id);
     try {
@@ -101,7 +134,7 @@ export default function App() {
       <main className="page-content" data-dialog-fallback tabIndex={-1}>
         {error && <div role="alert" className="error-banner">{error}<button onClick={refresh}>Thử lại <RotateCcw size={14}/></button></div>}
         {loading && !dashboard ? <div className="loading-shell"><div className="loader"/><p>Đang chuẩn bị hành trình của bạn...</p></div> : <>
-          {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onNewHabit={() => setModal('habit')} goTo={goTo}/>}
+          {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} goTo={goTo}/>}
           {tab === 'journey' && <JourneyPage journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')}/>}
           {tab === 'character' && <CharacterPage dashboard={dashboard}/>}
           {tab === 'insights' && <InsightsPage analytics={analytics} period={period} onPeriod={setPeriod} currentStreak={dashboard?.progress.currentStreak || 0}/>}
