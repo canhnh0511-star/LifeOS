@@ -1,0 +1,7 @@
+.git
+**/node_modules
+**/target
+frontend/dist
+backend/src/main/resources/static
+.env
+.scratch

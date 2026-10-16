@@ -56,11 +56,12 @@ class SecurityConfig {
             .authorizeHttpRequests(a -> a
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/logout").permitAll()
-                .anyRequest().authenticated())
+                .requestMatchers("/api/**").authenticated()
+                .anyRequest().permitAll())        // the bundled SPA (static files) is public; data lives under /api
             .httpBasic(b -> b.disable())
             .formLogin(f -> f.disable())
             .logout(l -> l.disable())
-            .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'none'; frame-ancestors 'none'")))
+            .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'")))
             .exceptionHandling(e -> e
                 .authenticationEntryPoint((req, res, ex) -> {
                     log.debug("auth.unauthenticated method={} path={}", req.getMethod(), req.getRequestURI());

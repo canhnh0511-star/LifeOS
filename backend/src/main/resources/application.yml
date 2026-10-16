@@ -2,9 +2,10 @@ spring:
   application:
     name: lifeos-backend
   datasource:
-    url: ${LIFEOS_DB_URL:jdbc:postgresql://localhost:5432/lifeos}
-    username: ${LIFEOS_DB_USER:lifeos}
-    password: ${LIFEOS_DB_PASSWORD:}
+    # LIFEOS_DB_* win; otherwise the standard PG* variables (Railway's Postgres plugin sets them) are used.
+    url: ${LIFEOS_DB_URL:jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:lifeos}}
+    username: ${LIFEOS_DB_USER:${PGUSER:lifeos}}
+    password: ${LIFEOS_DB_PASSWORD:${PGPASSWORD:}}
   jpa:
     open-in-view: false
     hibernate:
@@ -12,6 +13,8 @@ spring:
   flyway:
     enabled: true
 server:
+  port: ${PORT:8080}                      # Railway injects PORT
+  forward-headers-strategy: framework      # real client ip / https behind the platform proxy
   servlet:
     session:
       cookie:

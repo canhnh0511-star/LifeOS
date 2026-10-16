@@ -14,7 +14,7 @@ services:
       timeout: 3s
       retries: 10
   api:
-    build: ./backend
+    build: .
     depends_on:
       db: {condition: service_healthy}
     environment:
@@ -24,7 +24,7 @@ services:
       # Plain http on localhost. Leave true (default) behind HTTPS in any real deployment.
       LIFEOS_COOKIE_SECURE: ${LIFEOS_COOKIE_SECURE:-false}
     ports:
-      - "8080:8080"
+      - "8080:8080"   # UI + API on one origin: http://localhost:8080
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8080 && printf \"GET /actuator/health HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q UP <&3'"]
       interval: 10s
