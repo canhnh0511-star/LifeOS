@@ -1,6 +1,6 @@
 # B-11 — Sẵn sàng production và kiểm tra thiết bị thật
 
-Trạng thái: **chưa làm** · Chặn bởi: không (một phần cần quyền truy cập Railway/thiết bị).
+Trạng thái: **làm một phần** — xong: CI GitHub Actions (`.github/workflows/ci.yml`: frontend test + `VITE_API_MODE=real npm run build`, backend `./mvnw test` trên runner có Docker), favicon (`<link rel="icon">`); còn lại cần quyền Railway/thiết bị thật · Chặn bởi: không (một phần cần quyền truy cập Railway/thiết bị).
 
 Hạng mục còn thiếu từ B-06:
 - Docker: build image gốc và `docker compose up` chưa chạy được vì máy dev không có Docker; kiểm tra trên máy có Docker hoặc CI. Chạy Testcontainers trong CI.
