@@ -10,7 +10,7 @@ Bắt đầu với `docs/agent/AGENT_PROMPT.md`. Repository này phát triển t
 - Mock backend: `frontend/src/api/mockClient.ts` (localStorage, không có tài khoản thật).
 - API contract: `docs/openapi.yaml` và `frontend/src/api/types.ts`. Khi đề xuất đổi contract, phải cập nhật CẢ HAI.
 - Quy tắc sản phẩm: `docs/DOMAIN_RULES.md`.
-- Ticket: `docs/tickets/00_FRONTEND_REVIEW.md`, sau đó `B-01` đến `B-06` (đã được mở khóa, làm tuần tự).
+- Ticket: `docs/tickets/00_FRONTEND_REVIEW.md`, sau đó `B-01` đến `B-06` (đã xong). Ticket còn lại `B-07` đến `B-14`, danh sách và trạng thái ở `docs/tickets/README.md`.
 - Ghi lại các đánh đổi kiến trúc trong `docs/agent/DECISIONS.md`.
 
 ## Nguyên tắc làm việc
