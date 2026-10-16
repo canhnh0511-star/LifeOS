@@ -407,3 +407,46 @@ describe('stored data', () => {
     expect((await mockClient.getGoals()).length).toBeGreaterThan(0);
   });
 });
+
+describe('mock importHabitPlan', () => {
+  const habit = (xpReward = 20) => ({ title: 'Uống nước', targetMinutes: 5, xpReward, weekdays: [3, 1, 1] as Weekday[] });
+  const goal = (title: string, habits = [habit()]) => ({ title, category: 'HEALTH' as const, description: 'd', habits });
+
+  it('creates goals and habits atomically and they show up as quests', async () => {
+    const startDate = todayInTimezone();
+    const before = { goals: (await mockClient.getGoals()).length, habits: (await mockClient.getHabits()).length };
+    const out = await mockClient.importHabitPlan({ startDate, goals: [goal('Nước'), goal('Gym', [habit(50), habit(30)])] });
+    expect(out.goals).toHaveLength(2);
+    expect(out.habits).toHaveLength(3);
+    expect(out.habits[0].weekdays).toEqual([1, 3]);
+    expect((await mockClient.getGoals()).length).toBe(before.goals + 2);
+    expect((await mockClient.getHabits()).length).toBe(before.habits + 3);
+  });
+
+  it('rolls everything back and names the field when one habit is invalid', async () => {
+    const startDate = todayInTimezone();
+    const before = (await mockClient.getGoals()).length;
+    const err = await rejection(mockClient.importHabitPlan({ startDate, goals: [goal('Tốt'), goal('Xấu', [habit(20), habit(101)])] }));
+    expect(err.status).toBe(422);
+    expect(err.fields).toHaveProperty(['goals[1].habits[1].xpReward']);
+    expect((await mockClient.getGoals()).length).toBe(before);
+  });
+
+  it('rejects a repeated title with 409 and keeps a past start date as one top-level error', async () => {
+    const startDate = todayInTimezone();
+    await mockClient.importHabitPlan({ startDate, goals: [goal('Lặp')] });
+    const dup = await rejection(mockClient.importHabitPlan({ startDate, goals: [goal('lặp ')] }));
+    expect(dup.status).toBe(409);
+    expect(dup.code).toBe('PLAN_ALREADY_IMPORTED');
+    const past = await rejection(mockClient.importHabitPlan({ startDate: '2000-01-01', goals: [goal('Mới', [habit(), habit()])] }));
+    expect(Object.keys(past.fields ?? {})).toEqual(['startDate']);
+  });
+
+  it('enforces the size limits', async () => {
+    const startDate = todayInTimezone();
+    const tooManyGoals = Array.from({ length: 11 }, (_, i) => goal(`G${i}`));
+    expect((await rejection(mockClient.importHabitPlan({ startDate, goals: tooManyGoals }))).fields).toHaveProperty('goals');
+    const tooManyHabits = Array.from({ length: 51 }, () => habit());
+    expect((await rejection(mockClient.importHabitPlan({ startDate, goals: [goal('Nhiều', tooManyHabits)] }))).fields).toHaveProperty('goals');
+  });
+});

@@ -46,6 +46,7 @@ export const httpClient: LifeOsApi = {
   getHabits: () => request('/habits'),
   createHabit: (input: CreateHabitRequest) => request('/habits', { method: 'POST', body: JSON.stringify(input) }),
   updateHabit: (id: string, patch: Partial<Pick<HabitDto,'status'>>) => request(`/habits/${id}`, { method:'PATCH', body: JSON.stringify(patch) }),
+  importHabitPlan: input => request('/imports/habit-plans', { method: 'POST', body: JSON.stringify(input) }),
   getQuests: date => request(`/quests?date=${encodeURIComponent(date)}`),
   completeQuest: (habitId, date) => request(`/quests/${habitId}/dates/${date}/completion`, { method:'PUT' }),
   undoQuest: (habitId, date) => request(`/quests/${habitId}/dates/${date}/completion`, { method:'DELETE' }),

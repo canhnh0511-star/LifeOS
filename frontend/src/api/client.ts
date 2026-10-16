@@ -1,4 +1,4 @@
-import type { AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalDto, HabitDto, JourneyDto, ProgressDto, QuestDto, AchievementDto, BossMutationDto, QuestMutationDto, UserDto, RegisterRequest, LoginRequest } from './types';
+import type { AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, AchievementDto, BossMutationDto, QuestMutationDto, UserDto, RegisterRequest, LoginRequest } from './types';
 export interface LifeOsApi {
   getMe(): Promise<UserDto>;
   /** Real mode only; the mock has no accounts and always acts as the demo user. */
@@ -12,6 +12,8 @@ export interface LifeOsApi {
   getHabits(): Promise<HabitDto[]>;
   createHabit(input: CreateHabitRequest): Promise<HabitDto>;
   updateHabit(id: string, patch: Partial<Pick<HabitDto,'status'>>): Promise<HabitDto>;
+  /** Atomic bulk create of goals and habits; no screen uses it yet (UI is locked), it is driven by docs/seed files. */
+  importHabitPlan(input: ImportHabitPlanRequest): Promise<ImportedHabitPlanDto>;
   getQuests(date: string): Promise<QuestDto[]>;
   completeQuest(habitId: string, date: string): Promise<QuestMutationDto>;
   undoQuest(habitId: string, date: string): Promise<QuestMutationDto>;

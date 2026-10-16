@@ -13,6 +13,7 @@ DTO nguồn: `frontend/src/api/types.ts`. OpenAPI 3.1 dạng máy đọc đượ
 | GET | `/habits` | — | `HabitDto[]` |
 | POST | `/habits` | `CreateHabitRequest` | `HabitDto` (201) |
 | PATCH | `/habits/{id}` | partial `status` | `HabitDto` |
+| POST | `/imports/habit-plans` | `ImportHabitPlanRequest` | `ImportedHabitPlanDto` (201; atomic; ≤ 10 goal, ≤ 50 habit; 409 `PLAN_ALREADY_IMPORTED`) |
 | GET | `/quests?date=YYYY-MM-DD` | bắt buộc có date | `QuestDto[]` |
 | PUT | `/quests/{habitId}/dates/{date}/completion` | rỗng | `QuestMutationDto` |
 | DELETE | `/quests/{habitId}/dates/{date}/completion` | rỗng | `QuestMutationDto` |
@@ -89,6 +90,7 @@ HTTP status chuẩn: 400 validation, 401 chưa xác thực, 403 không có quy�
 | 401 | `INVALID_CREDENTIALS` | Đăng nhập sai; email không tồn tại và sai mật khẩu trả về y hệt nhau |
 | 429 | `RATE_LIMITED` | Quá nhiều lần `POST /auth/login` hoặc `/auth/register` theo IP hoặc theo email (cửa sổ trượt: login 15 phút, register 1 giờ). Kèm header `Retry-After` (giây). Khi đã khoá, mật khẩu đúng cũng bị từ chối; email tồn tại hay không trả về y hệt nhau |
 | 403 | `CSRF_INVALID` | Mutation thiếu hoặc sai header `X-XSRF-TOKEN` |
+| 409 | `PLAN_ALREADY_IMPORTED` | `POST /imports/habit-plans`: đã có goal ACTIVE cùng tên (không phân biệt hoa/thường), hoặc kế hoạch lặp tên goal; không tạo gì |
 | 409 | `EMAIL_TAKEN` | Email đã đăng ký (không phân biệt hoa/thường) |
 | 400 | `BAD_REQUEST` | JSON không đọc được |
 | 500 | `INTERNAL_ERROR` | Lỗi không mong đợi; không lộ chi tiết |

@@ -1,5 +1,5 @@
 import type { LifeOsApi } from './client';
-import type { AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalCategory, GoalDto, HabitDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto } from './types';
+import type { AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto } from './types';
 import { ApiError, ErrorCode } from './errors';
 import { ALL_CATEGORIES } from '../domain/insights';
 import { ACHIEVEMENT_CATALOG, STREAK_TARGET, balancedAchieved, comebackAchieved, spreadAcrossAreas } from '../domain/achievements';
@@ -367,6 +367,44 @@ export const mockClient:LifeOsApi={
     if(Object.keys(fields).length)fail(fields);
     const habit:HabitDto={id:id(),title:input.title.trim(),goalId:input.goalId,targetMinutes:input.targetMinutes,xpReward:input.xpReward,weekdays:[...new Set(input.weekdays)].sort((a,b)=>a-b),startDate:input.startDate,endDate:null,status:'ACTIVE'};
     db.habits.push(habit);save(db);return habit;
+  },
+  async importHabitPlan(input:ImportHabitPlanRequest):Promise<ImportedHabitPlanDto>{
+    await delay();const db=load();const plan=input?.goals;
+    if(!Array.isArray(plan)||plan.length===0)fail({goals:'Cần ít nhất một mục tiêu.'});
+    if(plan.length>10)fail({goals:'Tối đa 10 mục tiêu mỗi lần nhập.'});
+    if(plan.some(g=>!g||typeof g!=='object'))fail({goals:'Mục tiêu không hợp lệ.'});
+    if(plan.reduce((n,g)=>n+(Array.isArray(g.habits)?g.habits.length:0),0)>50)fail({goals:'Tối đa 50 thói quen mỗi lần nhập.'});
+    const key=(t:string)=>t.trim().toLowerCase();const taken=new Set(db.goals.filter(g=>g.status==='ACTIVE').map(g=>key(g.title)));
+    for(const g of plan){
+      if(typeof g.title!=='string'||!g.title.trim())continue;
+      if(taken.has(key(g.title)))throw new ApiError(409,ErrorCode.planAlreadyImported,`Mục tiêu "${g.title.trim()}" đã tồn tại; kế hoạch này có thể đã được nhập.`);
+      taken.add(key(g.title));
+    }
+    const errors:Record<string,string>={};const goals:GoalDto[]=[];const habits:HabitDto[]=[];
+    const put=(prefix:string,f:Record<string,string>)=>{for(const [k,v] of Object.entries(f))errors[k==='startDate'?k:prefix+k]??=v;};
+    plan.forEach((g,i)=>{
+      const gp=`goals[${i}].`;const gf:Record<string,string>={};
+      checkTitle(gf,g.title,'Tên mục tiêu');checkDescription(gf,g.description);
+      if(!ALL_CATEGORIES.includes(g.category))gf.category='Lĩnh vực không hợp lệ.';
+      const noHabits=!Array.isArray(g.habits)||g.habits.length===0;
+      if(noHabits)gf.habits='Cần ít nhất một thói quen.';
+      put(gp,gf);if(Object.keys(gf).length)return;
+      const goal:GoalDto={id:id(),title:g.title.trim(),category:g.category,description:g.description.trim(),status:'ACTIVE',createdAt:now()};goals.push(goal);
+      g.habits.forEach((h,j)=>{
+        const hp=`${gp}habits[${j}].`;const hf:Record<string,string>={};
+        if(!h||typeof h!=='object'){errors[`${gp}habits[${j}]`]??='Thói quen không hợp lệ.';return;}
+        checkTitle(hf,h.title,'Tên thói quen');
+        if(!isInt(h.targetMinutes,1,480))hf.targetMinutes='Thời lượng phải là số nguyên từ 1 đến 480 phút.';
+        if(!isInt(h.xpReward,0,100))hf.xpReward='XP thưởng phải là số nguyên từ 0 đến 100.';
+        if(!Array.isArray(h.weekdays)||h.weekdays.length===0||!h.weekdays.every(d=>isInt(d,1,7)))hf.weekdays='Chọn ít nhất một ngày trong tuần (1 đến 7).';
+        if(!isLocalDate(input.startDate))hf.startDate='Ngày bắt đầu phải có dạng YYYY-MM-DD.';
+        else if(input.startDate<todayInTimezone())hf.startDate='Thói quen chỉ có thể bắt đầu từ hôm nay trở đi.';
+        put(hp,hf);if(Object.keys(hf).length)return;
+        habits.push({id:id(),title:h.title.trim(),goalId:goal.id,targetMinutes:h.targetMinutes,xpReward:h.xpReward,weekdays:[...new Set(h.weekdays)].sort((a,b)=>a-b),startDate:input.startDate,endDate:null,status:'ACTIVE'});
+      });
+    });
+    if(Object.keys(errors).length)fail(errors);
+    db.goals.push(...goals);db.habits.push(...habits);save(db);return {goals,habits};
   },
   async updateHabit(habitId,patch){
     await delay();assertOnlyKeys(patch,['status']);
