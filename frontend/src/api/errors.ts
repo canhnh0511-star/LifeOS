@@ -11,6 +11,7 @@ export const ErrorCode = {
   invalidCredentials: 'INVALID_CREDENTIALS',
   emailTaken: 'EMAIL_TAKEN',
   csrfInvalid: 'CSRF_INVALID',
+  rateLimited: 'RATE_LIMITED',
   http: 'HTTP_ERROR',
   network: 'NETWORK_ERROR',
   timeout: 'REQUEST_TIMEOUT'

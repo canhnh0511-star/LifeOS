@@ -21,6 +21,13 @@ describe('httpClient errors', () => {
     const error = await failure(httpClient.getMe());
     expect([error.status, error.code]).toEqual([401, 'UNAUTHENTICATED']);
   });
+  it('maps 429 to RATE_LIMITED and keeps the server wait message', async () => {
+    const body = JSON.stringify({ code: 'RATE_LIMITED', message: 'Quá nhiều lần thử. Vui lòng thử lại sau 15 phút.', fields: {} });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body, { status: 429, headers: { 'Retry-After': '900' } })));
+    const error = await failure(httpClient.login({ email: 'a@b.co', password: 'x'.repeat(10) }));
+    expect([error.status, error.code]).toEqual([429, 'RATE_LIMITED']);
+    expect(error.message).toContain('15 phút');
+  });
   it('maps a non-JSON failure to HTTP_ERROR and a network failure to NETWORK_ERROR', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html>', { status: 502 })));
     const bad = await failure(httpClient.getGoals());

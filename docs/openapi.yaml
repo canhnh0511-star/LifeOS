@@ -38,6 +38,7 @@ paths:
       responses:
         '201': {description: Created and signed in, content: {application/json: {schema: {$ref: '#/components/schemas/User'}}}}
         '403': {$ref: '#/components/responses/CsrfInvalid'}
+        '429': {$ref: '#/components/responses/RateLimited'}
         '409': {description: 'EMAIL_TAKEN', content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
         '422': {$ref: '#/components/responses/ValidationError'}
   /auth/login:
@@ -52,6 +53,7 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/CsrfInvalid'}
         '422': {$ref: '#/components/responses/ValidationError'}
+        '429': {$ref: '#/components/responses/RateLimited'}
   /auth/logout:
     post:
       tags: [Identity]
@@ -206,6 +208,10 @@ components:
   responses:
     Unauthorized: {description: Unauthenticated, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
     CsrfInvalid: {description: 'CSRF_INVALID - missing or mismatching X-XSRF-TOKEN header', content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+    RateLimited:
+      description: 'RATE_LIMITED - too many login/register attempts from this address or for this email; identical for known and unknown emails'
+      headers: {Retry-After: {description: Seconds until a retry can succeed, schema: {type: integer}}}
+      content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}
     NotFound: {description: Not found or not owned, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
     Conflict: {description: 'State conflict, e.g. QUEST_NOT_ACTIVE (habit or goal paused on that date)', content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
     ValidationError: {description: Input validation failed, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}

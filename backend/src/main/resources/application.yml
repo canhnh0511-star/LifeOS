@@ -14,7 +14,8 @@ spring:
     enabled: true
 server:
   port: ${PORT:8080}                      # Railway injects PORT
-  forward-headers-strategy: framework      # real client ip / https behind the platform proxy
+  forward-headers-strategy: native         # Tomcat RemoteIpValve: real client ip / https behind the platform proxy. Walks X-Forwarded-For from the right and
+                                           # skips internal proxies, so a client-supplied left part cannot spoof the address ('framework' trusts the leftmost entry).
   servlet:
     session:
       cookie:

@@ -87,6 +87,7 @@ HTTP status chuẩn: 400 validation, 401 chưa xác thực, 403 không có quy�
 |---|---|---|
 | 401 | `UNAUTHENTICATED` | Chưa đăng nhập hoặc session hết hạn |
 | 401 | `INVALID_CREDENTIALS` | Đăng nhập sai; email không tồn tại và sai mật khẩu trả về y hệt nhau |
+| 429 | `RATE_LIMITED` | Quá nhiều lần `POST /auth/login` hoặc `/auth/register` theo IP hoặc theo email (cửa sổ trượt: login 15 phút, register 1 giờ). Kèm header `Retry-After` (giây). Khi đã khoá, mật khẩu đúng cũng bị từ chối; email tồn tại hay không trả về y hệt nhau |
 | 403 | `CSRF_INVALID` | Mutation thiếu hoặc sai header `X-XSRF-TOKEN` |
 | 409 | `EMAIL_TAKEN` | Email đã đăng ký (không phân biệt hoa/thường) |
 | 400 | `BAD_REQUEST` | JSON không đọc được |

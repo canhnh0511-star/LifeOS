@@ -1,6 +1,6 @@
 # B-07 — Rate limit đăng nhập và chống lạm dụng auth
 
-Trạng thái: **chưa làm** · Ưu tiên: cao (domain Railway đã public) · Chặn bởi: không.
+Trạng thái: **xong** (ADR-027) · Ưu tiên: cao (domain Railway đã public) · Chặn bởi: không.
 
 Mục tiêu: chặn dò mật khẩu và đăng ký hàng loạt mà không làm lộ email nào đã tồn tại.
 

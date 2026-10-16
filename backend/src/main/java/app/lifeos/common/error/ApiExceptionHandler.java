@@ -24,6 +24,13 @@ class ApiExceptionHandler {
         return ResponseEntity.status(e.status()).body(new ApiError(e.code(), e.getMessage(), e.fields()));
     }
 
+    @ExceptionHandler(RateLimitedException.class)
+    ResponseEntity<ApiError> rateLimited(RateLimitedException e) {
+        log.info("request.rejected status=429 code=RATE_LIMITED retryAfterSeconds={}", e.retryAfterSeconds());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).header("Retry-After", String.valueOf(e.retryAfterSeconds()))
+            .body(new ApiError(e.code(), e.getMessage(), e.fields()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ApiError> validation(MethodArgumentNotValidException e) {
         Map<String, String> fields = new LinkedHashMap<>();

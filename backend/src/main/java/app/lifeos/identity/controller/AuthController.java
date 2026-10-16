@@ -47,14 +47,14 @@ class AuthController {
 
     @PostMapping("/auth/register")
     ResponseEntity<UserDto> register(@Valid @RequestBody AuthRequests.Register body, HttpServletRequest req, HttpServletResponse res) {
-        User user = auth.register(body);
+        User user = auth.register(body, req.getRemoteAddr());
         signIn(user, req, res);
         return ResponseEntity.status(HttpStatus.CREATED).body(UserDto.of(user));
     }
 
     @PostMapping("/auth/login")
     UserDto login(@Valid @RequestBody AuthRequests.Login body, HttpServletRequest req, HttpServletResponse res) {
-        User user = auth.authenticate(body);
+        User user = auth.authenticate(body, req.getRemoteAddr());
         signIn(user, req, res);
         return UserDto.of(user);
     }

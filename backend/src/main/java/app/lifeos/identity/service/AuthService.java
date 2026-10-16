@@ -24,18 +24,20 @@ public class AuthService {
 
     private final UserRepository users;
     private final PasswordEncoder encoder;
+    private final AuthRateLimiter limiter;
     /** Compared against when the email is unknown so login timing does not reveal which emails exist. */
     private final String dummyHash;
 
-    public AuthService(UserRepository users, PasswordEncoder encoder) {
-        this.users = users; this.encoder = encoder;
+    public AuthService(UserRepository users, PasswordEncoder encoder, AuthRateLimiter limiter) {
+        this.users = users; this.encoder = encoder; this.limiter = limiter;
         this.dummyHash = encoder.encode(UUID.randomUUID().toString());
     }
 
     static String normalizeEmail(String email) { return email.trim().toLowerCase(Locale.ROOT); }
 
-    public User register(AuthRequests.Register req) {
+    public User register(AuthRequests.Register req, String clientIp) {
         String email = normalizeEmail(req.email());
+        limiter.admitRegister(clientIp, LogContext.fingerprint(email));
         String timezone = req.timezone() == null || req.timezone().isBlank() ? DEFAULT_TIMEZONE : req.timezone().trim();
         try {
             ZoneId.of(timezone);
@@ -54,14 +56,19 @@ public class AuthService {
         }
     }
 
-    public User authenticate(AuthRequests.Login req) {
-        User user = users.findByEmail(normalizeEmail(req.email())).orElse(null);
+    public User authenticate(AuthRequests.Login req, String clientIp) {
+        String email = normalizeEmail(req.email());
+        String fingerprint = LogContext.fingerprint(email);
+        // Checked before any lookup or hashing, so a blocked answer is identical (and equally fast) for known and unknown emails.
+        AuthRateLimiter.Attempt attempt = limiter.admitLogin(clientIp, fingerprint);
+        User user = users.findByEmail(email).orElse(null);
         boolean ok = encoder.matches(req.password(), user == null ? dummyHash : user.getPasswordHash());
         if (user == null || !ok) {
             // Same response either way (no account enumeration); the log keeps the real reason for investigation.
-            log.warn("auth.login.failed reason={} email={}", user == null ? "unknown_email" : "bad_password", LogContext.fingerprint(normalizeEmail(req.email())));
+            log.warn("auth.login.failed reason={} email={}", user == null ? "unknown_email" : "bad_password", fingerprint);
             throw new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Email hoặc mật khẩu không đúng.");
         }
+        limiter.loginSucceeded(attempt);
         return user;
     }
 
