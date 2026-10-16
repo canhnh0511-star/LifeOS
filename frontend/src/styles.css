@@ -235,7 +235,7 @@ button.chest{font:inherit;cursor:pointer;width:100%}button.chest:hover{filter:br
 @media(max-width:520px){.item-detail{grid-template-columns:1fr}.item-detail .item-art{width:100%;height:auto;aspect-ratio:1;max-width:200px}}
 @media(prefers-reduced-motion:reduce){.chest-item{animation:none}}
 /* chest art (tiles + opening dialog) */
-.chest-art{display:block;object-fit:contain;mix-blend-mode:screen;pointer-events:none}
+.chest-art{display:block;object-fit:contain;pointer-events:none}
 .chest-pic{position:relative;display:grid;place-items:center;width:64px;height:64px}
 .chest.is-ready .chest-art{animation:chest-bob 1.1s ease-in-out infinite;filter:drop-shadow(0 0 10px currentColor)}
 .chest:not(.is-open) .chest-art{filter:grayscale(1) brightness(.5)}
@@ -245,7 +245,6 @@ button.chest{font:inherit;cursor:pointer;width:100%}button.chest:hover{filter:br
 .chest-opening-card.is-opening .chest-box{animation:chest-shake .22s ease-in-out infinite}
 .chest-opening-card.is-revealed .chest-box{animation:chest-pop .35s ease-out}
 @media(prefers-reduced-motion:reduce){.chest.is-ready .chest-art{animation:none}}
-.chest-box{mix-blend-mode:screen}
 .chest-opening-card{width:min(92vw,420px);min-width:0;box-sizing:border-box}
 .chest-item,.chest-item>div{min-width:0}.chest-item small{overflow-wrap:anywhere}
 @keyframes item-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
