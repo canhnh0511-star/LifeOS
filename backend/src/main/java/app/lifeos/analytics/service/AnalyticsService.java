@@ -55,6 +55,12 @@ public class AnalyticsService {
             new PreviousPeriodDto(previous.rate(), previous.completed, previous.scheduled, previous.xp, previous.categories()));
     }
 
+    /** Per-area scheduled/completed over the `length` days ending on `end` (bosses included), without the previous period. */
+    @Transactional
+    public List<CategoryStatDto> categoriesEnding(UUID userId, LocalDate end, int length) {
+        return period(userId, loader.load(userId), journeys.current(userId), end, length).categories();
+    }
+
     private Period period(UUID userId, ScheduleHistory history, JourneyDto journey, LocalDate end, int length) {
         LocalDate start = end.minusDays(length - 1L);
         Map<String, QuestInstance> stored = new HashMap<>();

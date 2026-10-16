@@ -28,8 +28,8 @@ export interface CategoryStatDto { category: GoalCategory; scheduled: number; co
 export interface PreviousPeriodDto { completionRate: number; completedCount: number; scheduledCount: number; earnedXp: number; categories: CategoryStatDto[]; }
 /** `previous` (same-length preceding period) is optional until the radar chart is implemented; then it becomes required. */
 export interface AnalyticsDto { period: '7d' | '30d'; days: DayStatDto[]; completionRate: number; completedCount: number; scheduledCount: number; earnedXp: number; categories: CategoryStatDto[]; previous?: PreviousPeriodDto; }
-/** `xpAwarded` is the net XP delta of the whole request, including `effects`. `effects` is optional until the RPG layer is implemented. */
-export interface QuestMutationDto { habitId: string; date: string; status: 'PENDING' | 'COMPLETED'; xpAwarded: number; totalXp: number; level: number; streak: number; effects?: RewardEffectDto[]; }
+/** `xpAwarded` is the net XP delta of the whole request, including `effects`. `effects` lists achievements granted or revoked by the request. */
+export interface QuestMutationDto { habitId: string; date: string; status: 'PENDING' | 'COMPLETED'; xpAwarded: number; totalXp: number; level: number; streak: number; effects: RewardEffectDto[]; }
 export interface BossMutationDto { bossId: string; status: BossStatus; xpAwarded: number; totalXp: number; level: number; effects: RewardEffectDto[]; }
 export interface CreateGoalRequest { title: string; category: GoalCategory; description: string; }
 export interface CreateHabitRequest { title: string; goalId: string; targetMinutes: number; xpReward: number; weekdays: Weekday[]; startDate: string; }

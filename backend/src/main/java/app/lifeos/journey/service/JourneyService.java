@@ -82,6 +82,8 @@ public class JourneyService {
     }
 
     /** The user's journey, created on first use (two concurrent first uses create one). */
+    public UUID journeyIdFor(UUID userId) { return journeyOf(users.findById(userId).orElseThrow()).getId(); }
+
     Journey journeyOf(User user) { return journeys.findByUserId(user.getId()).orElseGet(() -> create(user)); }
 
     private Journey create(User user) {

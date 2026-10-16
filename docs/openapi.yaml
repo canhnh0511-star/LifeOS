@@ -449,7 +449,7 @@ components:
         journey: {oneOf: [{$ref: '#/components/schemas/Journey'}, {type: 'null'}]}
     QuestMutation:
       type: object
-      required: [habitId, date, status, xpAwarded, totalXp, level, streak]
+      required: [habitId, date, status, xpAwarded, totalXp, level, streak, effects]
       properties:
         habitId: {type: string}
         date: {$ref: '#/components/schemas/LocalDate'}
@@ -458,7 +458,7 @@ components:
         totalXp: {type: integer, minimum: 0}
         level: {type: integer, minimum: 1}
         streak: {type: integer, minimum: 0}
-        effects: {type: array, items: {$ref: '#/components/schemas/RewardEffect'}, description: 'Optional until the RPG layer is implemented, then required.'}
+        effects: {type: array, items: {$ref: '#/components/schemas/RewardEffect'}, description: 'Achievements granted or revoked by this request; their XP is already in xpAwarded.'}
     DayStat:
       type: object
       required: [date, scheduled, completed, xpEarned]

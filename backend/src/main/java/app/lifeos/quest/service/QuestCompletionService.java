@@ -1,5 +1,7 @@
 package app.lifeos.quest.service;
 
+import app.lifeos.achievement.dto.RewardEffectDto;
+import app.lifeos.achievement.service.AchievementService;
 import app.lifeos.common.error.ApiException;
 import app.lifeos.common.error.FieldErrors;
 import app.lifeos.common.time.UserClock;
@@ -53,10 +55,11 @@ public class QuestCompletionService {
     private final ProgressService progress;
     private final UserClock clock;
     private final StreakService streaks;
+    private final AchievementService achievements;
 
     public QuestCompletionService(HabitRepository habits, HabitScheduleVersionRepository schedules, GoalRepository goals, LifecycleEventRepository lifecycle,
-                                  QuestInstanceRepository instances, XpTransactionRepository ledger, UserRepository users, ProgressService progress, StreakService streaks, UserClock clock) {
-        this.streaks = streaks;
+                                  QuestInstanceRepository instances, XpTransactionRepository ledger, UserRepository users, ProgressService progress, StreakService streaks, AchievementService achievements, UserClock clock) {
+        this.streaks = streaks; this.achievements = achievements;
         this.habits = habits; this.schedules = schedules; this.goals = goals; this.lifecycle = lifecycle;
         this.instances = instances; this.ledger = ledger; this.users = users; this.progress = progress; this.clock = clock;
     }
@@ -92,11 +95,14 @@ public class QuestCompletionService {
         QuestInstance quest = instances.findByUserIdAndHabitIdAndScheduledDate(userId, habit.getId(), day).orElseThrow(); // takes the row lock
 
         int delta = 0;
+        boolean changed = false;
         if (complete && quest.getStatus() == QuestInstance.Status.PENDING) {
+            changed = true;
             quest.complete(clock.now());
             delta = quest.getXpReward();
             if (delta > 0) ledger.save(new XpTransaction(userId, quest.getId(), EventType.QUEST_COMPLETE, quest.getCycle(), quest.getCategory(), delta, day, clock.now()));
         } else if (!complete && quest.getStatus() == QuestInstance.Status.COMPLETED) {
+            changed = true;
             // Reverse exactly what this cycle earned, never the habit's current reward.
             int earned = ledger.completeAmount(quest.getId(), quest.getCycle()).orElse(0);
             if (earned > 0) {
@@ -106,12 +112,15 @@ public class QuestCompletionService {
             quest.revert();
         }
         instances.flush();
+        // Only a real transition re-evaluates achievements; an idempotent repeat changes nothing and awards nothing.
+        List<RewardEffectDto> effects = changed ? achievements.reconcile(userId) : List.of();
+        delta += effects.stream().mapToInt(RewardEffectDto::xpDelta).sum();
         ProgressDto p = progress.progressFor(userId);
         if (p.totalXp() < 0) throw new IllegalStateException("negative XP total"); // rolls the whole mutation back
         if (delta != 0 || (complete && quest.getStatus() == QuestInstance.Status.COMPLETED)) {
             log.info("quest.{} userId={} habitId={} date={} cycle={} xpDelta={}", complete ? "completed" : "reverted", userId, habit.getId(), day, quest.getCycle(), delta);
         }
-        return new QuestMutationDto(habit.getId().toString(), day, quest.getStatus().name(), delta, p.totalXp(), p.level(), streaks.forHabit(userId, habit.getId(), today), List.of());
+        return new QuestMutationDto(habit.getId().toString(), day, quest.getStatus().name(), delta, p.totalXp(), p.level(), streaks.forHabit(userId, habit.getId(), today), effects);
     }
 
     private Habit findHabit(UUID userId, String habitId) {

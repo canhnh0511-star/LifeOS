@@ -1,6 +1,6 @@
 # B-09 — Achievement: cấp, thu hồi và `effects[]`
 
-Trạng thái: **chưa làm** · Chặn bởi: B-08 (BALANCED/STREAK_7 đọc cả boss/ledger; nên làm sau).
+Trạng thái: **xong** (ADR-029) · Chặn bởi: B-08 (BALANCED/STREAK_7 đọc cả boss/ledger; nên làm sau).
 
 Hiện tại: `GET /achievements` trả danh mục 3 mục (`STREAK_7`, `BALANCED`, `COMEBACK`), tất cả LOCKED; quest mutation trả `effects: []`.
 

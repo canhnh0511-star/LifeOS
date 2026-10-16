@@ -1,5 +1,7 @@
 package app.lifeos.journey.service;
 
+import app.lifeos.achievement.dto.RewardEffectDto;
+import app.lifeos.achievement.service.AchievementService;
 import app.lifeos.common.error.ApiException;
 import app.lifeos.common.error.FieldErrors;
 import app.lifeos.common.time.UserClock;
@@ -42,9 +44,10 @@ public class BossService {
     private final UserRepository users;
     private final ProgressService progress;
     private final UserClock clock;
+    private final AchievementService achievements;
 
-    public BossService(BossStateRepository states, JourneyService journeys, XpTransactionRepository ledger, UserRepository users, ProgressService progress, UserClock clock) {
-        this.states = states; this.journeys = journeys; this.ledger = ledger; this.users = users; this.progress = progress; this.clock = clock;
+    public BossService(AchievementService achievements, BossStateRepository states, JourneyService journeys, XpTransactionRepository ledger, UserRepository users, ProgressService progress, UserClock clock) {
+        this.achievements = achievements; this.states = states; this.journeys = journeys; this.ledger = ledger; this.users = users; this.progress = progress; this.clock = clock;
     }
 
     @Transactional
@@ -64,10 +67,12 @@ public class BossService {
         // A row exists only once a boss has been fought, so undoing a boss that never was creates nothing.
         if (defeat) states.ensure(UUID.randomUUID(), userId, journey.getId(), boss.code(), clock.now());
         BossState state = states.findByJourneyIdAndBossCode(journey.getId(), boss.code()).orElse(null); // takes the row lock
-        if (state == null) return result(userId, boss, bossId, null, 0);
+        if (state == null) return result(userId, boss, bossId, null, 0, List.of());
 
         int delta = 0;
+        boolean changed = false;
         if (defeat && !state.isDefeated()) {
+            changed = true;
             if (areaLevel(userId, category) < boss.requiredLevel()) {
                 throw new ApiException(HttpStatus.CONFLICT, "BOSS_LOCKED", "Boss chưa mở khóa: cần level " + boss.requiredLevel() + " ở lĩnh vực này.");
             }
@@ -75,6 +80,7 @@ public class BossService {
             delta = boss.xpReward();
             ledger.save(XpTransaction.boss(userId, state.getId(), EventType.BOSS_COMPLETE, state.getCycle(), category, delta, today, clock.now()));
         } else if (!defeat && state.isDefeated()) {
+            changed = true;
             if (ChronoUnit.DAYS.between(state.getDefeatedDate(), today) > MAX_BACKDATE_DAYS) {
                 throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "QUEST_TOO_OLD", "Chỉ có thể điều chỉnh trong 7 ngày gần nhất.");
             }
@@ -88,15 +94,16 @@ public class BossService {
         }
         states.flush();
         if (delta != 0) log.info("boss.{} userId={} boss={} cycle={} xpDelta={}", defeat ? "defeated" : "reverted", userId, boss.code(), state.getCycle(), delta);
-        return result(userId, boss, bossId, state, delta);
+        List<RewardEffectDto> effects = changed ? achievements.reconcile(userId) : List.of();
+        return result(userId, boss, bossId, state, delta + effects.stream().mapToInt(RewardEffectDto::xpDelta).sum(), effects);
     }
 
-    private BossMutationDto result(UUID userId, BossCatalog.Boss boss, String bossId, BossState state, int delta) {
+    private BossMutationDto result(UUID userId, BossCatalog.Boss boss, String bossId, BossState state, int delta, List<RewardEffectDto> effects) {
         ProgressDto p = progress.progressFor(userId);
         if (p.totalXp() < 0) throw new IllegalStateException("negative XP total"); // rolls the whole mutation back
         int level = p.areas().stream().filter(a -> a.category().equals(boss.category())).findFirst().orElseThrow().level();
         String status = state != null && state.isDefeated() ? "DEFEATED" : level >= boss.requiredLevel() ? "AVAILABLE" : "LOCKED";
-        return new BossMutationDto(bossId, status, delta, p.totalXp(), p.level(), List.of());
+        return new BossMutationDto(bossId, status, delta, p.totalXp(), p.level(), effects);
     }
 
     /** Area level straight from the ledger (no streak work), used only for the start-of-fight check. */

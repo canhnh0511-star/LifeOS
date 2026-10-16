@@ -15,7 +15,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "xp_transactions")
 public class XpTransaction {
-    public enum EventType { QUEST_COMPLETE, QUEST_REVERT, BOSS_COMPLETE, BOSS_REVERT }
+    public enum EventType { QUEST_COMPLETE, QUEST_REVERT, BOSS_COMPLETE, BOSS_REVERT, ACHIEVEMENT_GRANT, ACHIEVEMENT_REVOKE }
 
     @Id private UUID id;
     @Column(name = "user_id", nullable = false, updatable = false) private UUID userId;
@@ -42,5 +42,14 @@ public class XpTransaction {
         return t;
     }
 
+    /** An achievement event; `sourceId` is the achievement_states row. */
+    public static XpTransaction achievement(UUID userId, UUID stateId, EventType eventType, int cycle, Category category, int amount, LocalDate date, Instant createdAt) {
+        XpTransaction t = new XpTransaction(userId, stateId, eventType, cycle, category, amount, date, createdAt);
+        t.sourceType = "ACHIEVEMENT";
+        return t;
+    }
+
+    public Category getCategory() { return category; }
+    public LocalDate getScheduledDate() { return scheduledDate; }
     public int getAmount() { return amount; }
 }

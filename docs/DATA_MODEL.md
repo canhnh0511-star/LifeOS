@@ -13,7 +13,7 @@
 | `habit_lifecycle_events` | UUID id PK, habit_id FK, effective_date, event_type=PAUSE/RESUME/ARCHIVE; lịch sử sự kiện |
 | `journeys` | UUID id PK, user_id FK, title, start_date, duration_days, status |
 | `quest_instances` | UUID id PK, user_id FK, habit_id FK, scheduled_date DATE, status, reward_snapshot, category_snapshot, completed_at, cycle INTEGER, UNIQUE(user_id,habit_id,scheduled_date) |
-| `xp_transactions` | UUID id PK, user_id FK, source_type (QUEST/BOSS/ACHIEVEMENT), source_id UUID, category, cycle INTEGER, event_type, amount (+/-, khác 0), created_at, UNIQUE(source_type,source_id,cycle,event_type) |
+| `xp_transactions` | UUID id PK, user_id FK, source_type (QUEST/BOSS/ACHIEVEMENT), source_id UUID, category, cycle INTEGER, event_type, amount (+/-, khác 0), created_at, UNIQUE(source_type,source_id,cycle,event_type,category) (category thêm ở B-09 để BALANCED có 5 event) |
 | `chapters` | UUID id PK, journey_id FK, idx, start_date, end_date |
 | `boss_definitions` | code PK, name, category, target_minutes, xp_reward 1..100, tier 1..5, required_level, art_key (dữ liệu seed/cấu hình) |
 | `boss_states` (triển khai B-08, thay `campaign_bosses`) | UUID id PK, user_id FK, journey_id FK, boss_code, status (AVAILABLE/DEFEATED), cycle, defeated_date, defeated_at; UNIQUE(journey_id, boss_code); chỉ có dòng khi boss đã được đánh | 
