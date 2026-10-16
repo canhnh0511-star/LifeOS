@@ -21,7 +21,9 @@ import './styles.css';
 
 type ModalKind = 'goal' | 'habit' | 'editHabit' | 'settings' | null;
 const MODAL_TITLES = { goal: 'Mục tiêu mới', habit: 'Thói quen mới', editHabit: 'Sửa thói quen', settings: 'Cài đặt hệ thống' } as const;
-const failure = (e: unknown, fallback: string) => e instanceof Error ? e.message : fallback;
+/** Error notices start with this mark so the toast can tell them from system messages. */
+const ERROR_MARK = '⚠ ';
+const failure = (e: unknown, fallback: string) => ERROR_MARK + (e instanceof Error ? e.message : fallback);
 /** Fresh progress for level-up detection; a failure here must not hide that the action itself succeeded. */
 const latestProgress = () => api.getProgress().catch(() => undefined);
 
@@ -150,6 +152,6 @@ export default function App() {
       {modal === 'settings' && <SettingsPanel isDemo={isDemo} onExport={exportData} onReset={reset} onLogout={logout}/>}
     </Modal>}
     {celebration && <Celebration data={celebration} onClose={() => setCelebration(null)}/>}
-    {notice && <div role="status" className="toast"><Sparkles size={18}/>{notice}<button aria-label="Đóng thông báo" onClick={() => setNotice('')}><X size={15}/></button></div>}
+    {notice && <div role={notice.startsWith(ERROR_MARK) ? 'alert' : 'status'} className={`toast ${notice.startsWith(ERROR_MARK) ? 'toast-error' : ''}`}><Sparkles size={18}/><span className="toast-text"><b className="toast-tag">{notice.startsWith(ERROR_MARK) ? 'LỖI' : 'HỆ THỐNG'}</b>{notice.replace(ERROR_MARK, '')}</span><button aria-label="Đóng thông báo" onClick={() => setNotice('')}><X size={15}/></button></div>}
   </div>;
 }

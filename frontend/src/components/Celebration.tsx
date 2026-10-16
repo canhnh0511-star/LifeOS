@@ -3,6 +3,7 @@ import { Award, Swords, Zap } from 'lucide-react';
 import type { BossDto, GoalCategory } from '../api/types';
 import { useDialog } from '../hooks/useDialog';
 import type { LevelUps } from '../domain/levelUps';
+import { RankBadge } from './RankBadge';
 import { categoryLabel, titleForLevel } from '../domain/rules';
 
 export interface BossWin { boss: BossDto; xp: number; badgeName: string | null; }
@@ -11,7 +12,7 @@ export interface CelebrationData extends LevelUps { boss?: BossWin; }
 /** Long enough to read; Escape, the button or a backdrop click closes sooner. */
 const DISMISS_MS = 8000;
 
-export const hasCelebration = (data: CelebrationData) => !!data.boss || data.level !== null || data.areas.length > 0;
+export const hasCelebration = (data: CelebrationData) => !!data.boss || data.level !== null || !!data.rank || data.areas.length > 0;
 
 /** Full-screen reward moment, built as a real dialog (focus trap, Escape, focus restore); motion is off under prefers-reduced-motion. */
 export function Celebration({ data, onClose }: { data: CelebrationData; onClose: () => void }) {
@@ -23,7 +24,7 @@ export function Celebration({ data, onClose }: { data: CelebrationData; onClose:
   useEffect(() => { const timer = setTimeout(() => close.current(), DISMISS_MS); return () => clearTimeout(timer); }, [data]);
 
   const tier = data.boss?.boss.tier ?? 1;
-  const title = data.boss ? `${data.boss.boss.name} bị hạ!` : data.level !== null ? 'LEVEL UP!' : 'Chỉ số tăng cấp!';
+  const title = data.boss ? `${data.boss.boss.name} bị hạ!` : data.rank ? 'LÊN HẠNG!' : data.level !== null ? 'LEVEL UP!' : 'Chỉ số tăng cấp!';
   return <div className={`celebration tier-${tier}`} onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
     <div className="celebration-rays" aria-hidden="true"/>
     <div ref={card} className="celebration-card" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
@@ -33,6 +34,8 @@ export function Celebration({ data, onClose }: { data: CelebrationData; onClose:
       <h2 id={titleId}>{data.boss && <Swords size={26} aria-hidden="true"/>} {title}</h2>
       {data.boss && <p className="celebration-big">+{data.boss.xp} XP</p>}
       {data.boss?.badgeName && <p className="celebration-line"><Award size={18} aria-hidden="true"/> Nhận {data.boss.badgeName}</p>}
+      {data.rank && data.level !== null && <RankBadge level={data.level} size="lg"/>}
+      {data.rank && <p className="celebration-line">Bạn đạt Hạng {data.rank}</p>}
       {data.level !== null && <p className={data.boss ? 'celebration-line' : 'celebration-big'}>Level {data.level} · {titleForLevel(data.level)}</p>}
       {data.areas.map(a => <p key={a.category} className="celebration-line">{categoryLabel(a.category as GoalCategory)} lên Lv {a.level}</p>)}
       <button className="btn btn-primary celebration-close" onClick={onClose}>Tiếp tục</button>

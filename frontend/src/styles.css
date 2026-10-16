@@ -175,3 +175,18 @@
 .chest.is-open strong{color:inherit}
 @keyframes chest-open{0%{transform:scale(.92)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.chest.is-open{animation:none}}
+/* B-20: hunter-style rank badge and "Hệ thống" window */
+.rank-badge{color:var(--rk);flex:0 0 auto;vertical-align:middle}.rank-lg{filter:drop-shadow(0 0 14px color-mix(in srgb,var(--rk) 60%,transparent))}
+.rank-e{--rk:#9aa7b8}.rank-d{--rk:#6fd0a0}.rank-c{--rk:#5ab4f5}.rank-b{--rk:#9b7cf6}.rank-a{--rk:#f0a24b}.rank-s{--rk:#ff5f6d}
+.today-level .level-line{align-items:center}.stat-top>span{display:inline-flex;align-items:center;gap:6px}
+.toast{border-color:#4b5fd0;background:linear-gradient(160deg,#171d3f,#101830);color:#dfe6ff;box-shadow:0 15px 50px #0009,0 0 24px #4b5fd055}
+.toast>svg{color:#8fa0ff}.toast-text{display:flex;flex-direction:column;gap:3px}.toast-tag{font-size:9px;letter-spacing:2px;color:#8fa0ff}
+.level-hero{border-color:#3b4a8a;background:linear-gradient(112deg,#1a2147 0%,#161c3a 48%,#121a2e 100%)}
+.level-hero .hero-kicker{color:#a3b2ff}
+.today-level{border-color:#4b5fd0;background:linear-gradient(160deg,#1a2147,#141c33)}
+.today-level .level-line{color:#b9c4ff}.today-level .level-line strong{color:#eef1ff}
+.today-level .progress-fill{background:linear-gradient(90deg,#5a6df0,#9fb0ff)}.today-level .progress-track{background:#273056}.today-level small{color:#8f9bd6}
+@keyframes system-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.toast{animation:system-in .25s ease-out}
+@media(prefers-reduced-motion:reduce){.toast{animation:none}}
+.toast-error{border-color:#a8505a;background:linear-gradient(160deg,#3a1b22,#2a141a);color:#ffd7db}.toast-error>svg,.toast-error .toast-tag{color:#ff9aa5}

@@ -1,5 +1,7 @@
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Circle, Clock3, Flame, Gift, Lock, PartyPopper, Plus, Zap } from 'lucide-react';
 import type { DailyDashboardDto, QuestDto, QuestObjectiveDto } from '../api/types';
+import { RankBadge } from '../components/RankBadge';
+import { rankForLevel } from '../domain/ranks';
 import { tierName } from '../domain/dailyRewards';
 import { categoryLabel, formatDate, moveDate, titleForLevel } from '../domain/rules';
 import { ObjectiveList, metCount } from '../components/ObjectiveList';
@@ -38,7 +40,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
         <div className="today-progress"><div className="today-progress-top"><span>Tiến độ trong ngày</span><strong>{done}/{total}</strong></div><ProgressBar value={dayPct} variant="green" size="slim"/></div>
         <div className="today-chip" title="Số ngày liên tiếp hoàn thành ít nhất một nửa nhiệm vụ trong ngày"><Flame size={18}/><strong>{dashboard?.dayStreak || 0}</strong><span>ngày liên tục</span></div>
         <div className="today-chip"><Zap size={18}/><strong>+{dashboard?.earnedXpToday || 0}</strong><span>{isToday ? 'XP hôm nay' : 'XP ngày này'}</span></div>
-        <button className="today-chip today-level" onClick={() => goTo('character')} aria-label={`Level ${cur?.level || 1}, xem nhân vật`}><span className="level-line"><strong>Lv {cur?.level || 1}</strong><span>{titleForLevel(cur?.level || 1)}</span></span><ProgressBar value={levelPct} size="slim"/><small>{number(cur?.totalXp || 0)} / {number(cur?.nextLevelXp || 0)} XP</small></button>
+        <button className="today-chip today-level" onClick={() => goTo('character')} aria-label={`Level ${cur?.level || 1}, hạng ${rankForLevel(cur?.level || 1)}, xem nhân vật`}><span className="level-line"><RankBadge level={cur?.level || 1} size="sm"/><strong>Lv {cur?.level || 1}</strong><span>{titleForLevel(cur?.level || 1)}</span></span><ProgressBar value={levelPct} size="slim"/><small>{number(cur?.totalXp || 0)} / {number(cur?.nextLevelXp || 0)} XP</small></button>
       </div>
 
       {rewards.length > 0 && <section className="daily-rewards" aria-label={`Phần thưởng ${isToday ? 'hôm nay' : 'ngày này'}`}>

@@ -3,6 +3,7 @@ import type { AreaStatDto, GoalCategory } from '../api/types';
 import { categoryLabel } from '../domain/rules';
 import { categoryColors, categoryIcons } from '../ui/categories';
 import { number, pct } from '../ui/format';
+import { RankBadge } from './RankBadge';
 import { CharacterModel } from './CharacterModel';
 import { IconBubble, ProgressBar } from './primitives';
 
@@ -20,7 +21,7 @@ export function CharacterCard({ areas, totalXp }: { areas: AreaStatDto[]; totalX
         const Icon = categoryIcons[a.category];
         return <li key={a.category} className={`stat-row ${active === a.category ? 'is-active' : ''}`} onMouseEnter={() => setActive(a.category)} onMouseLeave={() => setActive(null)}>
           <IconBubble icon={Icon} tone={categoryColors[a.category]}/>
-          <div className="stat-body"><div className="stat-top"><strong>{categoryLabel(a.category)}</strong><span>Lv {a.level} · {number(a.xp)} XP</span></div><ProgressBar value={pct(a.xp - a.levelStartXp, a.nextLevelXp - a.levelStartXp)} variant="green" size="slim"/><small>{number(a.nextLevelXp - a.xp)} XP nữa lên Lv {a.level + 1}</small></div>
+          <div className="stat-body"><div className="stat-top"><strong>{categoryLabel(a.category)}</strong><span><RankBadge level={a.level} size="sm" decorative/> Lv {a.level} · {number(a.xp)} XP</span></div><ProgressBar value={pct(a.xp - a.levelStartXp, a.nextLevelXp - a.levelStartXp)} variant="green" size="slim"/><small>{number(a.nextLevelXp - a.xp)} XP nữa lên Lv {a.level + 1}</small></div>
         </li>;
       })}</ul>
     </div>

@@ -59,7 +59,7 @@ describe('TodayPage', () => {
     const goTo = vi.fn();
     render(<TodayPage {...props} goTo={goTo} onToggleQuest={() => {}} dashboard={dashboard([quest('a', 'PENDING')])}/>);
     expect(screen.queryByText('Chỉ số nhân vật')).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: /Level 2, xem nhân vật/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Level 2, hạng E, xem nhân vật/ }));
     expect(goTo).toHaveBeenCalledWith('character');
   });
   it('shows a quest that has a checklist as a card with its lines, and offers a quick "all done" instead of a plain button', async () => {
