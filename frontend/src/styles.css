@@ -147,3 +147,7 @@
 @media (max-width:560px){.objective-edit-head{display:none}}
 
 /* Installed on a phone the page runs under the status bar (black-translucent + viewport-fit=cover): the top bar and the mobile drawer (above) add the safe-area insets so nothing hides under the notch or the home indicator. */
+.today-banner{position:relative;min-height:190px;align-items:flex-end;padding:26px 28px;border-radius:15px;overflow:hidden;border:1px solid #2c3a4a;background:linear-gradient(180deg,rgba(8,12,20,.1) 0%,rgba(8,12,20,.78) 100%),url('/art/today-banner.jpg') center 30%/cover no-repeat,#0b1018}
+.today-banner h1,.today-banner p{text-shadow:0 2px 12px #000c}
+.today-banner p{color:#c3cedb}
+@media(max-width:690px){.today-banner{min-height:170px;padding:20px 16px}.today-banner>.btn{margin-top:0}}
