@@ -1,0 +1,35 @@
+{
+  "startDate": "REPLACE_WITH_TODAY_YYYY-MM-DD",
+  "goals": [
+    {
+      "title": "Dinh dưỡng & nước (85 → 82 kg)",
+      "category": "HEALTH",
+      "description": "Giảm 2–4 kg trong 30 ngày (0,5–1 kg/tuần): uống đủ nước, ăn đủ đạm, bỏ đồ ngọt, giữ khoảng 1.700–1.900 kcal/ngày.",
+      "habits": [
+        {"title": "Uống đủ 2,5 lít nước", "targetMinutes": 5, "xpReward": 20, "weekdays": [1,2,3,4,5,6,7]},
+        {"title": "Ăn đủ đạm, không đồ ngọt/nước có đường", "targetMinutes": 15, "xpReward": 30, "weekdays": [1,2,3,4,5,6,7]},
+        {"title": "Ghi lại bữa ăn, giữ ~1.700–1.900 kcal", "targetMinutes": 10, "xpReward": 20, "weekdays": [1,2,3,4,5,6,7]}
+      ]
+    },
+    {
+      "title": "Vận động 30 ngày",
+      "category": "HEALTH",
+      "description": "Gym toàn thân 3 buổi/tuần (T2/T4/T6), đi bộ nhanh T3/T5/T7, Chủ nhật phục hồi nhẹ.",
+      "habits": [
+        {"title": "Gym toàn thân (squat, ép ngực, kéo xô, plank)", "targetMinutes": 60, "xpReward": 50, "weekdays": [1,3,5]},
+        {"title": "Đi bộ nhanh ~8.000 bước", "targetMinutes": 45, "xpReward": 35, "weekdays": [2,4,6]},
+        {"title": "Phục hồi: đi bộ nhẹ + giãn cơ", "targetMinutes": 30, "xpReward": 20, "weekdays": [7]}
+      ]
+    },
+    {
+      "title": "Ngủ & theo dõi cân nặng",
+      "category": "HEALTH",
+      "description": "Ngủ đủ giấc để kiểm soát cảm giác thèm ăn; cân 2 lần/tuần và đo vòng eo mỗi Chủ nhật.",
+      "habits": [
+        {"title": "Ngủ trước 23h, đủ 7 tiếng", "targetMinutes": 420, "xpReward": 30, "weekdays": [1,2,3,4,5,6,7]},
+        {"title": "Cân sáng lúc đói, ghi cân nặng", "targetMinutes": 5, "xpReward": 15, "weekdays": [1,4]},
+        {"title": "Đo vòng eo + chụp ảnh tiến độ", "targetMinutes": 10, "xpReward": 20, "weekdays": [7]}
+      ]
+    }
+  ]
+}

@@ -23,8 +23,11 @@ Giai đoạn đầu là app tập gym · giữ 5 tab · giữ hạng E–S · RP
 Gói nói 4 tab, mock localStorage cho kho đồ, stage Initiate…Sovereign, chỉ số FOCUS/STRENGTH demo, bảng token `--rpg-*`. Thực tế: 5 tab; kho đồ lưu server (ADR-034); rank E–S (`domain/ranks.ts`); radar theo dữ liệu thật; biến CSS rút từ palette hiện có. Ví dụ học/piano/đọc sách chỉ là minh hoạ cũ.
 
 ## Đã chạy và chưa kiểm (2026-10-17)
-- `cd frontend && npm test`: 257 test đạt; backend `./mvnw test` 200 test đạt (có V12); `npx tsc --noEmit` sạch; `npm run build` thành công.
+- `cd frontend && npm test`: 259 test đạt; backend `./mvnw test` 200 test đạt (có V12); `npx tsc --noEmit` sạch; `npm run build` thành công.
 - **Chưa làm được:** ảnh chụp 390/768/1440px, kiểm vùng chạm 44px/safe-area/nút Back/tương phản trên trình duyệt thật, bản Railway, PWA trên iPhone, test backend. Gom vào B-31.
+
+## Ảnh tham chiếu giao diện của owner (2026-10-17)
+10 màn kiểu RPG (Hôm nay, lịch tuần, chi tiết buổi, chi tiết bài, đang tập, thư viện, nhóm cơ, nhân vật, kho đồ, thống kê). Owner duyệt layout và hiệu ứng, **giữ màu xanh hiện tại**; không dùng nhân vật/tên giống tác phẩm gốc. Chia thành B-35 (xong) và B-36 → B-41; màn chưa làm chờ duyệt từng ticket.
 
 ## Quy trình
 Một ticket mỗi lần, báo cáo file đổi + lệnh test + known gaps, chờ owner duyệt rồi mới sang ticket sau. Bất biến: XP chỉ từ mutation hoàn thành; timer/ghim/độ khó không đổi XP; streak theo buổi có lịch; ngày theo timezone user.

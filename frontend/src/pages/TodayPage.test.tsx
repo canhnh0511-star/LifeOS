@@ -49,7 +49,7 @@ describe('TodayPage', () => {
     expect(block.textContent).toContain('Còn 3 nhiệm vụ để mở Rương bạc');
     expect(screen.getByLabelText(/Rương gỗ: chạm để mở/)).toBeTruthy();
     expect(screen.getByLabelText(/Rương vàng: mở khi xong 4 nhiệm vụ/)).toBeTruthy();
-    expect(screen.getByText('12').closest('.today-chip')!.textContent).toContain('ngày liên tục');
+    expect(screen.getByText('12 ngày').closest('.today-tile')!.textContent).toContain('Chuỗi ngày');
   });
   it('opens an earned chest with a reveal of what it paid, then remembers it was opened', async () => {
     localStorage.clear();
@@ -88,7 +88,7 @@ describe('TodayPage', () => {
     const goTo = vi.fn();
     render(<TodayPage {...props} goTo={goTo} onToggleQuest={() => {}} dashboard={dashboard([quest('a', 'PENDING')])}/>);
     expect(screen.queryByText('Chỉ số nhân vật')).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: /Level 2, hạng E, xem nhân vật/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Level 2, hạng E, Tân binh, xem nhân vật/ }));
     expect(goTo).toHaveBeenCalledWith('character');
   });
   it('shows a quest that has a checklist as a card with its lines, and offers a quick "all done" instead of a plain button', async () => {
@@ -127,7 +127,7 @@ describe('TodayPage', () => {
   it('opens the quest detail from the Main Quest card and closes it without touching the quest', async () => {
     const onToggleQuest = vi.fn();
     render(<TodayPage {...props} onToggleQuest={onToggleQuest} dashboard={dashboard([quest('b', 'PENDING', 'Tập chân')])}/>);
-    await userEvent.click(screen.getByRole('button', { name: /Chi tiết buổi tập/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập/ }));
     const dialog = screen.getByRole('dialog', { name: 'Tập chân' });
     expect(within(dialog).getByRole('button', { name: 'Xác nhận hoàn thành' })).toBeTruthy();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Đóng' }));
@@ -163,3 +163,26 @@ describe('TodayPage', () => {
   });
 });
 
+
+describe('Today as a status window (B-35)', () => {
+  it('shows level, rank stage and XP in the level, the day tiles and one quick stat per area', () => {
+    const d = dashboard([quest('a', 'PENDING')]);
+    d.progress = { ...d.progress, level: 12, totalXp: 1250, levelStartXp: 1000, nextLevelXp: 2000, areas: [
+      { category: 'HEALTH', xp: 500, level: 6, levelStartXp: 0, nextLevelXp: 700 }, { category: 'CAREER', xp: 100, level: 2, levelStartXp: 0, nextLevelXp: 400 }] };
+    render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={d} weekly={{ completedCount: 9, scheduledCount: 12 } as never}/>);
+    const status = screen.getByLabelText('Trạng thái nhân vật');
+    expect(status.textContent).toContain('Lv. 12'); expect(status.textContent).toContain('Hạng C · Tiên phong'); expect(status.textContent).toContain('1.250 / 2.000 XP');
+    expect(screen.getByLabelText('Tóm tắt hôm nay').textContent).toContain('9/12');
+    const stats = screen.getByLabelText('Chỉ số nhanh');
+    expect(stats.querySelectorAll('li')).toHaveLength(2); expect(stats.textContent).toContain('6');
+  });
+  it('the main quest card carries its XP and a Start button that opens the detail, not a completion', async () => {
+    const onToggleQuest = vi.fn();
+    render(<TodayPage {...props} onToggleQuest={onToggleQuest} dashboard={dashboard([{ ...quest('b', 'PENDING', 'Buổi A'), xpReward: 40 }])}/>);
+    const card = screen.getByLabelText('Việc tiếp theo');
+    expect(card.textContent).toContain('+40 XP'); expect(card.textContent).toContain('MAIN QUEST');
+    await userEvent.click(within(card).getByRole('button', { name: /Bắt đầu buổi tập/ }));
+    expect(screen.getByRole('dialog', { name: 'Buổi A' })).toBeTruthy();
+    expect(onToggleQuest).not.toHaveBeenCalled();
+  });
+});

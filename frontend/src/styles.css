@@ -286,3 +286,24 @@ button.chest{font:inherit;cursor:pointer;width:100%}button.chest:hover{filter:br
 .set-log{list-style:none;margin:0;padding:0;display:grid;gap:14px}.set-exercise{display:grid;gap:6px;border-top:1px solid var(--line);padding-top:10px}.set-plan{color:var(--text-muted)}
 .set-rows{list-style:none;margin:0;padding:0;display:grid;gap:4px}.set-rows li{display:flex;align-items:center;justify-content:space-between;gap:8px}.set-del{width:44px;height:44px;display:grid;place-items:center;background:none;border:1px solid var(--line);border-radius:10px;color:var(--text-muted)}
 .set-add{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px}.set-add label{display:grid;gap:2px;font-size:12px;color:var(--text-muted)}.set-add input{width:84px;min-height:44px}.set-add .btn{min-height:44px}.set-error{color:#ff8a8a;margin:0}
+/* B-35: Today as a status window (layout from the owner's reference, colours kept: dark surfaces with the lime accent) */
+.hunter-status{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-radius:18px;border:1px solid color-mix(in srgb,var(--accent) 38%,var(--line));background:radial-gradient(120% 140% at 100% 0%,color-mix(in srgb,var(--accent) 16%,transparent),transparent 62%),linear-gradient(160deg,#18222e,#10161f);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 10%,transparent),0 10px 34px #0007}
+.hunter-main{flex:1;min-width:0;display:grid;gap:6px;text-align:left;background:none;border:0;color:inherit;padding:0;font:inherit}
+.hunter-level{font-size:34px;line-height:1;font-weight:900;letter-spacing:.5px;color:var(--text-strong);text-shadow:0 0 18px color-mix(in srgb,var(--accent) 45%,transparent)}
+.hunter-title{font-size:14px;font-weight:700;color:var(--accent)}.hunter-main small{color:var(--text-muted)}
+.hunter-rank{flex:0 0 auto;display:grid;place-items:center;filter:drop-shadow(0 0 14px color-mix(in srgb,var(--accent) 40%,transparent))}
+.today-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.today-tile{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:linear-gradient(180deg,#1a2230,#141b25);color:var(--accent);min-width:0}
+.today-tile span{display:grid;min-width:0}.today-tile small{color:var(--text-muted);font-size:11px}.today-tile strong{color:var(--text-strong);font-size:16px}
+.today-progress-line{margin-top:-6px}
+.quick-stats-title{font-size:14px;margin:0 0 8px;color:var(--text-muted);letter-spacing:.6px;text-transform:uppercase}
+.quick-stats ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.quick-stats li{display:grid;justify-items:center;gap:2px;padding:12px 6px;border-radius:14px;border:1px solid var(--line);background:linear-gradient(180deg,#1a2230,#141b25);color:var(--accent)}
+.quick-stats li strong{color:var(--text-strong);font-size:18px}.quick-stats li small{color:var(--text-muted);font-size:11px;text-align:center}
+.next-up{border-radius:18px;border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));background:radial-gradient(110% 120% at 0% 0%,color-mix(in srgb,var(--accent) 12%,transparent),transparent 60%),linear-gradient(160deg,#18222e,#10161f);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent),0 0 30px color-mix(in srgb,var(--accent) 14%,transparent),0 10px 34px #0007}
+.next-up-label{display:flex;flex-wrap:wrap;align-items:center;gap:6px;color:var(--accent)}.next-up-xp{margin-left:auto;display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;border:1px solid color-mix(in srgb,var(--accent) 50%,var(--line));color:var(--accent);font-weight:800}
+.next-up-start{width:100%;min-height:48px;font-weight:800}
+@keyframes quest-glow{0%,100%{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent),0 0 24px color-mix(in srgb,var(--accent) 10%,transparent),0 10px 34px #0007}50%{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 22%,transparent),0 0 38px color-mix(in srgb,var(--accent) 22%,transparent),0 10px 34px #0007}}
+:root:not([data-motion="reduce"]) .next-up:not(.next-up-done){animation:quest-glow 3.6s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.next-up{animation:none!important}}
+@media(max-width:560px){.today-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.quick-stats ul{gap:6px}.quick-stats li{padding:10px 2px}.hunter-level{font-size:30px}}
