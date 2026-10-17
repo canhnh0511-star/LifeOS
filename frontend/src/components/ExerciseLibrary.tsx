@@ -12,7 +12,7 @@ const plain = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(
 /** Filter by muscle group (null = all) and by a search text that ignores case and Vietnamese accents; matches the name, group and equipment. */
 export function filterExercises(list: readonly Exercise[], group: MuscleGroup | null, query: string): Exercise[] {
   const q = plain(query.trim());
-  return list.filter(e => (!group || e.group === group) && (!q || plain(`${e.name} ${muscleLabel[e.group]} ${infoFor(e).equipment}`).includes(q)));
+  return list.filter(e => (!group || e.group === group) && (!q || plain(`${e.nameVi ?? ''} ${e.name} ${muscleLabel[e.group]} ${infoFor(e).equipment}`).includes(q)));
 }
 
 /** The exercise library (B-39): search, filter by muscle group, open an exercise for its detail. */
@@ -54,8 +54,8 @@ export function ExerciseLibrary({ onClose, habits, onAddToHabit }: { onClose: ()
       </div>
       <p className="form-note" role="status">{shown.length} bài</p>
       {shown.length === 0 ? <p className="xl-empty">Không có bài nào khớp. Thử bỏ bớt từ khoá hoặc chọn nhóm cơ khác.</p>
-        : <ul className="xl-list">{shown.map(e => <li key={e.id}><button type="button" className="xl-item" onClick={() => setOpen(e)} aria-label={`Chi tiết ${e.name}`}>
-          <MuscleFigure primary={e.group} size={28}/><span><strong>{e.name}</strong><small>{muscleLabel[e.group]} · {infoFor(e).equipment} · {levelLabel[infoFor(e).level]}</small></span><small className="xl-plan">{e.sets}×{e.reps}</small>
+        : <ul className="xl-list">{shown.map(e => <li key={e.id}><button type="button" className="xl-item" onClick={() => setOpen(e)} aria-label={`Chi tiết ${e.nameVi ?? e.name}`}>
+          <MuscleFigure primary={e.group} size={28}/><span><strong>{e.nameVi ?? e.name}</strong><small lang="en">{e.name}</small><small>{muscleLabel[e.group]} · {infoFor(e).equipment} · {levelLabel[infoFor(e).level]}</small></span><small className="xl-plan">{e.sets}×{e.reps}</small>
         </button></li>)}</ul>}
     </div>
   </Modal>;

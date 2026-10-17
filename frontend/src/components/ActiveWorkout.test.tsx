@@ -22,7 +22,7 @@ function fakeApi(initial: WorkoutSetDto[] = []) {
 }
 const start = async (api: SetLogApi, onToggle = vi.fn()) => {
   render(<QuestSheet quest={quest} date="2026-10-19" busy={false} onClose={() => {}} setLog={api} onToggle={onToggle} onSetObjective={() => {}}/>);
-  await screen.findByLabelText('Nhật ký set Machine Chest Press');
+  await screen.findByLabelText('Nhật ký set Đẩy ngực với máy');
   await waitFor(() => expect(api.list).toHaveBeenCalled()); await act(async () => { await new Promise(r => setTimeout(r, 50)); });
   await userEvent.click(await screen.findByRole('button', { name: /Tập từng set/ }));
   return onToggle;
@@ -58,11 +58,11 @@ describe('active workout (B-38)', () => {
   it('moves to the next exercise when all sets are done; a hold has no weight', async () => {
     const api = fakeApi([{ exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 40 }, { exercise: 'Machine Chest Press', setNo: 2, reps: 10, weightKg: 40 }]);
     await start(api);
-    expect(screen.getByRole('heading', { name: 'Plank' })).toBeTruthy(); // opens on the first exercise with sets left
+    expect(screen.getByRole('heading', { name: 'Plank (giữ thân thẳng)' })).toBeTruthy(); // opens on the first exercise with sets left
     await userEvent.click(screen.getByRole('button', { name: 'Bài trước' }));
     expect(screen.getByRole('status').textContent).toContain('Đã xong 2/2');
     await userEvent.click(screen.getByRole('button', { name: /Bài tiếp theo/ }));
-    expect(screen.getByRole('heading', { name: 'Plank' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Plank (giữ thân thẳng)' })).toBeTruthy();
     expect(screen.queryByLabelText('mức tạ (kg) hiện tại')).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: 'Hoàn thành set' }));
     expect(api.record).toHaveBeenCalledWith('h', '2026-10-19', { exercise: 'Plank', setNo: 1, reps: 45, weightKg: null });
@@ -81,7 +81,7 @@ describe('active workout (B-38)', () => {
     api.remove.mockImplementation(async () => []);
     await start(api);
     await userEvent.click(screen.getByRole('button', { name: 'Tăng thời gian nghỉ' }));
-    await userEvent.click(screen.getAllByRole('button', { name: 'Xoá set 1 của Machine Chest Press' }).at(-1)!);
+    await userEvent.click(screen.getAllByRole('button', { name: 'Xoá set 1 của Đẩy ngực với máy' }).at(-1)!);
     expect(api.remove).toHaveBeenCalledWith('h', '2026-10-19', 'Machine Chest Press', 1);
     cleanup();
     await start(fakeApi());

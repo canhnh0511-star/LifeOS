@@ -8,6 +8,19 @@ import { ExerciseLibrary, filterExercises } from './ExerciseLibrary';
 
 afterEach(cleanup);
 
+describe('filterExercises by Vietnamese and English names', () => {
+  it('finds an exercise by its Vietnamese name with or without accents, and by its English name', () => {
+    expect(filterExercises(EXERCISES, null, 'hít đất').map(e => e.id)).toEqual(['push-up']);
+    expect(filterExercises(EXERCISES, null, 'hit dat').map(e => e.id)).toEqual(['push-up']);
+    expect(filterExercises(EXERCISES, null, 'PUSH-UP').map(e => e.id)).toEqual(['push-up']);
+    expect(filterExercises(EXERCISES, null, 'goblet').map(e => e.id)).toContain('goblet-squat');
+  });
+  it('lists the Vietnamese name first in the library', async () => {
+    render(<ExerciseLibrary onClose={() => {}}/>);
+    expect(screen.getByRole('button', { name: /Chi tiết Hít đất/ })).toBeTruthy();
+  });
+});
+
 describe('filterExercises', () => {
   it('filters by group, and searches ignoring case and accents', () => {
     expect(filterExercises(EXERCISES, 'CORE', '').every(e => e.group === 'CORE')).toBe(true);
@@ -22,15 +35,15 @@ describe('exercise library screen (B-39)', () => {
     render(<ExerciseLibrary onClose={() => {}}/>);
     expect(screen.getByRole('status').textContent).toBe(`${EXERCISES.length} bài`);
     await userEvent.click(screen.getByRole('button', { name: /^Bụng/ }));
-    expect(screen.getByRole('button', { name: 'Chi tiết Plank' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Chi tiết Barbell Bench Press' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Chi tiết Plank (giữ thân thẳng)' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Chi tiết Đẩy ngực với thanh đòn (ghế phẳng)' })).toBeNull();
     await userEvent.type(screen.getByLabelText('Tìm bài tập'), 'zzz');
     expect(screen.getByText(/Không có bài nào khớp/)).toBeTruthy();
   });
   it('opens an exercise for its detail and goes back to the list', async () => {
     render(<ExerciseLibrary onClose={() => {}}/>);
-    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Plank' }));
-    expect(screen.getByRole('dialog', { name: 'Plank' })).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Plank (giữ thân thẳng)' }));
+    expect(screen.getByRole('dialog', { name: 'Plank (giữ thân thẳng)' })).toBeTruthy();
     expect(screen.getByText('Nhóm cơ chính')).toBeTruthy(); expect(screen.getByText(/Khuỷu dưới vai/)).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
     expect(screen.getByRole('dialog', { name: 'Thư viện bài tập' })).toBeTruthy();
@@ -42,7 +55,7 @@ describe('add an exercise to a session (B-39)', () => {
   it('appends the exercise to the chosen gym session, keeping its current lines', async () => {
     const onAdd = vi.fn(async () => {});
     render(<ExerciseLibrary onClose={() => {}} habits={[habit('a', 'Buổi A', ['Machine Chest Press']), habit('p', 'Piano', ['Scales'])]} onAddToHabit={onAdd}/>);
-    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Plank' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Plank (giữ thân thẳng)' }));
     expect(screen.queryByRole('option', { name: 'Piano' })).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: /^Thêm 3×45 giây/ }));
     expect(onAdd).toHaveBeenCalledWith('a', [{ title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10 }, { title: 'Plank', target: 135, unit: 'giây', step: 45 }]);
@@ -51,17 +64,17 @@ describe('add an exercise to a session (B-39)', () => {
   it('refuses a duplicate and shows an API failure', async () => {
     const onAdd = vi.fn(async () => { throw new Error('Không lưu được.'); });
     render(<ExerciseLibrary onClose={() => {}} habits={[habit('a', 'Buổi A', ['Machine Chest Press'])]} onAddToHabit={onAdd}/>);
-    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Machine Chest Press' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Đẩy ngực với máy' }));
     await userEvent.click(screen.getByRole('button', { name: /^Thêm/ }));
     expect((await screen.findByRole('alert')).textContent).toContain('đã có bài này'); expect(onAdd).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Plank' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Plank (giữ thân thẳng)' }));
     await userEvent.click(screen.getByRole('button', { name: /^Thêm/ }));
     expect((await screen.findByRole('alert')).textContent).toContain('Không lưu được');
   });
   it('says there is no session when no habit is a gym session', async () => {
     render(<ExerciseLibrary onClose={() => {}} habits={[habit('p', 'Piano', ['Scales'])]} onAddToHabit={async () => {}}/>);
-    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Plank' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Plank (giữ thân thẳng)' }));
     expect(screen.getByText(/Chưa có buổi tập nào/)).toBeTruthy();
   });
 });

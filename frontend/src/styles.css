@@ -398,3 +398,6 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]),select{min-height
 .today-more[open]>summary{margin-bottom:12px}.today-more .today-tiles{margin-bottom:12px}
 .aw-stepper input.aw-value{width:100%;min-width:0;background:transparent;border:0;border-bottom:2px solid var(--line);border-radius:0;color:var(--text-strong);padding:0;min-height:56px!important}.aw-stepper input.aw-value:focus{outline:none;border-bottom-color:var(--accent)}.aw-rest .aw-stepper input.aw-value{min-height:44px!important}
 .aw-field{display:grid;gap:4px}.aw-label{font-size:13px;color:var(--text-muted)}
+
+/* Vietnamese exercise name first; the English name is a quiet second line */
+.aw-name-en,.xl-item small[lang="en"]{display:block;color:var(--text-muted);font-size:12px}

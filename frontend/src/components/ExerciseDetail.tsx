@@ -8,7 +8,7 @@ import { MuscleFigure } from './MuscleFigure';
 export function ExerciseDetail({ exercise: e, onClose, action }: { exercise: Exercise; onClose: () => void; action?: React.ReactNode }) {
   const x = infoFor(e);
   const unit = e.unit === 'giây' ? 'giây' : 'rep';
-  return <Modal title={e.name} onClose={onClose} sheet>
+  return <Modal title={e.nameVi ?? e.name} onClose={onClose} sheet>
     <div className="xd">
       <div className="xd-top">
         <MuscleFigure primary={e.group} secondary={x.secondary}/>

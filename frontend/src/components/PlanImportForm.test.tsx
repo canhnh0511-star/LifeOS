@@ -13,12 +13,12 @@ describe('PlanImportForm (B-32)', () => {
     const onImport = vi.fn().mockResolvedValue(undefined);
     render(<PlanImportForm onClose={() => {}} onImport={onImport}/>);
     const preview = screen.getByLabelText('Xem trước giáo án');
-    expect(preview.textContent).toContain('Machine Chest Press · 2×10');
-    expect(preview.textContent).toContain('Dead Bug · 2×8 mỗi bên');
+    expect(preview.textContent).toContain('Đẩy ngực với máy · 2×10');
+    expect(preview.textContent).toContain('Con bọ chết (Dead Bug) · 2×8 mỗi bên');
     expect(preview.textContent).toContain('5 thói quen');
     await userEvent.click(screen.getByRole('radio', { name: /Chia nhóm cơ — 5 buổi/ }));
     expect(preview.textContent).toContain('5 thói quen');
-    expect(preview.textContent).toContain('Plank · 3×45 giây');
+    expect(preview.textContent).toContain('Plank (giữ thân thẳng) · 3×45 giây');
     expect(onImport).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole('button', { name: /Nạp giáo án/ }));
     expect(onImport).toHaveBeenCalledTimes(1);

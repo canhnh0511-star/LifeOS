@@ -66,17 +66,17 @@ export function ExerciseSets({ exercise, sets, date, busy, last, onRecord, onRem
     await onRecord({ exercise: exercise.name, setNo: no, reps: r, weightKg: w });
   };
   const unit = seconds ? 'giây' : 'rep';
-  return <li className="set-exercise" aria-label={`Nhật ký set ${exercise.name}`}>
-    <strong>{exercise.name}</strong>
+  return <li className="set-exercise" aria-label={`Nhật ký set ${exercise.nameVi ?? exercise.name}`}>
+    <strong>{exercise.nameVi ?? exercise.name}</strong>
     <small className="set-plan">Kế hoạch {exercise.sets} set × {exercise.reps} {unit}{exercise.note ? ` ${exercise.note}` : ''}{previous && (previous.date ? ` · Lần trước (${formatDate(previous.date, { day: 'numeric', month: 'numeric' })}): ${previous.sets.map(s => `${s.reps}${kg(s.weightKg)}`).join('; ')}` : ' · Chưa có lần trước')}</small>
     {mine.length > 0 && <ol className="set-rows">{mine.map(s => <li key={s.setNo}>
       <span>Set {s.setNo}: {s.reps} {unit}{kg(s.weightKg)}</span>
-      <button type="button" className="set-del" disabled={busy} aria-label={`Xoá set ${s.setNo} của ${exercise.name}`} onClick={() => onRemove(exercise.name, s.setNo)}><Trash2 size={15}/></button>
+      <button type="button" className="set-del" disabled={busy} aria-label={`Xoá set ${s.setNo} của ${exercise.nameVi ?? exercise.name}`} onClick={() => onRemove(exercise.name, s.setNo)}><Trash2 size={15}/></button>
     </li>)}</ol>}
     <div className="set-add">
-      <label>{seconds ? 'Giây' : 'Rep'}<input inputMode="numeric" value={reps} onChange={e => setReps(e.target.value)} aria-label={`${seconds ? 'Số giây' : 'Số rep'} ${exercise.name}`}/></label>
-      {!seconds && <label>kg<input inputMode="decimal" value={weight} placeholder="tuỳ chọn" onChange={e => setWeight(e.target.value)} aria-label={`Mức tạ ${exercise.name}`}/></label>}
-      <button type="button" className="btn btn-secondary" disabled={busy} onClick={add} aria-label={`Ghi set ${nextSetNo(mine)} ${exercise.name}`}><Plus size={15}/> Ghi set {nextSetNo(mine)}</button>
+      <label>{seconds ? 'Giây' : 'Rep'}<input inputMode="numeric" value={reps} onChange={e => setReps(e.target.value)} aria-label={`${seconds ? 'Số giây' : 'Số rep'} ${exercise.nameVi ?? exercise.name}`}/></label>
+      {!seconds && <label>kg<input inputMode="decimal" value={weight} placeholder="tuỳ chọn" onChange={e => setWeight(e.target.value)} aria-label={`Mức tạ ${exercise.nameVi ?? exercise.name}`}/></label>}
+      <button type="button" className="btn btn-secondary" disabled={busy} onClick={add} aria-label={`Ghi set ${nextSetNo(mine)} ${exercise.nameVi ?? exercise.name}`}><Plus size={15}/> Ghi set {nextSetNo(mine)}</button>
     </div>
     {problem && <p role="alert" className="set-error">{problem}</p>}
   </li>;

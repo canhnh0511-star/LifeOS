@@ -36,7 +36,7 @@ export function PlanImportForm({ onClose, onImport, existingHabits = [], existin
       <ul>{program.days.map(d => <li key={d.title}>
         <strong>{d.weekdays.map(w => DAY_NAMES[w]).join(', ')} · {d.title}</strong>
         <small>{d.groups.map(g => muscleLabel[g]).join(', ')} · {program.sessionMinutes ?? 60} phút · +{program.sessionXp ?? 50} XP khi xác nhận hoàn thành cả buổi</small>
-        <ul>{d.exerciseIds.map(id => { const e = prescribed(d, id); return <li key={id}>{e.name} · {e.sets}×{e.reps}{e.unit === 'giây' ? ' giây' : ''}{e.note ? ` ${e.note}` : ''}</li>; })}</ul>
+        <ul>{d.exerciseIds.map(id => { const e = prescribed(d, id); return <li key={id}>{e.nameVi ?? e.name} · {e.sets}×{e.reps}{e.unit === 'giây' ? ' giây' : ''}{e.note ? ` ${e.note}` : ''}</li>; })}</ul>
       </li>)}</ul>
       <p className="form-note">Lịch bắt đầu từ ngày bạn chọn và không đổi ngược các ngày đã qua. Có thể sửa hoặc tạm dừng từng thói quen sau.{program.goalNote ? ' Ngày hồi phục và ngày nghỉ không tạo nhiệm vụ nên không bị tính là bỏ lỡ.' : ''}</p>
     </section>

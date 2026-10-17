@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EXERCISES, PROGRAMS, exerciseById, exercisesFor, muscleLabel, objectiveFor, exerciseByName, planRequest, prescribed, type MuscleGroup } from './exerciseLibrary';
+import { EXERCISES, PROGRAMS, exerciseById, exercisesFor, muscleLabel, objectiveFor, exerciseByName, viName, planRequest, prescribed, type MuscleGroup } from './exerciseLibrary';
 
 describe('exercise library (B-32)', () => {
   it('has unique ids and names, and several exercises for every muscle group', () => {
@@ -71,5 +71,18 @@ describe('rest times from the week-1 plan', () => {
     expect(exerciseByName('Machine Chest Press')?.restSeconds).toBe(90);
     expect(exerciseByName('Bài tự đặt tên')).toBeUndefined();
     expect(exerciseByName('Barbell Curl')?.restSeconds).toBeUndefined();
+  });
+});
+
+describe('Vietnamese exercise names', () => {
+  it('gives every exercise a unique Vietnamese name that differs from the English storage key', () => {
+    for (const e of EXERCISES) { expect(e.nameVi, e.id).toBeTruthy(); expect(e.nameVi).not.toBe(e.name); }
+    expect(new Set(EXERCISES.map(e => e.nameVi)).size).toBe(EXERCISES.length);
+  });
+  it('shows Vietnamese for a stored name, keeps unknown names as they are, and does not change the storage key', () => {
+    expect(viName('Goblet Squat')).toBe('Squat ôm tạ trước ngực (Goblet)');
+    expect(viName('goblet squat ')).toBe('Squat ôm tạ trước ngực (Goblet)');
+    expect(viName('Uống nước')).toBe('Uống nước');
+    expect(objectiveFor(exerciseById('goblet-squat')).title).toBe('Goblet Squat');
   });
 });

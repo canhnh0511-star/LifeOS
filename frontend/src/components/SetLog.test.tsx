@@ -41,9 +41,9 @@ describe('parseWeight and nextSetNo', () => {
 describe('set log in the quest sheet (B-34)', () => {
   it('logs the next set with reps and weight, shows it, and does not touch the quest', async () => {
     const api = fakeApi(); const { onToggle, onSetObjective } = open(api);
-    const box = await screen.findByLabelText('Nhật ký set Machine Chest Press');
-    await userEvent.clear(within(box).getByLabelText('Mức tạ Machine Chest Press'));
-    await userEvent.type(within(box).getByLabelText('Mức tạ Machine Chest Press'), '42,5');
+    const box = await screen.findByLabelText('Nhật ký set Đẩy ngực với máy');
+    await userEvent.clear(within(box).getByLabelText('Mức tạ Đẩy ngực với máy'));
+    await userEvent.type(within(box).getByLabelText('Mức tạ Đẩy ngực với máy'), '42,5');
     await userEvent.click(within(box).getByRole('button', { name: /Ghi set 1/ }));
     expect(api.record).toHaveBeenCalledWith('h', '2026-10-19', { exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 42.5 });
     expect(await within(box).findByText(/Set 1: 10 rep · 42,5 kg/)).toBeTruthy();
@@ -53,23 +53,23 @@ describe('set log in the quest sheet (B-34)', () => {
   it('shows the sets already logged and last time, and deletes one', async () => {
     const api = fakeApi([{ exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 40 }], { date: '2026-10-15', sets: [{ exercise: 'Machine Chest Press', setNo: 1, reps: 12, weightKg: 35 }] });
     open(api);
-    const box = await screen.findByLabelText('Nhật ký set Machine Chest Press');
+    const box = await screen.findByLabelText('Nhật ký set Đẩy ngực với máy');
     expect(await within(box).findByText(/Set 1: 10 rep · 40 kg/)).toBeTruthy();
     await waitFor(() => expect(box.textContent).toContain('Lần trước'));
     expect(box.textContent).toContain('12 · 35 kg');
-    await userEvent.click(within(box).getByRole('button', { name: 'Xoá set 1 của Machine Chest Press' }));
+    await userEvent.click(within(box).getByRole('button', { name: 'Xoá set 1 của Đẩy ngực với máy' }));
     expect(api.remove).toHaveBeenCalledWith('h', '2026-10-19', 'Machine Chest Press', 1);
     await waitFor(() => expect(within(box).queryByText(/Set 1:/)).toBeNull());
   });
   it('refuses a bad weight or rep count on the spot, without calling the API', async () => {
     const api = fakeApi(); open(api);
-    const box = await screen.findByLabelText('Nhật ký set Machine Chest Press');
-    await userEvent.type(within(box).getByLabelText('Mức tạ Machine Chest Press'), 'nặng');
+    const box = await screen.findByLabelText('Nhật ký set Đẩy ngực với máy');
+    await userEvent.type(within(box).getByLabelText('Mức tạ Đẩy ngực với máy'), 'nặng');
     await userEvent.click(within(box).getByRole('button', { name: /Ghi set 1/ }));
     expect(within(box).getByRole('alert').textContent).toContain('Mức tạ không hợp lệ');
-    await userEvent.clear(within(box).getByLabelText('Mức tạ Machine Chest Press'));
-    await userEvent.clear(within(box).getByLabelText('Số rep Machine Chest Press'));
-    await userEvent.type(within(box).getByLabelText('Số rep Machine Chest Press'), '0');
+    await userEvent.clear(within(box).getByLabelText('Mức tạ Đẩy ngực với máy'));
+    await userEvent.clear(within(box).getByLabelText('Số rep Đẩy ngực với máy'));
+    await userEvent.type(within(box).getByLabelText('Số rep Đẩy ngực với máy'), '0');
     await userEvent.click(within(box).getByRole('button', { name: /Ghi set 1/ }));
     expect(within(box).getByRole('alert').textContent).toContain('1 đến 1000');
     expect(api.record).not.toHaveBeenCalled();
@@ -77,15 +77,15 @@ describe('set log in the quest sheet (B-34)', () => {
   it('shows the API message when saving fails and keeps the list as it was', async () => {
     const api = fakeApi(); api.record.mockRejectedValueOnce(new Error('Chỉ có thể ghi set trong 7 ngày gần nhất.'));
     open(api);
-    const box = await screen.findByLabelText('Nhật ký set Machine Chest Press');
+    const box = await screen.findByLabelText('Nhật ký set Đẩy ngực với máy');
     await userEvent.click(within(box).getByRole('button', { name: /Ghi set 1/ }));
     expect((await screen.findAllByRole('alert')).some(a => a.textContent?.includes('7 ngày'))).toBe(true);
     expect(within(box).queryByText(/Set 1:/)).toBeNull();
   });
   it('a hold such as a plank logs seconds and has no weight field', async () => {
     const api = fakeApi(); open(api, quest('Plank'));
-    const box = await screen.findByLabelText('Nhật ký set Plank');
-    expect(within(box).queryByLabelText('Mức tạ Plank')).toBeNull();
+    const box = await screen.findByLabelText('Nhật ký set Plank (giữ thân thẳng)');
+    expect(within(box).queryByLabelText('Mức tạ Plank (giữ thân thẳng)')).toBeNull();
     await userEvent.click(within(box).getByRole('button', { name: /Ghi set 1/ }));
     expect(api.record).toHaveBeenCalledWith('h', '2026-10-19', { exercise: 'Plank', setNo: 1, reps: 45, weightKg: null });
   });
@@ -103,8 +103,8 @@ describe('exercise detail from the quest sheet (B-37)', () => {
     const q = quest(); q.objectives = [...q.objectives, { id: 'o2', title: 'Bài tự đặt tên', target: 3, unit: 'lần', step: 1, value: 0 } as QuestDto['objectives'][number]];
     render(<QuestSheet quest={q} date="2026-10-19" busy={false} onClose={() => {}} onToggle={() => {}} onSetObjective={() => {}}/>);
     expect(screen.queryByRole('button', { name: 'Kỹ thuật Bài tự đặt tên' })).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: 'Kỹ thuật Machine Chest Press' }));
-    expect(screen.getByRole('dialog', { name: 'Machine Chest Press' })).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Kỹ thuật Đẩy ngực với máy' }));
+    expect(screen.getByRole('dialog', { name: 'Đẩy ngực với máy' })).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
     expect(screen.getByRole('dialog', { name: 'Buổi A' })).toBeTruthy();
   });
@@ -123,6 +123,6 @@ describe('plan numbers beat library defaults', () => {
   it('uses sets and reps from the checklist line (a plan with 2 sets of 12 for Leg Press, whose library default is 3 x 12)', () => {
     const q = quest('Leg Press'); q.objectives = [{ id: 'o1', title: 'Leg Press', target: 24, unit: 'rep', step: 12, value: 0 } as QuestDto['objectives'][number]];
     open(fakeApi(), q);
-    expect(screen.getByLabelText('Nhật ký set Leg Press').textContent).toContain('Kế hoạch 2 set × 12 rep');
+    expect(screen.getByLabelText('Nhật ký set Đạp đùi với máy').textContent).toContain('Kế hoạch 2 set × 12 rep');
   });
 });

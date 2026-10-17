@@ -86,7 +86,7 @@ export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last,
     <div className="aw">
       <div className="aw-nav">
         <button type="button" className="icon-btn" aria-label="Bài trước" disabled={index === 0} onClick={() => go(index - 1)}><ChevronLeft size={20}/></button>
-        <div><small>Bài {index + 1}/{exercises.length} · {muscleLabel[e.group]}</small><h3 className="aw-name">{e.name}</h3><button type="button" className="btn btn-quiet aw-info" onClick={() => setShowInfo(true)}><Info size={15}/> Kỹ thuật</button></div>
+        <div><small>Bài {index + 1}/{exercises.length} · {muscleLabel[e.group]}</small><h3 className="aw-name">{e.nameVi ?? e.name}</h3><small className="aw-name-en" lang="en">{e.name}</small><button type="button" className="btn btn-quiet aw-info" onClick={() => setShowInfo(true)}><Info size={15}/> Kỹ thuật</button></div>
         <button type="button" className="icon-btn" aria-label="Bài sau" disabled={index === exercises.length - 1} onClick={() => go(index + 1)}><ChevronRight size={20}/></button>
       </div>
       <div className="aw-dots" aria-label="Các set">{Array.from({ length: Math.max(e.sets, mine.length) }, (_, i) => {
@@ -94,7 +94,7 @@ export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last,
         return <span key={i} className={`aw-dot${s ? ' is-done' : i + 1 === setNo ? ' is-now' : ''}`}>{s ? `${s.reps}${s.weightKg ? ` × ${kg(s.weightKg)}` : ''}` : i + 1}</span>;
       })}</div>
       {mine.length > 0 && <ul className="aw-sets">{mine.map(m => <li key={m.setNo}><span>Set {m.setNo}: {m.reps} {unit}{m.weightKg ? ` · ${kg(m.weightKg)} kg` : ''}</span>
-        <button type="button" className="set-del" disabled={busy} aria-label={`Xoá set ${m.setNo} của ${e.name}`} onClick={() => onRemove(e.name, m.setNo)}><Trash2 size={15}/></button></li>)}</ul>}
+        <button type="button" className="set-del" disabled={busy} aria-label={`Xoá set ${m.setNo} của ${e.nameVi ?? e.name}`} onClick={() => onRemove(e.name, m.setNo)}><Trash2 size={15}/></button></li>)}</ul>}
       {allDone
         ? <p role="status" className="aw-done"><Check size={16}/> Đã xong {mine.length}/{e.sets} set bài này.</p>
         : <>

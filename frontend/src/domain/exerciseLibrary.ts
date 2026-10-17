@@ -8,12 +8,12 @@ import type { ImportHabitPlanRequest, ObjectiveInput, Weekday } from '../api/typ
 export type MuscleGroup = 'CHEST' | 'BACK' | 'LEGS' | 'SHOULDERS' | 'ARMS' | 'CORE';
 export const muscleLabel: Record<MuscleGroup, string> = { CHEST: 'Ngực', BACK: 'Lưng', LEGS: 'Chân', SHOULDERS: 'Vai', ARMS: 'Tay', CORE: 'Bụng' };
 
-export interface Exercise { id: string; name: string; group: MuscleGroup; sets: number; reps: number; /** what one rep counts: repetitions or seconds held */ unit: 'rep' | 'giây'; /** shown next to the numbers, e.g. "mỗi bên" */ note?: string; /** suggested rest between sets, from the week-1 plan */ restSeconds?: number; }
+export interface Exercise { id: string; /** canonical English name: the storage key of checklist lines and the set log. Never change it; show `viName` instead */ name: string; /** Vietnamese display name, shown first */ nameVi?: string; group: MuscleGroup; sets: number; reps: number; /** what one rep counts: repetitions or seconds held */ unit: 'rep' | 'giây'; /** shown next to the numbers, e.g. "mỗi bên" */ note?: string; /** suggested rest between sets, from the week-1 plan */ restSeconds?: number; }
 const ex = (id: string, name: string, group: MuscleGroup, sets: number, reps: number, unit: Exercise['unit'] = 'rep', note?: string): Exercise => ({ id, name, group, sets, reps, unit, ...(note ? { note } : {}) });
 /** Rest between sets (seconds) for the exercises of the week-1 plan (docs/LifeOS_Gym_Week1_2026-10-19.json). */
 const REST: Record<string, number> = { 'machine-chest-press': 90, 'incline-db-press': 90, 'seated-row': 90, 'leg-press': 90, 'dead-bug': 60, 'goblet-squat': 90, 'lat-pulldown': 90, 'db-romanian-deadlift': 90, 'machine-shoulder-press': 90, plank: 60, 'seated-leg-curl': 75, 'leg-extension': 75, 'db-lateral-raise': 60 };
 
-export const EXERCISES: readonly Exercise[] = [
+const BASE: readonly Exercise[] = [
   ex('bench-press', 'Barbell Bench Press', 'CHEST', 4, 8), ex('incline-db-press', 'Incline Dumbbell Press', 'CHEST', 3, 10), ex('cable-fly', 'Cable Fly', 'CHEST', 3, 12), ex('push-up', 'Push-up', 'CHEST', 3, 15), ex('chest-dip', 'Chest Dip', 'CHEST', 3, 10),
   ex('pull-up', 'Pull-up', 'BACK', 4, 8), ex('barbell-row', 'Barbell Row', 'BACK', 4, 8), ex('lat-pulldown', 'Lat Pulldown', 'BACK', 3, 10), ex('seated-row', 'Seated Cable Row', 'BACK', 3, 12), ex('deadlift', 'Deadlift', 'BACK', 3, 5),
   ex('back-squat', 'Back Squat', 'LEGS', 4, 8), ex('romanian-deadlift', 'Romanian Deadlift', 'LEGS', 3, 10), ex('leg-press', 'Leg Press', 'LEGS', 3, 12), ex('walking-lunge', 'Walking Lunge', 'LEGS', 3, 12), ex('calf-raise', 'Calf Raise', 'LEGS', 4, 15),
@@ -24,10 +24,51 @@ export const EXERCISES: readonly Exercise[] = [
   ex('db-lateral-raise', 'Dumbbell Lateral Raise', 'SHOULDERS', 2, 12), ex('dead-bug', 'Dead Bug', 'CORE', 2, 8, 'rep', 'mỗi bên'),
   ex('plank', 'Plank', 'CORE', 3, 45, 'giây'), ex('hanging-leg-raise', 'Hanging Leg Raise', 'CORE', 3, 12), ex('cable-crunch', 'Cable Crunch', 'CORE', 3, 15)
 ];
+/** Vietnamese display names, by exercise id (a beginner knows the movement by this name, not by the English one). */
+const VI: Record<string, string> = {
+  'bench-press': 'Đẩy ngực với thanh đòn (ghế phẳng)',
+  'incline-db-press': 'Đẩy ngực trên với tạ đơn (ghế dốc)',
+  'cable-fly': 'Ép ngực với máy cáp',
+  'push-up': 'Hít đất',
+  'chest-dip': 'Nhún xà kép (ngực)',
+  'pull-up': 'Kéo xà đơn',
+  'barbell-row': 'Kéo thanh đòn gập người',
+  'lat-pulldown': 'Kéo xô trước (kéo cáp xuống)',
+  'seated-row': 'Kéo cáp ngồi',
+  'deadlift': 'Nâng tạ đòn từ sàn (Deadlift)',
+  'back-squat': 'Squat với thanh đòn',
+  'romanian-deadlift': 'Nâng tạ đòn kiểu Romania',
+  'leg-press': 'Đạp đùi với máy',
+  'walking-lunge': 'Bước chùng đi bộ',
+  'calf-raise': 'Nhón bắp chân',
+  'overhead-press': 'Đẩy vai với thanh đòn',
+  'lateral-raise': 'Nâng vai sang ngang',
+  'rear-delt-fly': 'Mở tạ vai sau',
+  'face-pull': 'Kéo cáp về phía mặt',
+  'barbell-curl': 'Cuốn tạ đòn (tay trước)',
+  'hammer-curl': 'Cuốn tạ đơn kiểu búa',
+  'triceps-pushdown': 'Đẩy cáp xuống (tay sau)',
+  'skull-crusher': 'Duỗi tay sau nằm với thanh EZ',
+  'overhead-triceps': 'Duỗi tay sau qua đầu',
+  'machine-chest-press': 'Đẩy ngực với máy',
+  'seated-leg-curl': 'Cuốn đùi sau với máy ngồi',
+  'leg-extension': 'Đá đùi trước với máy',
+  'goblet-squat': 'Squat ôm tạ trước ngực (Goblet)',
+  'db-romanian-deadlift': 'Nâng tạ đơn kiểu Romania',
+  'machine-shoulder-press': 'Đẩy vai với máy ngồi',
+  'db-lateral-raise': 'Nâng tạ đơn sang ngang',
+  'dead-bug': 'Con bọ chết (Dead Bug)',
+  'plank': 'Plank (giữ thân thẳng)',
+  'hanging-leg-raise': 'Treo xà nâng chân',
+  'cable-crunch': 'Gập bụng với máy cáp'
+};
+export const EXERCISES: readonly Exercise[] = BASE.map(e => ({ ...e, nameVi: VI[e.id] }));
 const byId = new Map(EXERCISES.map(e => [e.id, { ...e, ...(REST[e.id] ? { restSeconds: REST[e.id] } : {}) } as Exercise]));
 const byName = new Map([...byId.values()].map(e => [e.name.toLowerCase(), e]));
 /** The library entry for a checklist line, by its exercise name (how the set log will recognise it too). */
 export const exerciseByName = (name: string): Exercise | undefined => byName.get(name.trim().toLowerCase());
+/** Name to show for a checklist/set-log exercise name: Vietnamese when the library knows it, otherwise the name as stored. */
+export const viName = (name: string): string => exerciseByName(name)?.nameVi ?? name;
 export const exerciseById = (id: string): Exercise => { const e = byId.get(id); if (!e) throw new Error(`Unknown exercise ${id}`); return e; };
 export const exercisesFor = (group: MuscleGroup): Exercise[] => EXERCISES.filter(e => e.group === group);
 

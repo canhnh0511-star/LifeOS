@@ -1,3 +1,4 @@
+import { viName } from '../domain/exerciseLibrary';
 import { useEffect, useState } from 'react';
 import { Check, Circle, Info, Minus, Plus } from 'lucide-react';
 import type { QuestDto, QuestObjectiveDto } from '../api/types';
@@ -27,17 +28,17 @@ export function ObjectiveList({ quest, disabled = false, onSet, onInfo, hasInfo 
       if (isTick(o)) {
         return <li key={o.id} className={`objective ${met ? 'is-met' : ''}`}>
           <button type="button" role="checkbox" aria-checked={met} disabled={disabled} className="objective-tick" onClick={() => change(o, met ? 0 : 1)}>
-            <span className={`quest-check ${met ? 'checked' : ''}`}>{met ? <Check size={15}/> : <Circle size={19}/>}</span><span className="objective-title">{o.title}</span>
+            <span className={`quest-check ${met ? 'checked' : ''}`}>{met ? <Check size={15}/> : <Circle size={19}/>}</span><span className="objective-title">{viName(o.title)}</span>
           </button>
         </li>;
       }
       return <li key={o.id} className={`objective ${met ? 'is-met' : ''}`}>
-        <div className="objective-head"><span className="objective-title">{met && <Check size={14} aria-hidden="true"/>} {o.title}</span>{onInfo && hasInfo(o) && <button type="button" className="objective-info" aria-label={`Kỹ thuật ${o.title}`} onClick={() => onInfo(o)}><Info size={16}/></button>}<span className="objective-count"><strong>{value}</strong> / {o.target} {o.unit}</span></div>
+        <div className="objective-head"><span className="objective-title">{met && <Check size={14} aria-hidden="true"/>} {viName(o.title)}</span>{onInfo && hasInfo(o) && <button type="button" className="objective-info" aria-label={`Kỹ thuật ${viName(o.title)}`} onClick={() => onInfo(o)}><Info size={16}/></button>}<span className="objective-count"><strong>{value}</strong> / {o.target} {o.unit}</span></div>
         <div className="objective-controls">
-          <button type="button" aria-label={`Giảm ${o.title} ${o.step} ${o.unit}`} disabled={disabled || value <= 0} onClick={() => change(o, value - o.step)}><Minus size={16}/></button>
+          <button type="button" aria-label={`Giảm ${viName(o.title)} ${o.step} ${o.unit}`} disabled={disabled || value <= 0} onClick={() => change(o, value - o.step)}><Minus size={16}/></button>
           <ProgressBar value={Math.min(100, Math.round(100 * value / o.target))} variant="green" size="slim"/>
-          <button type="button" aria-label={`Tăng ${o.title} ${o.step} ${o.unit}`} disabled={disabled} onClick={() => change(o, value >= o.target ? value + o.step : Math.min(o.target, value + o.step))}><Plus size={16}/></button>
-          <input key={value} type="number" inputMode="numeric" min={0} max={100000} defaultValue={value} disabled={disabled} aria-label={`Nhập tiến độ ${o.title}`}
+          <button type="button" aria-label={`Tăng ${viName(o.title)} ${o.step} ${o.unit}`} disabled={disabled} onClick={() => change(o, value >= o.target ? value + o.step : Math.min(o.target, value + o.step))}><Plus size={16}/></button>
+          <input key={value} type="number" inputMode="numeric" min={0} max={100000} defaultValue={value} disabled={disabled} aria-label={`Nhập tiến độ ${viName(o.title)}`}
             onBlur={e => { const n = Number(e.currentTarget.value); if (Number.isFinite(n)) change(o, n); else e.currentTarget.value = String(value); }}
             onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}/>
         </div>

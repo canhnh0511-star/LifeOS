@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { WorkoutStatsDto } from '../api/types';
-import { muscleLabel } from '../domain/exerciseLibrary';
+import { muscleLabel, viName } from '../domain/exerciseLibrary';
 import { summarizeStats } from '../domain/workoutStats';
 import { number } from '../ui/format';
 import { CardTitle } from './primitives';
@@ -36,7 +36,7 @@ export function WorkoutStats({ period, loadStats }: Props) {
           <ul>{sum.byGroup.map((g, i) => <li key={g.group}><i style={{ background: SLICES[i % SLICES.length] }}/>{muscleLabel[g.group]} <b>{Math.round(g.share * 100)}%</b> <small>{g.sets} set</small></li>)}</ul>
         </div>
         <h3 className="sheet-h">Bài nặng nhất</h3>
-        <ol className="ws-top">{sum.topExercises.map(e => <li key={e.name}><span>{e.name}</span><small>{e.sets} set{e.volumeKg ? ` · ${number(Math.round(e.volumeKg))} kg` : ''}</small></li>)}</ol>
+        <ol className="ws-top">{sum.topExercises.map(e => <li key={e.name}><span>{viName(e.name)}</span><small>{e.sets} set{e.volumeKg ? ` · ${number(Math.round(e.volumeKg))} kg` : ''}</small></li>)}</ol>
       </>}
   </article>;
 }
