@@ -109,3 +109,12 @@ describe('exercise detail from the quest sheet (B-37)', () => {
     expect(screen.getByRole('dialog', { name: 'Buổi A' })).toBeTruthy();
   });
 });
+
+describe('session header (B-37)', () => {
+  it('lists the muscle groups of the session and offers to start it above the checklist', () => {
+    open(fakeApi());
+    expect(screen.getByLabelText('Nhóm cơ của buổi').textContent).toBe('Ngực');
+    const start = screen.getByRole('button', { name: /Tập từng set/ }), list = screen.getByLabelText('Danh sách việc của Buổi A');
+    expect(start.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});

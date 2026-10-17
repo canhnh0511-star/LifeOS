@@ -3,7 +3,7 @@ import { Check, Clock3, Dumbbell, Pause, Pin, PinOff, Play, RotateCcw, Timer, Un
 import type { QuestDto, QuestObjectiveDto } from '../api/types';
 import { difficultyForXp, difficultyLabel } from '../domain/difficulty';
 import { categoryLabel } from '../domain/rules';
-import { exerciseByName } from '../domain/exerciseLibrary';
+import { exerciseByName, muscleLabel } from '../domain/exerciseLibrary';
 import { clock, elapsedMs, isRunning, loadTimer, pauseTimer, saveTimer, startTimer, idleTimer, type TimerState } from '../ui/focusTimer';
 import { Modal } from './Modal';
 import { ExerciseSets, useSetLog, type SetLogApi } from './SetLog';
@@ -47,11 +47,12 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
   return <Modal title={quest.title} onClose={onClose} sheet>
     <div className="sheet">
       <p className="sheet-meta"><Clock3 size={14}/> {quest.targetMinutes} phút · {categoryLabel(quest.category)} · <Zap size={14}/> {done ? 'Đã nhận' : '+'}{quest.xpReward} XP <span className={`diff-chip diff-${d.toLowerCase()}`}>{difficultyLabel[d]}</span></p>
+      {loggable.length > 0 && <p className="xd-chips" aria-label="Nhóm cơ của buổi">{[...new Set(loggable.map(e => e.group))].map(g => <span key={g} className="diff-chip">{muscleLabel[g]}</span>)}</p>}
+      {setLog && loggable.length > 0 && !done && <button className="btn btn-primary" onClick={() => setTraining(true)}><Dumbbell size={17}/> Tập từng set</button>}
       {quest.objectives.length > 0 && <section aria-label="Bài tập">
         <h3 className="sheet-h">Bài tập · {metCount(quest.objectives)}/{quest.objectives.length}</h3>
         <ObjectiveList quest={quest} disabled={busy} onSet={(o, v) => onSetObjective(quest, o, v)} onInfo={o => setDetail(o.title)} hasInfo={o => !!exerciseByName(o.title)}/>
       </section>}
-      {setLog && loggable.length > 0 && !done && <button className="btn btn-primary" onClick={() => setTraining(true)}><Dumbbell size={17}/> Tập từng set</button>}
       {setLog && loggable.length > 0 && <section aria-label="Nhật ký set">
         <h3 className="sheet-h">Nhật ký set</h3>
         <ul className="set-log">{loggable.map(e => <ExerciseSets key={e.id} exercise={e} sets={log.sets} date={date} busy={log.busy} last={setLog.last} onRecord={log.record} onRemove={log.remove}/>)}</ul>
