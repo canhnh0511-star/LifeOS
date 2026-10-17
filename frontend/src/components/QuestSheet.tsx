@@ -8,6 +8,7 @@ import { clock, elapsedMs, isRunning, loadTimer, pauseTimer, saveTimer, startTim
 import { Modal } from './Modal';
 import { ExerciseSets, useSetLog, type SetLogApi } from './SetLog';
 import { ActiveWorkout } from './ActiveWorkout';
+import { ExerciseDetail } from './ExerciseDetail';
 import { ObjectiveList, metCount } from './ObjectiveList';
 
 const REST_PRESETS = [60, 90, 120];
@@ -24,6 +25,7 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [confirmUndo, setConfirmUndo] = useState(false);
   const [training, setTraining] = useState(false);
+  const [detail, setDetail] = useState<string | null>(null);
   const log = useSetLog(setLog, quest.habitId, date);
   const loggable = setLog ? quest.objectives.map(o => exerciseByName(o.title)).filter((e): e is NonNullable<typeof e> => !!e) : [];
   const done = quest.status === 'COMPLETED';
@@ -39,13 +41,15 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
   const nextLine = quest.objectives.find(o => o.value < o.target);
   const suggested = nextLine ? exerciseByName(nextLine.title) : undefined;
   const suggestedRest = suggested?.restSeconds;
+  const detailExercise = detail ? exerciseByName(detail) : undefined;
+  if (detailExercise) return <ExerciseDetail exercise={detailExercise} onClose={() => setDetail(null)}/>;
   if (training && setLog) return <ActiveWorkout quest={quest} date={date} exercises={loggable} sets={log.sets} busy={log.busy} error={log.error} last={setLog.last} onRecord={log.record} onRemove={log.remove} onClose={() => setTraining(false)}/>;
   return <Modal title={quest.title} onClose={onClose} sheet>
     <div className="sheet">
       <p className="sheet-meta"><Clock3 size={14}/> {quest.targetMinutes} phút · {categoryLabel(quest.category)} · <Zap size={14}/> {done ? 'Đã nhận' : '+'}{quest.xpReward} XP <span className={`diff-chip diff-${d.toLowerCase()}`}>{difficultyLabel[d]}</span></p>
       {quest.objectives.length > 0 && <section aria-label="Bài tập">
         <h3 className="sheet-h">Bài tập · {metCount(quest.objectives)}/{quest.objectives.length}</h3>
-        <ObjectiveList quest={quest} disabled={busy} onSet={(o, v) => onSetObjective(quest, o, v)}/>
+        <ObjectiveList quest={quest} disabled={busy} onSet={(o, v) => onSetObjective(quest, o, v)} onInfo={o => setDetail(o.title)} hasInfo={o => !!exerciseByName(o.title)}/>
       </section>}
       {setLog && loggable.length > 0 && !done && <button className="btn btn-primary" onClick={() => setTraining(true)}><Dumbbell size={17}/> Tập từng set</button>}
       {setLog && loggable.length > 0 && <section aria-label="Nhật ký set">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, Circle, Minus, Plus } from 'lucide-react';
+import { Check, Circle, Info, Minus, Plus } from 'lucide-react';
 import type { QuestDto, QuestObjectiveDto } from '../api/types';
 import { ProgressBar } from './primitives';
 
@@ -11,7 +11,7 @@ export const metCount = (objectives: readonly QuestObjectiveDto[]) => objectives
  * The checklist of one quest. Taps update the numbers at once and each change is sent as an absolute value, so quick repeated taps are
  * never lost and a retry is harmless. The server decides when the whole quest is done.
  */
-export function ObjectiveList({ quest, disabled = false, onSet }: { quest: QuestDto; disabled?: boolean; onSet: (objective: QuestObjectiveDto, value: number) => void }) {
+export function ObjectiveList({ quest, disabled = false, onSet, onInfo, hasInfo = () => true }: { quest: QuestDto; disabled?: boolean; onSet: (objective: QuestObjectiveDto, value: number) => void; /** given for lines that have a detail screen (library exercises) */ onInfo?: (objective: QuestObjectiveDto) => void; hasInfo?: (objective: QuestObjectiveDto) => boolean }) {
   const [local, setLocal] = useState<Record<string, number>>({});
   useEffect(() => { setLocal({}); }, [quest.objectives]); // fresh data from the server replaces what was typed
   const valueOf = (o: QuestObjectiveDto) => local[o.id] ?? o.value;
@@ -32,7 +32,7 @@ export function ObjectiveList({ quest, disabled = false, onSet }: { quest: Quest
         </li>;
       }
       return <li key={o.id} className={`objective ${met ? 'is-met' : ''}`}>
-        <div className="objective-head"><span className="objective-title">{met && <Check size={14} aria-hidden="true"/>} {o.title}</span><span className="objective-count"><strong>{value}</strong> / {o.target} {o.unit}</span></div>
+        <div className="objective-head"><span className="objective-title">{met && <Check size={14} aria-hidden="true"/>} {o.title}</span>{onInfo && hasInfo(o) && <button type="button" className="objective-info" aria-label={`Kỹ thuật ${o.title}`} onClick={() => onInfo(o)}><Info size={16}/></button>}<span className="objective-count"><strong>{value}</strong> / {o.target} {o.unit}</span></div>
         <div className="objective-controls">
           <button type="button" aria-label={`Giảm ${o.title} ${o.step} ${o.unit}`} disabled={disabled || value <= 0} onClick={() => change(o, value - o.step)}><Minus size={16}/></button>
           <ProgressBar value={Math.min(100, Math.round(100 * value / o.target))} variant="green" size="slim"/>

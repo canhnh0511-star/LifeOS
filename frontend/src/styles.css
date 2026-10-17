@@ -364,3 +364,4 @@ button.chest{font:inherit;cursor:pointer;width:100%}button.chest:hover{filter:br
 .xl-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}.xl-item{width:100%;min-height:56px;display:flex;align-items:center;gap:12px;text-align:left;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--text-strong)}.xl-item span{flex:1;min-width:0;display:grid}.xl-item small{color:var(--text-muted)}.xl-plan{font-variant-numeric:tabular-nums}.xl-empty{text-align:center;color:var(--text-muted)}
 .aw-info{min-height:44px}
 .modal-heading .icon-btn{width:44px;height:44px}
+.objective-info{min-width:44px;min-height:44px;display:grid;place-items:center;background:transparent;border:0;color:var(--text-muted)}

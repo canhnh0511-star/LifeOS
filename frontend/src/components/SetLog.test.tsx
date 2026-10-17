@@ -97,3 +97,15 @@ describe('set log in the quest sheet (B-34)', () => {
     expect(screen.queryByLabelText('Nhật ký set')).toBeNull();
   });
 });
+
+describe('exercise detail from the quest sheet (B-37)', () => {
+  it('opens technique for a library exercise only, and comes back to the sheet', async () => {
+    const q = quest(); q.objectives = [...q.objectives, { id: 'o2', title: 'Bài tự đặt tên', target: 3, unit: 'lần', step: 1, value: 0 } as QuestDto['objectives'][number]];
+    render(<QuestSheet quest={q} date="2026-10-19" busy={false} onClose={() => {}} onToggle={() => {}} onSetObjective={() => {}}/>);
+    expect(screen.queryByRole('button', { name: 'Kỹ thuật Bài tự đặt tên' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Kỹ thuật Machine Chest Press' }));
+    expect(screen.getByRole('dialog', { name: 'Machine Chest Press' })).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
+    expect(screen.getByRole('dialog', { name: 'Buổi A' })).toBeTruthy();
+  });
+});
