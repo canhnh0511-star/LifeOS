@@ -37,6 +37,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   const [showWeek, setShowWeek] = useState(false);
   const [opening, setOpening] = useState<DailyRewardDto | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [autoTrain, setAutoTrain] = useState(false); // the Main Quest's start button goes straight into the set-by-set screen for a gym session
   const detail = detailId ? dashboard?.quests.find(q => q.habitId === detailId) : undefined; // read from the live dashboard so the sheet never shows stale numbers
   const [opened, setOpened] = useState(loadOpened);
   const cur = dashboard?.progress;
@@ -81,7 +82,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
         {next.objectives.length > 0 && <ProgressBar value={pct(metCount(next.objectives), next.objectives.length)} variant="green" size="slim"/>}
         {isRunning(loadTimer(next.habitId, selectedDate)) && <small className="timer-running" role="status"><Timer size={13}/> Đồng hồ buổi tập đang chạy</small>}
         <div className="next-up-actions">
-          <button className="btn btn-primary next-up-start" onClick={() => setDetailId(next.habitId)}><ClipboardList size={17}/> Bắt đầu buổi tập</button>
+          <button className="btn btn-primary next-up-start" onClick={() => { setAutoTrain(true); setDetailId(next.habitId); }}><ClipboardList size={17}/> Bắt đầu buổi tập</button>
           {next.objectives.length === 0 && <button className="btn btn-quiet next-up-quick" disabled={busyId === next.habitId} onClick={() => onToggleQuest(next)}><Check size={16}/> Hoàn thành</button>}
         </div>
       </article>}
@@ -136,7 +137,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
           })}</div>
       </article>
     </div>
-    {detail && <QuestSheet setLog={setLog} quest={detail} date={selectedDate} busy={busyId === detail.habitId} onClose={() => setDetailId(null)} onToggle={onToggleQuest} onSetObjective={onSetObjective} main={next?.habitId === detail.habitId} pinned={pinnedId === detail.habitId} canPin={isToday} onPin={pin}/>}
+    {detail && <QuestSheet key={`${detail.habitId}:${autoTrain}`} autoTrain={autoTrain} setLog={setLog} quest={detail} date={selectedDate} busy={busyId === detail.habitId} onClose={() => { setDetailId(null); setAutoTrain(false); }} onToggle={onToggleQuest} onSetObjective={onSetObjective} main={next?.habitId === detail.habitId} pinned={pinnedId === detail.habitId} canPin={isToday} onPin={pin}/>}
     {opening && <ChestOpening reward={opening} onRevealed={() => setOpened(prev => withOpened(prev, selectedDate, opening.tier, true))} onClose={() => setOpening(null)}/>}
   </>;
 }

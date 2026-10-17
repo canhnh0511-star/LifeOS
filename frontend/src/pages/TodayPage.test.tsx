@@ -189,3 +189,20 @@ describe('Today as a status window (B-35)', () => {
     expect(onToggleQuest).not.toHaveBeenCalled();
   });
 });
+
+describe('Main Quest start button for a gym session', () => {
+  it('goes straight into the set-by-set screen, and opens the plain detail for other quests', async () => {
+    const gym = { ...quest('g', 'PENDING', 'Buổi A'), objectives: [{ id: 'o', title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10, value: 0 }] } as QuestDto;
+    const setLog = { list: async () => [], record: async () => [], remove: async () => [], last: async () => ({ date: null, sets: [] }) };
+    render(<TodayPage {...props} setLog={setLog} onToggleQuest={() => {}} dashboard={dashboard([gym])}/>);
+    await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập/ }));
+    expect(await screen.findByRole('button', { name: 'Hoàn thành set' })).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Thoát' }));
+    expect(screen.getByRole('button', { name: /Xác nhận hoàn thành/ })).toBeTruthy();
+    cleanup();
+    render(<TodayPage {...props} setLog={setLog} onToggleQuest={() => {}} dashboard={dashboard([quest('b', 'PENDING', 'Piano')])}/>);
+    await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập/ }));
+    expect(screen.queryByRole('button', { name: 'Hoàn thành set' })).toBeNull();
+    expect(screen.getByRole('button', { name: /Xác nhận hoàn thành/ })).toBeTruthy();
+  });
+});

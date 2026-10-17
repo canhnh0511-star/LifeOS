@@ -13,18 +13,18 @@ import { ObjectiveList, metCount } from './ObjectiveList';
 
 const REST_PRESETS = [60, 90, 120];
 
-interface Props { quest: QuestDto; date: string; busy: boolean; onClose: () => void; onToggle: (quest: QuestDto) => void; onSetObjective: (quest: QuestDto, objective: QuestObjectiveDto, value: number) => void; setLog?: SetLogApi; main?: boolean; pinned?: boolean; canPin?: boolean; onPin?: (habitId: string | null) => void; }
+interface Props { quest: QuestDto; date: string; busy: boolean; onClose: () => void; onToggle: (quest: QuestDto) => void; onSetObjective: (quest: QuestDto, objective: QuestObjectiveDto, value: number) => void; setLog?: SetLogApi; autoTrain?: boolean; main?: boolean; pinned?: boolean; canPin?: boolean; onPin?: (habitId: string | null) => void; }
 
 /**
  * Quest detail (RPG-03): the checklist, a session stopwatch and a rest countdown, and an explicit confirm button.
  * Timers are local aids. Starting, pausing or finishing one never completes the quest or awards XP; only the confirm button does.
  */
-export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjective, setLog, main = false, pinned = false, canPin = false, onPin }: Props) {
+export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjective, setLog, autoTrain = false, main = false, pinned = false, canPin = false, onPin }: Props) {
   const [timer, setTimer] = useState<TimerState>(() => loadTimer(quest.habitId, date));
   const [now, setNow] = useState(() => Date.now());
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [confirmUndo, setConfirmUndo] = useState(false);
-  const [training, setTraining] = useState(false);
+  const [training, setTraining] = useState(autoTrain && !!setLog && quest.status !== 'COMPLETED' && quest.objectives.some(o => !!exerciseByName(o.title)));
   const [detail, setDetail] = useState<string | null>(null);
   const log = useSetLog(setLog, quest.habitId, date);
   const loggable = setLog ? quest.objectives.map(o => exerciseByName(o.title)).filter((e): e is NonNullable<typeof e> => !!e) : [];
