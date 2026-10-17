@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BookOpen, CalendarDays, Check, ChevronLeft, ChevronRight, Circle, ClipboardList, Dumbbell, Clock3, Timer, Flame, Lock, PartyPopper, Plus, Zap } from 'lucide-react';
-import type { AnalyticsDto, HabitDto, ObjectiveInput, DailyDashboardDto, DailyRewardDto, QuestDto, QuestObjectiveDto } from '../api/types';
+import type { AnalyticsDto, HabitDto, DailyDashboardDto, DailyRewardDto, QuestDto, QuestObjectiveDto } from '../api/types';
 import { stageForLevel } from '../domain/characterStage';
 import { RankBadge } from '../components/RankBadge';
 import { ChestArt } from '../components/ChestArt';
@@ -13,7 +13,6 @@ import { loadPin, pendingFirst, pickMain, savePin } from '../ui/mainQuest';
 import { isRunning, loadTimer } from '../ui/focusTimer';
 import { exerciseByName, isLibraryLine, muscleLabel } from '../domain/exerciseLibrary';
 import { hasGymHabit, nextGymSession } from '../domain/gymSession';
-import { ExerciseLibrary } from '../components/ExerciseLibrary';
 import { WeekPlan } from '../components/WeekPlan';
 import { QuestSheet } from '../components/QuestSheet';
 import type { SetLogApi } from '../components/SetLog';
@@ -27,7 +26,7 @@ interface Props {
   dashboard: DailyDashboardDto | null;
   selectedDate: string; today: string; busyId: string | null;
   onSelectDate: (update: (date: string) => string) => void;
-  onToggleQuest: (quest: QuestDto) => void; onSetObjective: (quest: QuestDto, objective: QuestObjectiveDto, value: number) => void; onNewHabit: () => void; onImportPlan?: () => void; setLog?: SetLogApi; loadDay?: (date: string) => Promise<DailyDashboardDto>; habits?: HabitDto[]; onAddToHabit?: (habitId: string, objectives: ObjectiveInput[]) => Promise<void>; weekly?: AnalyticsDto | null; goTo: (tab: Tab) => void;
+  onToggleQuest: (quest: QuestDto) => void; onSetObjective: (quest: QuestDto, objective: QuestObjectiveDto, value: number) => void; onNewHabit: () => void; onImportPlan?: () => void; setLog?: SetLogApi; loadDay?: (date: string) => Promise<DailyDashboardDto>; habits?: HabitDto[]; weekly?: AnalyticsDto | null; goTo: (tab: Tab) => void;
 }
 
 const Difficulty = ({ xp }: { xp: number }) => { const d = difficultyForXp(xp); return <span className={`diff-chip diff-${d.toLowerCase()}`} title="Độ khó chỉ để hiển thị, suy từ XP">{difficultyLabel[d]}</span>; };
@@ -36,9 +35,8 @@ const Difficulty = ({ xp }: { xp: number }) => { const d = difficultyForXp(xp); 
  * Today answers one question: what do I do next? A one-line summary, the next quest with a single button, then the full list.
  * Level, stats, balance and the campaign live in their own tabs.
  */
-export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate, onToggleQuest, onSetObjective, onNewHabit, onImportPlan, setLog, loadDay, habits, onAddToHabit, weekly, goTo }: Props) {
+export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate, onToggleQuest, onSetObjective, onNewHabit, onImportPlan, setLog, loadDay, habits, weekly, goTo }: Props) {
   const [showWeek, setShowWeek] = useState(false);
-  const [showLibrary, setShowLibrary] = useState(false);
   const [opening, setOpening] = useState<DailyRewardDto | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [autoTrain, setAutoTrain] = useState(false); // the Main Quest's start button goes straight into the set-by-set screen for a gym session
@@ -82,7 +80,6 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   }, [setLog, nextIsGym, next?.habitId, selectedDate, detailId]); // eslint-disable-line react-hooks/exhaustive-deps
   const NextIcon = next ? categoryIcons[next.category] : null;
   return <>
-    {showLibrary && <ExerciseLibrary onClose={() => setShowLibrary(false)} habits={habits} onAddToHabit={onAddToHabit}/>}
     {showWeek && loadDay && <WeekPlan today={today} selectedDate={selectedDate} loadDay={loadDay} onPick={d => { onSelectDate(() => d); setShowWeek(false); }} onClose={() => setShowWeek(false)}/>}
     <section className="today-hero is-compact" aria-label="Trạng thái nhân vật">
       <div className="hero-top"><div><h1>{isToday ? <>Hôm <span className="text-gradient">nay</span></> : <span className="text-gradient">Ngày đã chọn</span>}</h1><p>{dateText(selectedDate)} · {total === 0 ? 'chưa có nhiệm vụ nào' : `${done}/${total} nhiệm vụ đã xong`}</p></div><button className="btn btn-outlined hero-new" onClick={onNewHabit} aria-label="Thói quen mới"><Plus size={17}/><span>Thói quen mới</span></button></div>
@@ -99,7 +96,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
     <div className="today-simple">
       <div className="today-actions" role="group" aria-label="Lối tắt">
         {loadDay && <button type="button" className="btn btn-secondary" onClick={() => setShowWeek(true)}><CalendarDays size={16}/> Lịch tuần</button>}
-        <button type="button" className="btn btn-secondary" onClick={() => setShowLibrary(true)}><BookOpen size={16}/> Thư viện</button>
+        <button type="button" className="btn btn-secondary" onClick={() => goTo('exercises')}><BookOpen size={16}/> Bài tập</button>
         {onImportPlan && <button type="button" className="btn btn-secondary" onClick={onImportPlan}><Dumbbell size={16}/> Giáo án</button>}
       </div>
       {noPlan && gymNudge}

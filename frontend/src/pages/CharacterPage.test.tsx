@@ -33,6 +33,6 @@ describe('CharacterPage and the Nhân vật tab', () => {
     expect(tabFromHash()).toBe('character');
     window.location.hash = '#nonsense';
     expect(tabFromHash()).toBe('today');
-    expect(primaryNav.map(n => n.id)).toEqual(['today', 'journey', 'character', 'body', 'insights']);
+    expect(primaryNav.map(n => n.id)).toEqual(['today', 'exercises', 'insights', 'character']); // gym v1: four destinations (see ui/nav.test.ts)
   });
 });

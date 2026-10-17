@@ -20,7 +20,8 @@ import { CharacterPage } from './pages/CharacterPage';
 import { BodyPage } from './pages/BodyPage';
 import { TodayPage } from './pages/TodayPage';
 import { withEffects } from './ui/messages';
-import { primaryNav, tabFromHash, type Tab } from './ui/nav';
+import { moreNav, primaryNav, tabFromHash, type Tab } from './ui/nav';
+import { ExercisesPage } from './pages/ExercisesPage';
 import './styles.css';
 
 type ModalKind = 'goal' | 'habit' | 'editHabit' | 'settings' | 'plan' | null;
@@ -166,17 +167,20 @@ export default function App() {
       <div className="sidebar-top"><Logo/><button className="mobile-close icon-btn" aria-label="Đóng menu" onClick={() => setMenuOpen(false)}><X size={20}/></button></div>
       <div className="sidebar-section-label">MENU</div>
       <nav className="side-nav" aria-label="Điều hướng chính">{primaryNav.map(item => <button key={item.id} className={`nav-item ${tab === item.id ? 'active' : ''}`} aria-current={tab === item.id ? 'page' : undefined} onClick={() => goTo(item.id)}><item.icon size={19}/><span>{item.title}</span>{tab === item.id && <span className="nav-indicator"/>}</button>)}</nav>
+      <div className="sidebar-section-label">THÊM</div>
+      <nav className="side-nav" aria-label="Mục khác">{moreNav.map(item => <button key={item.id} className={`nav-item ${tab === item.id ? 'active' : ''}`} aria-current={tab === item.id ? 'page' : undefined} onClick={() => goTo(item.id)}><item.icon size={19}/><span>{item.title}</span>{tab === item.id && <span className="nav-indicator"/>}</button>)}</nav>
       <div className="sidebar-spacer"/>
       <div className="sidebar-tip"><span className="tip-icon"><Sparkles size={18}/></span><strong>Từng bước nhỏ, tiến bộ lớn.</strong><p>Không cần hoàn hảo. Chỉ cần tốt hơn hôm qua một chút.</p><div className="tip-glow"/></div>
       <button className="profile-mini" onClick={() => setModal('settings')}><span className="avatar">C</span><span className="profile-text"><strong>{dashboard?.user.displayName || 'Bạn'}</strong><small>Tài khoản và cài đặt</small></span><Settings2 size={17}/></button>
     </aside>
     {menuOpen && <button className="sidebar-scrim" aria-label="Đóng menu" onClick={() => setMenuOpen(false)}/>}
     <div className="main-area">
-      <header className="topbar"><div className="topbar-left"><button className="mobile-menu icon-btn" aria-label="Mở menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><Menu size={21}/></button><span className="breadcrumb">Không gian của bạn</span><span className="slash">/</span><strong>{primaryNav.find(n => n.id === tab)?.title}</strong></div><div className="topbar-right"><span className="demo-pill"><span/> {isDemo ? 'CHẾ ĐỘ THỬ' : 'ĐÃ KẾT NỐI'}</span><span className="top-date"><CalendarDays size={16}/> {formatDate(today, { day: 'numeric', month: 'short', year: 'numeric' })}</span><button onClick={() => setModal('settings')} aria-label="Cài đặt" className="icon-btn top-settings"><Settings2 size={20}/></button><button onClick={() => setModal('settings')} aria-label="Tài khoản và cài đặt" className="top-avatar">C</button></div></header>
+      <header className="topbar"><div className="topbar-left"><button className="mobile-menu icon-btn" aria-label="Mở menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><Menu size={21}/></button><span className="breadcrumb">Không gian của bạn</span><span className="slash">/</span><strong>{[...primaryNav, ...moreNav].find(n => n.id === tab)?.title}</strong></div><div className="topbar-right"><span className="demo-pill"><span/> {isDemo ? 'CHẾ ĐỘ THỬ' : 'ĐÃ KẾT NỐI'}</span><span className="top-date"><CalendarDays size={16}/> {formatDate(today, { day: 'numeric', month: 'short', year: 'numeric' })}</span><button onClick={() => setModal('settings')} aria-label="Cài đặt" className="icon-btn top-settings"><Settings2 size={20}/></button><button onClick={() => setModal('settings')} aria-label="Tài khoản và cài đặt" className="top-avatar">C</button></div></header>
       <main className="page-content" data-dialog-fallback tabIndex={-1}>
         {error && <div role="alert" className="error-banner">{error}<button onClick={refresh}>Thử lại <RotateCcw size={14}/></button></div>}
         {loading && !dashboard ? <div className="loading-shell"><div className="loader"/><p>Đang chuẩn bị hành trình của bạn...</p></div> : <>
-          {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')} setLog={setLog} loadDay={loadDay} habits={habits} onAddToHabit={addToSession} weekly={weekly} goTo={goTo}/>}
+          {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')} setLog={setLog} loadDay={loadDay} habits={habits} weekly={weekly} goTo={goTo}/>}
+          {tab === 'exercises' && <ExercisesPage habits={habits} onAddToHabit={addToSession}/>}
           {tab === 'journey' && <JourneyPage onAddToHabit={addToSession} journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')}/>}
           {tab === 'character' && <CharacterPage loadBadges={loadBadges} dashboard={dashboard} items={items} busyItemCode={busyItemCode} onEquip={item => wear(item, true)} onUnequip={item => wear(item, false)}/>}
           {tab === 'body' && <BodyPage metrics={metrics} failed={metricsFailed} onRetry={() => { void reloadMetrics(); }} today={today} busy={bodyBusy} onRecord={recordMeasure} onRemoveEntry={removeMeasure} onCreate={createMetric} onDelete={deleteMetric}/>}
