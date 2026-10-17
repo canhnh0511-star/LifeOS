@@ -60,6 +60,8 @@ export const httpClient: LifeOsApi = {
   getWorkoutSets: (habitId, date) => request(`/quests/${habitId}/dates/${date}/sets`),
   recordWorkoutSet: (habitId, date, input) => request(`/quests/${habitId}/dates/${date}/sets`, { method:'PUT', body: JSON.stringify(input) }),
   removeWorkoutSet: (habitId, date, exercise, setNo) => request(`/quests/${habitId}/dates/${date}/sets?exercise=${encodeURIComponent(exercise)}&setNo=${setNo}`, { method:'DELETE' }),
+  getBadges: () => request('/badges'),
+  getWorkoutStats: days => request(`/workout-stats?days=${days}`),
   getLastWorkoutSets: (exercise, before) => request(`/workout-sets/last?exercise=${encodeURIComponent(exercise)}&before=${before}`),
   recordMeasurement: (metricId, date, value) => request(`/metrics/${metricId}/entries/${date}`, { method:'PUT', body: JSON.stringify({ value }) }),
   removeMeasurement: (metricId, date) => request(`/metrics/${metricId}/entries/${date}`, { method:'DELETE' }),

@@ -126,6 +126,8 @@ export default function App() {
   };
   const saveGoal = async (v: CreateGoalRequest) => { try { await api.createGoal(v); setModal(null); setNotice('Đã tạo mục tiêu mới.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi xảy ra.')); } };
   // Stable object so the sheet does not reload its sets on every render. Errors reach the sheet as messages, not toasts.
+  const loadBadges = useMemo(() => () => api.getBadges(), []);
+  const loadStats = useMemo(() => (days: number) => api.getWorkoutStats(days), []);
   const loadDay = useMemo(() => (date: string) => api.getDashboard(date), []);
   const setLog = useMemo<SetLogApi>(() => ({ list: api.getWorkoutSets, record: api.recordWorkoutSet, remove: api.removeWorkoutSet, last: api.getLastWorkoutSets }), []);
   const importPlan = async (v: ImportHabitPlanRequest) => { try { const r = await api.importHabitPlan(v); setModal(null); setNotice(`Đã nạp giáo án: ${r.habits.length} buổi tập.`); refresh(); } catch (e) { setNotice(failure(e, 'Không nạp được giáo án.')); } };
@@ -166,9 +168,9 @@ export default function App() {
         {loading && !dashboard ? <div className="loading-shell"><div className="loader"/><p>Đang chuẩn bị hành trình của bạn...</p></div> : <>
           {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')} setLog={setLog} loadDay={loadDay} weekly={weekly} goTo={goTo}/>}
           {tab === 'journey' && <JourneyPage onAddToHabit={addToSession} journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')}/>}
-          {tab === 'character' && <CharacterPage dashboard={dashboard} items={items} busyItemCode={busyItemCode} onEquip={item => wear(item, true)} onUnequip={item => wear(item, false)}/>}
+          {tab === 'character' && <CharacterPage loadBadges={loadBadges} dashboard={dashboard} items={items} busyItemCode={busyItemCode} onEquip={item => wear(item, true)} onUnequip={item => wear(item, false)}/>}
           {tab === 'body' && <BodyPage metrics={metrics} failed={metricsFailed} onRetry={() => { void reloadMetrics(); }} today={today} busy={bodyBusy} onRecord={recordMeasure} onRemoveEntry={removeMeasure} onCreate={createMetric} onDelete={deleteMetric}/>}
-          {tab === 'insights' && <InsightsPage analytics={analytics} period={period} onPeriod={setPeriod} currentStreak={dashboard?.progress.currentStreak || 0} today={today} loadDay={loadDay} setLog={setLog}/>}
+          {tab === 'insights' && <InsightsPage analytics={analytics} period={period} onPeriod={setPeriod} currentStreak={dashboard?.progress.currentStreak || 0} loadStats={loadStats}/>}
         </>}
         <footer className="footer"><span>© Life OS · Built for progress, not perfection.</span><span>Version 0.1.0 · {isDemo ? 'Mock API' : 'Real API'} · Asia/Ho_Chi_Minh</span></footer>
       </main>

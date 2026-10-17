@@ -11,6 +11,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /** Normalizes every failure to {@link ApiError}; never leaks exception text or stack traces. */
@@ -37,6 +38,13 @@ class ApiExceptionHandler {
         e.getBindingResult().getFieldErrors().forEach(f -> fields.putIfAbsent(f.getField(), f.getDefaultMessage()));
         log.info("request.rejected status=422 code=VALIDATION_FAILED fields={}", fields.keySet()); // field names only, never submitted values
         return ResponseEntity.unprocessableEntity().body(new ApiError("VALIDATION_FAILED", "Dữ liệu không hợp lệ.", fields));
+    }
+
+    /** A query or path parameter of the wrong type (e.g. `days=abc`) is the caller's mistake: a field error, not a 500. */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    ResponseEntity<ApiError> badParameter(MethodArgumentTypeMismatchException e) {
+        log.info("request.rejected status=422 code=VALIDATION_FAILED fields=[{}]", e.getName());
+        return ResponseEntity.unprocessableEntity().body(new ApiError("VALIDATION_FAILED", "Dữ liệu không hợp lệ.", Map.of(e.getName(), "Giá trị không hợp lệ.")));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

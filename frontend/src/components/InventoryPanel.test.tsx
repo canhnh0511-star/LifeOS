@@ -17,7 +17,7 @@ describe('InventoryPanel', () => {
     expect(screen.getByLabelText('Vũ khí: đang đeo Kiếm Nanh Sói')).toBeTruthy();
     expect(screen.getByLabelText('Đầu: trống')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Chưa sở hữu: Gương Vua Vô Danh' })).toBeTruthy();
-    expect(screen.getByText(/Sưu tập 2\/6/)).toBeTruthy();
+    expect(screen.getByText(/Sưu tập 2\/10/)).toBeTruthy();
   });
   it('offers "Đeo vào" for an owned item, "Tháo ra" for a worn one, and nothing to wear for a locked one', async () => {
     const onEquip = vi.fn(); const onUnequip = vi.fn();

@@ -645,6 +645,27 @@ export const mockClient:LifeOsApi={
     const sets=(db.workoutSets??[]).filter(s=>sameExercise(s.exercise,name)&&s.date===date).sort((a,b)=>a.habitId.localeCompare(b.habitId)||a.setNo-b.setNo).map(({exercise:e,setNo,reps,weightKg})=>({exercise:e,setNo,reps,weightKg}));
     return {date,sets};
   },
+  async getBadges(){
+    await delay();const db=load();
+    const sessions=db.questStates.filter(q=>q.status==='COMPLETED'&&((q.objectives?.length??db.habits.find(h=>h.id===q.habitId)?.objectives.length??0)>0)).length;
+    const sets=(db.workoutSets??[]).length;
+    const defs:[string,string,string,number,number][]=[
+      ['BADGE_FIRST_WORKOUT','Buổi tập đầu tiên','Hoàn thành một buổi tập có danh sách bài.',1,sessions],
+      ['BADGE_10_SESSIONS','Mười buổi tập','Hoàn thành 10 buổi tập có danh sách bài.',10,sessions],
+      ['BADGE_100_SETS','Trăm set','Ghi lại 100 set trong nhật ký tập.',100,sets]];
+    return defs.map(([code,name,description,target,have])=>({code,name,description,earned:have>=target,progress:Math.min(have,target),target}));
+  },
+  async getWorkoutStats(days:number){
+    await delay();if(!isInt(days,1,90))fail({days:'Số ngày phải từ 1 đến 90.'});
+    const db=load();const to=todayInTimezone(),from=moveDate(to,-(days-1));
+    const sets=(db.workoutSets??[]).filter(s=>s.date>=from&&s.date<=to);
+    const perDay=Array.from({length:days},(_,i)=>{const date=moveDate(from,i);return {date,sets:sets.filter(s=>s.date===date).length};});
+    const sessions=new Set(sets.map(s=>`${s.habitId}|${s.date}`)).size;
+    const by=new Map<string,{exercise:string;sets:number;reps:number;volumeKg:number}>();
+    for(const s of sets){const k=s.exercise.toLowerCase();const cur=by.get(k)??{exercise:s.exercise,sets:0,reps:0,volumeKg:0};cur.sets++;cur.reps+=s.reps;cur.volumeKg=Math.round((cur.volumeKg+(s.weightKg?s.reps*s.weightKg:0))*100)/100;by.set(k,cur);}
+    const exercises=[...by.values()].sort((a,b)=>b.volumeKg-a.volumeKg||b.sets-a.sets||a.exercise.localeCompare(b.exercise));
+    return {from,to,sessions,days:perDay,exercises};
+  },
   async recordMeasurement(metricId:string,date:string,value:number){
     await delay();const db=load();const metric=metricOf(db,metricId);const d=entryDate(date);
     const v=typeof value==='number'&&Number.isFinite(value)?Math.round(value*100)/100:NaN;

@@ -383,3 +383,5 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]),select{min-height
 .goal-habit{flex-wrap:wrap}
 .page-header button,header button,.section-header button,.section-actions button,.hero-new{min-width:44px!important;min-height:44px!important}
 .xd-add{display:grid;gap:8px}.xd-add select{width:100%}
+.badge-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}.badge-item{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:10px 12px;opacity:.85}.badge-item.is-earned{opacity:1;border-color:var(--accent);box-shadow:0 0 12px color-mix(in srgb,var(--accent) 25%,transparent)}
+.badge-icon{flex:none;width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)}.badge-body{display:grid;gap:4px;flex:1;min-width:0}.badge-body small{color:var(--text-muted)}.badge-state{font-variant-numeric:tabular-nums}

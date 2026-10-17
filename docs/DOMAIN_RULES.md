@@ -96,4 +96,5 @@ Cấp một lần mỗi campaign, có thưởng XP (10–30), ghi ledger `ACHIEV
 - **Độ khó** chỉ để hiển thị, suy từ `xpReward`: Dễ 0–20, Vừa 21–40, Khó 41+. Không đổi phần thưởng.
 - **Đồng hồ buổi tập và đếm ngược nghỉ** là công cụ cục bộ, không phải bằng chứng hoàn thành: bắt đầu/tạm dừng/hết giờ không hoàn thành nhiệm vụ và không có XP. Chỉ mutation hoàn thành (PUT/DELETE completion, objective) mới đổi XP.
 - Tuỳ chọn giảm chuyển động, ghim và đồng hồ lưu trong localStorage của thiết bị, không đồng bộ và không có bí mật.
+- **Huy hiệu tập luyện (B-29, ADR-038)** chỉ phản ánh bằng chứng hiện có (buổi đã hoàn thành có danh sách bài, set đã ghi), không lưu, không XP. Hoàn tác buổi hoặc xoá set thì huy hiệu mất tương ứng. **Thống kê set (B-41)** chỉ đọc nhật ký set.
 - **Nhật ký set (B-34)** chỉ ghi lại bài đã tập (bài, số set, rep hoặc giây, mức tạ kg). Không cộng XP, không có sự kiện ledger, không đổi streak/rương/thành tựu và không tự hoàn thành nhiệm vụ: hoàn thành vẫn chỉ qua nút xác nhận hoặc checklist (B-17).

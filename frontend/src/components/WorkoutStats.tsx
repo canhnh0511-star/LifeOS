@@ -1,31 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { DailyDashboardDto } from '../api/types';
-import { exerciseByName, muscleLabel } from '../domain/exerciseLibrary';
-import { moveDate } from '../domain/rules';
-import { summarizeWorkouts, type DaySets } from '../domain/workoutStats';
+import type { WorkoutStatsDto } from '../api/types';
+import { muscleLabel } from '../domain/exerciseLibrary';
+import { summarizeStats } from '../domain/workoutStats';
 import { number } from '../ui/format';
 import { CardTitle } from './primitives';
-import type { SetLogApi } from './SetLog';
 
-interface Props { today: string; period: '7d' | '30d'; loadDay: (date: string) => Promise<DailyDashboardDto>; setLog: Pick<SetLogApi, 'list'>; }
+interface Props { period: '7d' | '30d'; loadStats: (days: number) => Promise<WorkoutStatsDto>; }
 const SLICES = ['var(--accent)', 'color-mix(in srgb,var(--accent) 70%,#0d1b2a)', 'color-mix(in srgb,var(--accent) 45%,#0d1b2a)', '#6f7fa8', '#8a6fa8', '#5f8aa8'];
 
 /** Gym stats from the set log (B-41): sessions, sets, volume, sets per day and the share of each muscle group. */
-export function WorkoutStats({ today, period, loadDay, setLog }: Props) {
-  const [days, setDays] = useState<DaySets[] | null>(null);
+export function WorkoutStats({ period, loadStats }: Props) {
+  const [stats, setStats] = useState<WorkoutStatsDto | null>(null);
   const [failed, setFailed] = useState(false);
   const length = period === '7d' ? 7 : 30;
   useEffect(() => {
-    let alive = true; setDays(null); setFailed(false);
-    const dates = Array.from({ length }, (_, i) => moveDate(today, i - length + 1));
-    Promise.all(dates.map(async date => {
-      const quests = (await loadDay(date)).quests.filter(q => q.objectives.some(o => exerciseByName(o.title)));
-      const lists = await Promise.all(quests.map(q => setLog.list(q.habitId, date)));
-      return { date, sets: lists.flat() };
-    })).then(r => { if (alive) setDays(r); }).catch(() => { if (alive) setFailed(true); });
+    let alive = true; setStats(null); setFailed(false);
+    loadStats(length).then(r => { if (alive) setStats(r); }).catch(() => { if (alive) setFailed(true); });
     return () => { alive = false; };
-  }, [today, length, loadDay, setLog]);
-  const sum = useMemo(() => days ? summarizeWorkouts(days) : null, [days]);
+  }, [length, loadStats]);
+  const sum = useMemo(() => stats ? summarizeStats(stats) : null, [stats]);
   const cap = Math.max(1, ...(sum?.perDay.map(d => d.sets) ?? [1]));
   let acc = 0;
   return <article className="panel workout-stats" aria-label="Thống kê tập luyện">

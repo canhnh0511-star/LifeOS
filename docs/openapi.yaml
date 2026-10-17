@@ -206,6 +206,23 @@ paths:
         '200': {description: Logged sets after the change, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/WorkoutSet'}}}}}
         '404': {$ref: '#/components/responses/NotFound'}
         '422': {$ref: '#/components/responses/ValidationError'}
+  /badges:
+    get:
+      tags: [Quests]
+      operationId: getBadges
+      description: Training badges (ADR-038). Earned from real evidence on every read (completed sessions that have an exercise list; logged sets), never stored. Carry no XP. Undoing a session or deleting sets can make a badge unearned again.
+      responses:
+        '200': {description: Badges, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Badge'}}}}}
+  /workout-stats:
+    get:
+      tags: [Quests]
+      operationId: getWorkoutStats
+      description: Set statistics for the last `days` days up to today in the user's timezone (ADR-038). Read-only; gives no XP.
+      parameters:
+        - {name: days, in: query, required: false, schema: {type: integer, minimum: 1, maximum: 90, default: 7}}
+      responses:
+        '200': {description: Statistics, content: {application/json: {schema: {$ref: '#/components/schemas/WorkoutStats'}}}}
+        '422': {$ref: '#/components/responses/ValidationError'}
   /workout-sets/last:
     get:
       tags: [Quests]
@@ -613,6 +630,30 @@ components:
         setNo: {type: integer, minimum: 1, maximum: 50}
         reps: {type: integer, minimum: 1, maximum: 1000, description: 'Repetitions, or seconds for a hold such as a plank.'}
         weightKg: {type: [number, 'null'], minimum: 0, maximum: 1000, description: 'Two decimals; null for body weight or when not noted.'}
+    Badge:
+      type: object
+      required: [code, name, description, earned, progress, target]
+      properties:
+        code: {type: string, enum: [BADGE_FIRST_WORKOUT, BADGE_10_SESSIONS, BADGE_100_SETS]}
+        name: {type: string}
+        description: {type: string}
+        earned: {type: boolean}
+        progress: {type: integer, minimum: 0, description: 'Capped at target.'}
+        target: {type: integer, minimum: 1}
+    WorkoutStats:
+      type: object
+      required: [from, to, sessions, days, exercises]
+      properties:
+        from: {$ref: '#/components/schemas/LocalDate'}
+        to: {$ref: '#/components/schemas/LocalDate'}
+        sessions: {type: integer, minimum: 0, description: 'Distinct (habit, day) pairs with at least one logged set.'}
+        days:
+          type: array
+          items: {type: object, required: [date, sets], properties: {date: {$ref: '#/components/schemas/LocalDate'}, sets: {type: integer, minimum: 0}}}
+        exercises:
+          type: array
+          description: One entry per exercise (name compared ignoring case), heaviest volume first.
+          items: {type: object, required: [exercise, sets, reps, volumeKg], properties: {exercise: {type: string}, sets: {type: integer}, reps: {type: integer}, volumeKg: {type: number, description: 'Sum of reps x weight over sets that have a weight; two decimals.'}}}
     WorkoutSetInput:
       type: object
       required: [exercise, setNo, reps]

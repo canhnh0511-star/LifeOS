@@ -18,7 +18,12 @@ public final class ItemCatalog {
         new Item("WANING_MOON_CLOAK", "Áo Choàng Trăng Khuyết", "Dệt từ ánh trăng của đêm người lữ hành bắt đầu hành trình.", Slot.CLOAK, Rarity.RARE, "MINDFULNESS", "waning-moon-cloak"),
         new Item("BLANK_PAGES_CHRONICLE", "Sử Ký Trang Trắng", "Cuốn sách tự viết thêm một trang mỗi khi chủ nhân học được điều mới.", Slot.RELIC, Rarity.EPIC, "KNOWLEDGE", "blank-pages-chronicle"),
         new Item("ASHEN_EMBER_CROWN", "Vương Miện Tàn Tro", "Vương miện vỡ của một đế chế cháy rụi; tro vẫn còn âm ỉ.", Slot.HEAD, Rarity.EPIC, "CAREER", "ashen-ember-crown"),
-        new Item("NAMELESS_KING_MIRROR", "Gương Vua Vô Danh", "Gương của một vị vua bị xoá tên khỏi lịch sử. Soi vào chỉ thấy chiếc vương miện, không thấy mặt.", Slot.RELIC, Rarity.LEGENDARY, "MINDFULNESS", "nameless-king-mirror"));
+        new Item("NAMELESS_KING_MIRROR", "Gương Vua Vô Danh", "Gương của một vị vua bị xoá tên khỏi lịch sử. Soi vào chỉ thấy chiếc vương miện, không thấy mặt.", Slot.RELIC, Rarity.LEGENDARY, "MINDFULNESS", "nameless-king-mirror"),
+        // Gym theme (B-29). Cosmetic like the rest: no XP, drawn by the same deterministic chest rule.
+        new Item("SWEATBAND_OF_DAWN", "Băng Đô Bình Minh", "Thấm mồ hôi của những buổi tập khi cả thành phố còn ngủ.", Slot.HEAD, Rarity.UNCOMMON, "HEALTH", "sweatband-of-dawn"),
+        new Item("IRON_GRIP_GAUNTLETS", "Găng Nắm Sắt", "Giữ chặt thanh tạ qua cả những set cuối cùng, khi tay đã run.", Slot.WEAPON, Rarity.RARE, "HEALTH", "iron-grip-gauntlets"),
+        new Item("GYM_FLOOR_MANTLE", "Áo Choàng Sàn Tập", "Dệt từ chiếc khăn lau của người đến phòng tập đều đặn nhất năm.", Slot.CLOAK, Rarity.RARE, "HEALTH", "gym-floor-mantle"),
+        new Item("HOURGLASS_OF_REPS", "Đồng Hồ Cát Của Rep", "Mỗi hạt cát rơi là một rep; chiếc đồng hồ không bao giờ cạn với người kiên trì.", Slot.RELIC, Rarity.EPIC, "HEALTH", "hourglass-of-reps"));
 
     public static Optional<Item> find(String code) { return ITEMS.stream().filter(i -> i.code().equals(code)).findFirst(); }
 

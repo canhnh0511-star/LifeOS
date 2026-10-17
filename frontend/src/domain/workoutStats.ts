@@ -1,4 +1,4 @@
-import type { WorkoutSetDto } from '../api/types';
+import type { WorkoutSetDto, WorkoutStatsDto } from '../api/types';
 import { exerciseByName, type MuscleGroup } from './exerciseLibrary';
 
 /** Sets logged on one day (B-41). Stats are computed on the client from the set log; they never touch XP. */
@@ -32,5 +32,24 @@ export function summarizeWorkouts(days: readonly DaySets[]): WorkoutSummary {
     perDay: days.map(d => ({ date: d.date, sets: d.sets.length })),
     byGroup: [...groups].map(([group, sets]) => ({ group, sets, share: counted ? sets / counted : 0 })).sort((a, b) => b.sets - a.sets),
     topExercises: [...byExercise].map(([name, v]) => ({ name, ...v })).sort((a, b) => b.volumeKg - a.volumeKg || b.sets - a.sets).slice(0, 5)
+  };
+}
+
+/** The same summary from the server's pre-aggregated statistics (ADR-038). Holds count as sets but not as reps. */
+export function summarizeStats(stats: WorkoutStatsDto): WorkoutSummary {
+  const groups = new Map<MuscleGroup, number>();
+  let totalSets = 0, totalReps = 0, volumeKg = 0;
+  for (const x of stats.exercises) {
+    const e = exerciseByName(x.exercise);
+    totalSets += x.sets; volumeKg += x.volumeKg;
+    if (e?.unit !== 'giây') totalReps += x.reps;
+    if (e) groups.set(e.group, (groups.get(e.group) ?? 0) + x.sets);
+  }
+  const counted = [...groups.values()].reduce((a, b) => a + b, 0);
+  return {
+    sessions: stats.sessions, totalSets, totalReps, volumeKg: Math.round(volumeKg * 10) / 10,
+    perDay: stats.days,
+    byGroup: [...groups].map(([group, sets]) => ({ group, sets, share: counted ? sets / counted : 0 })).sort((a, b) => b.sets - a.sets),
+    topExercises: stats.exercises.slice(0, 5).map(x => ({ name: x.exercise, sets: x.sets, volumeKg: x.volumeKg }))
   };
 }

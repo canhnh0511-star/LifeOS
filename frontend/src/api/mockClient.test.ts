@@ -696,6 +696,31 @@ describe('quest checklists (B-17)', () => {
       expect(all[2].weightKg).toBeNull();
       expect(await mockClient.getWorkoutSets(h, D0)).toEqual(all);
     });
+    it('summarises the last N days into per-day counts, sessions and per-exercise totals (ADR-038)', async () => {
+      freezeAt(D0);
+      const h = await quest0();
+      await mockClient.recordWorkoutSet(h, D0, { exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 40 });
+      await mockClient.recordWorkoutSet(h, D0, { exercise: 'machine chest press', setNo: 2, reps: 8, weightKg: 42.5 });
+      await mockClient.recordWorkoutSet(h, D0, { exercise: 'Plank', setNo: 1, reps: 45 });
+      const s = await mockClient.getWorkoutStats(7);
+      expect(s.to).toBe(D0); expect(s.days).toHaveLength(7); expect(s.days.at(-1)).toEqual({ date: D0, sets: 3 }); expect(s.sessions).toBe(1);
+      expect(s.exercises[0]).toEqual({ exercise: 'Machine Chest Press', sets: 2, reps: 18, volumeKg: 740 });
+      expect(s.exercises[1].exercise).toBe('Plank');
+      expect((await mockClient.getWorkoutStats(1)).days).toHaveLength(1);
+      expect((await rejection(mockClient.getWorkoutStats(0))).fields).toHaveProperty('days');
+      expect((await rejection(mockClient.getWorkoutStats(91))).status).toBe(422);
+    });
+    it('earns the 100-sets badge only from logged sets, with capped progress and no XP change', async () => {
+      freezeAt(D0);
+      const h = await quest0();
+      const before = (await mockClient.getDashboard(D0)).progress.totalXp;
+      expect((await mockClient.getBadges()).find(b => b.code === 'BADGE_100_SETS')).toMatchObject({ earned: false, progress: 0, target: 100 });
+      for (let n = 1; n <= 50; n++) { await mockClient.recordWorkoutSet(h, D0, { exercise: 'Leg Press', setNo: n, reps: 10 }); await mockClient.recordWorkoutSet(h, D0, { exercise: 'Seated Row', setNo: n, reps: 10 }); }
+      expect((await mockClient.getBadges()).find(b => b.code === 'BADGE_100_SETS')).toMatchObject({ earned: true, progress: 100 });
+      await mockClient.removeWorkoutSet(h, D0, 'Leg Press', 1);
+      expect((await mockClient.getBadges()).find(b => b.code === 'BADGE_100_SETS')).toMatchObject({ earned: false, progress: 99 });
+      expect((await mockClient.getDashboard(D0)).progress.totalXp).toBe(before);
+    }, 60000);
     it('never touches XP, the ledger or the quest', async () => {
       freezeAt(D0);
       const h = await quest0();

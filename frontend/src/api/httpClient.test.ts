@@ -104,11 +104,15 @@ describe('httpClient workout set log (B-34)', () => {
     await httpClient.recordWorkoutSet('h1', '2026-10-19', { exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 42.5 });
     await httpClient.removeWorkoutSet('h1', '2026-10-19', 'Dumbbell Lateral Raise', 2);
     await httpClient.getLastWorkoutSets('Seated Cable Row', '2026-10-19');
+    await httpClient.getBadges();
+    await httpClient.getWorkoutStats(30);
     const calls = sent();
     expect(calls[0]).toEqual(['/quests/h1/dates/2026-10-19/sets', 'GET', undefined]);
     expect(calls[1][0]).toBe('/quests/h1/dates/2026-10-19/sets'); expect(calls[1][1]).toBe('PUT');
     expect(JSON.parse(calls[1][2] as string)).toEqual({ exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 42.5 });
     expect(calls[2]).toEqual(['/quests/h1/dates/2026-10-19/sets?exercise=Dumbbell%20Lateral%20Raise&setNo=2', 'DELETE', undefined]);
     expect(calls[3]).toEqual(['/workout-sets/last?exercise=Seated%20Cable%20Row&before=2026-10-19', 'GET', undefined]);
+    expect(calls[4]).toEqual(['/badges', 'GET', undefined]);
+    expect(calls[5]).toEqual(['/workout-stats?days=30', 'GET', undefined]);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { summarizeWorkouts } from './workoutStats';
+import { summarizeStats, summarizeWorkouts } from './workoutStats';
 
 const s = (exercise: string, setNo: number, reps: number, weightKg: number | null) => ({ exercise, setNo, reps, weightKg });
 describe('summarizeWorkouts (B-41)', () => {
@@ -22,5 +22,15 @@ describe('summarizeWorkouts (B-41)', () => {
   });
   it('is all zeros with no sets', () => {
     expect(summarizeWorkouts([])).toEqual({ sessions: 0, totalSets: 0, totalReps: 0, volumeKg: 0, perDay: [], byGroup: [], topExercises: [] });
+  });
+});
+
+describe('summarizeStats (server statistics)', () => {
+  it('matches the client-side summary, counting holds as sets but not reps', () => {
+    const r = summarizeStats({ from: '2026-10-19', to: '2026-10-21', sessions: 2, days: [{ date: '2026-10-19', sets: 3 }, { date: '2026-10-20', sets: 0 }, { date: '2026-10-21', sets: 1 }],
+      exercises: [{ exercise: 'Leg Press', sets: 1, reps: 12, volumeKg: 960 }, { exercise: 'Machine Chest Press', sets: 2, reps: 18, volumeKg: 740 }, { exercise: 'Plank', sets: 1, reps: 45, volumeKg: 0 }] });
+    expect(r).toMatchObject({ sessions: 2, totalSets: 4, totalReps: 30, volumeKg: 1700 });
+    expect(r.byGroup.map(g => g.group)).toEqual(['CHEST', 'LEGS', 'CORE']);
+    expect(r.topExercises[0]).toEqual({ name: 'Leg Press', sets: 1, volumeKg: 960 });
   });
 });

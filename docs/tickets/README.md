@@ -31,17 +31,17 @@
 | B-26 | Main Quest, ghim, chip độ khó (RPG-02) | Xong; chỉ frontend |
 | B-27 | Chi tiết nhiệm vụ, đồng hồ, nghỉ giữa set (RPG-03) | Xong; chỉ frontend |
 | B-28 | Tiến hoá nhân vật theo level/rank (RPG-04) | Xong; chỉ frontend |
-| B-29 | Cải tiến kho đồ/phần thưởng cho gym (RPG-05, cải tiến B-22) | Chưa làm |
+| B-29 | Cải tiến kho đồ/phần thưởng cho gym (RPG-05, cải tiến B-22) | Xong: 4 vật phẩm gym (danh mục 10 món, frontend + backend), 3 huy hiệu tập luyện từ `GET /badges` (ADR-038), lọc kho đồ. Chưa có ảnh vật phẩm mới (dùng biểu tượng thay thế) |
 | B-30 | Cải tiến chương/cửa ải cho gym (RPG-06, cải tiến B-21) | Xong: nhãn "ngày đã qua" tách khỏi "nhiệm vụ có lịch đã xong" (kèm số đếm), ngày hiện tại trong chương |
 | B-31 | QA liên màn hình và sign-off RPG (RPG-07) | Phần QA tự động xong (2026-10-17): xem docs/rpg/STATUS.md; còn kiểm trên iPhone thật/PWA/Railway |
 | B-32 | Nội dung gym: giáo án mẫu, thư viện bài tập, nạp giáo án | Xong; chỉ frontend |
-| B-33 | RFC backend cho lớp RPG (RPG-08) | Hoãn, chỉ tài liệu |
+| B-33 | RFC backend cho lớp RPG (RPG-08) | RFC đã viết (docs/rpg/RFC_BACKEND_EXTENSIONS.md), chờ owner quyết; chưa triển khai |
 | B-34 | Nhật ký từng set/rep/mức tạ (backend + frontend) | Xong (ADR-037) |
 | B-35 | Hôm nay kiểu cửa sổ trạng thái (màn 1 của ảnh tham chiếu) | Xong; chỉ frontend, giữ màu xanh |
 | B-36 | Màn lịch tập tuần (màn 2) | Xong (nút "Lịch tuần" ở Hôm nay; T2–CN, Main Quest, xem trước ngày tới) |
 | B-37 | Chi tiết buổi tập dạng danh sách và chi tiết bài (màn 3, 4) | Xong: chi tiết bài (nhóm cơ chính/phụ, dụng cụ, độ khó, loại bài, kỹ thuật) mở từ checklist/thư viện/màn đang tập; đầu buổi có nhóm cơ và nút "Tập từng set" |
 | B-38 | Màn đang tập từng set (màn 5) | Xong; chỉ frontend, giữ màu xanh |
 | B-39 | Thư viện bài tập và lọc nhóm cơ (màn 6, 7) | Xong (tìm, lọc nhóm cơ, mở chi tiết; vào từ Hành trình); thêm bài vào buổi tập xong (checklist mới có hiệu lực từ ngày mai) |
-| B-40 | Nhân vật và kho đồ theo ảnh tham chiếu (màn 8, 9; gộp B-29) | Xong phần frontend: thẻ "Cấp kế tiếp", lọc kho đồ, gợi ý nơi rơi. Vật phẩm/huy hiệu gym cần backend nên hoãn |
-| B-41 | Thống kê tập luyện (màn 10) | Xong (mục Tập luyện trong Thống kê, 7/30 ngày, tính ở client từ nhật ký set; không có tab "Tất cả" vì chưa có endpoint tổng hợp) |
+| B-40 | Nhân vật và kho đồ theo ảnh tham chiếu (màn 8, 9; gộp B-29) | Xong: thẻ "Cấp kế tiếp", lọc kho đồ, gợi ý nơi rơi, khối Huy hiệu tập luyện (xem B-29) |
+| B-41 | Thống kê tập luyện (màn 10) | Xong (mục Tập luyện trong Thống kê, 7/30 ngày, một request `GET /workout-stats` tính ở server (ADR-038); không có tab "Tất cả", tối đa 90 ngày) |
 

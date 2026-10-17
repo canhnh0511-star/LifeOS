@@ -85,9 +85,9 @@ class LootIntegrationTest {
         List<String> h = habit(b, 3);
         for (int i = 3; i >= 0; i--) doneAll(b, h, ago(i));
         UUID u = userId(b);
-        // 4 days x 3 chests asked for 12 items from a catalog of 6: never a duplicate, the rest simply do not drop.
+        // 4 days x 3 chests asked for 12 items from a catalog of 10: never a duplicate, the rest simply do not drop.
         assertThat(ownedCodes(u)).doesNotHaveDuplicates();
-        assertThat(owned(u)).isLessThanOrEqualTo(6).isGreaterThanOrEqualTo(3);
+        assertThat(owned(u)).isLessThanOrEqualTo(10).isGreaterThanOrEqualTo(3);
     }
 
     @Test void undoTakesTheItemBackAndUnequipsItAndRedoDropsTheSameOne() throws Exception {

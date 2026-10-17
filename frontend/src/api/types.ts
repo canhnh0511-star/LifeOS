@@ -57,4 +57,8 @@ export interface ApiErrorDto { requestId?: string; code: string; message: string
 export interface WorkoutSetDto { exercise: string; setNo: number; reps: number; weightKg: number | null; }
 export interface WorkoutSetInput { exercise: string; setNo: number; reps: number; weightKg?: number | null; }
 /** The sets of one exercise on its latest earlier day; `date` is null and `sets` empty when it was never logged. */
+/** Training badge (B-29, ADR-038): earned from real evidence on every read; carries no XP. */
+export interface BadgeDto { code: string; name: string; description: string; earned: boolean; progress: number; target: number; }
+/** Set statistics for the last `days` days up to today (B-41, ADR-038). `volumeKg` is the sum of reps × weight for sets with a weight. */
+export interface WorkoutStatsDto { from: string; to: string; sessions: number; days: { date: string; sets: number }[]; exercises: { exercise: string; sets: number; reps: number; volumeKg: number }[]; }
 export interface LastWorkoutSetsDto { date: string | null; sets: WorkoutSetDto[]; }

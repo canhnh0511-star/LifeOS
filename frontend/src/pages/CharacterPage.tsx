@@ -1,15 +1,16 @@
 import { ArrowUpRight, Flame, Zap } from 'lucide-react';
-import type { DailyDashboardDto, ItemDto } from '../api/types';
+import type { BadgeDto, DailyDashboardDto, ItemDto } from '../api/types';
 import { titleForLevel } from '../domain/rules';
 import { RankBadge } from '../components/RankBadge';
 import { InventoryPanel } from '../components/InventoryPanel';
+import { BadgePanel } from '../components/BadgePanel';
 import { CharacterCard } from '../components/CharacterCard';
 import { ProgressBar } from '../components/primitives';
 import { nextLevelReward } from '../domain/nextReward';
 import { number, pct } from '../ui/format';
 
 /** Who you are right now: level, per-area stats and the figure. Moved out of Today so Today can answer one question: what next? */
-export function CharacterPage({ dashboard, items, busyItemCode, onEquip, onUnequip }: { dashboard: DailyDashboardDto | null; items: ItemDto[]; busyItemCode: string | null; onEquip: (item: ItemDto) => void; onUnequip: (item: ItemDto) => void }) {
+export function CharacterPage({ dashboard, items, busyItemCode, onEquip, onUnequip, loadBadges }: { dashboard: DailyDashboardDto | null; items: ItemDto[]; busyItemCode: string | null; onEquip: (item: ItemDto) => void; onUnequip: (item: ItemDto) => void; loadBadges?: () => Promise<BadgeDto[]> }) {
   const cur = dashboard?.progress;
   const levelPct = cur ? pct(cur.totalXp - cur.levelStartXp, cur.nextLevelXp - cur.levelStartXp) : 0;
   return <>
@@ -22,6 +23,7 @@ export function CharacterPage({ dashboard, items, busyItemCode, onEquip, onUnequ
         <ul>{r.rankUp && <li>Lên <strong>hạng {r.rankUp.rank} · {r.rankUp.name}</strong>: hình nhân vật đổi diện mạo.</li>}{r.newGearTier && <li>Mở trang bị bậc {r.newGearTier} cho hình nhân vật.</li>}{!r.rankUp && r.nextRank && <li>Hạng {r.nextRank.rank} · {r.nextRank.name} còn {r.levelsToNextRank} cấp nữa.</li>}{!r.rankUp && !r.newGearTier && !r.nextRank && <li>Bạn đã ở hạng cao nhất.</li>}</ul>
       </>; })()}</article>}
       <CharacterCard areas={cur?.areas ?? []} totalXp={cur?.totalXp ?? 0} level={cur?.level ?? 1}/>
+      {loadBadges && <BadgePanel loadBadges={loadBadges} refreshKey={cur?.totalXp}/>}
       {items.length > 0 && <InventoryPanel items={items} busyCode={busyItemCode} onEquip={onEquip} onUnequip={onUnequip}/>}
       <div className="metric-grid metric-grid-2"><div className="metric-card"><span className="metric-icon orange"><Flame size={21}/></span><span className="metric-label">Chuỗi hiện tại</span><strong>{cur?.currentStreak || 0} <small>phiên</small></strong><span className="metric-foot">Chuỗi dài nhất của một thói quen đang chạy</span></div><div className="metric-card"><span className="metric-icon purple"><Zap size={21}/></span><span className="metric-label">Chuỗi kỷ lục</span><strong>{cur?.longestStreak || 0} <small>phiên</small></strong><span className="metric-foot">Dài nhất từ trước đến nay</span></div></div>
     </div>
