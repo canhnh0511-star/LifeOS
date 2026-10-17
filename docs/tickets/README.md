@@ -35,7 +35,7 @@
 | B-30 | Cải tiến chương/cửa ải cho gym (RPG-06, cải tiến B-21) | Xong: nhãn "ngày đã qua" tách khỏi "nhiệm vụ có lịch đã xong" (kèm số đếm), ngày hiện tại trong chương |
 | B-31 | QA liên màn hình và sign-off RPG (RPG-07) | Phần QA tự động xong (2026-10-17): xem docs/rpg/STATUS.md; còn kiểm trên iPhone thật/PWA/Railway |
 | B-32 | Nội dung gym: giáo án mẫu, thư viện bài tập, nạp giáo án | Xong; chỉ frontend |
-| B-33 | RFC backend cho lớp RPG (RPG-08) | RFC đã viết (docs/rpg/RFC_BACKEND_EXTENSIONS.md), chờ owner quyết; chưa triển khai |
+| B-33 | RFC backend cho lớp RPG (RPG-08) | RFC đã viết (docs/rpg/RFC_BACKEND_EXTENSIONS.md); owner quyết không triển khai, đóng |
 | B-34 | Nhật ký từng set/rep/mức tạ (backend + frontend) | Xong (ADR-037) |
 | B-35 | Hôm nay kiểu cửa sổ trạng thái (màn 1 của ảnh tham chiếu) | Xong; chỉ frontend, giữ màu xanh |
 | B-36 | Màn lịch tập tuần (màn 2) | Xong (nút "Lịch tuần" ở Hôm nay; T2–CN, Main Quest, xem trước ngày tới) |
