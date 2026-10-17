@@ -434,3 +434,36 @@ h1,h2,h3,.hunter-level,.section-eyebrow,.eyebrow,.rank-card-state{font-family:va
 .rank-card-name{display:flex;align-items:center;gap:6px;color:var(--text-strong)}.rank-card.is-locked .rank-card-name{color:var(--text-muted)}
 .rank-card-state{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;letter-spacing:1.4px;color:var(--text-muted)}.rank-card.is-current .rank-card-state{color:var(--accent)}
 @media(max-width:380px){.hunter-portrait{flex-direction:column;align-items:flex-start}.rank-gallery{gap:8px}}
+
+/* Phase 2: first-run plan wizard (full-screen, three steps) */
+.wizard-backdrop{position:fixed;inset:0;z-index:80;overflow-y:auto;background:radial-gradient(ellipse 520px 320px at 50% -60px,rgba(61,140,255,.28),transparent 72%),#060a12}
+.wizard{min-height:100dvh;max-width:480px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px;color:var(--text);font-family:var(--font-body);outline:none}
+.wizard-top{display:flex;align-items:center;justify-content:space-between}.wizard-tag{font-family:var(--font-display);font-weight:600;font-size:12px;letter-spacing:2.4px;color:var(--sys-cyan)}
+.wizard-steps{list-style:none;margin:0;padding:0;display:flex;gap:8px}.wizard-steps li{flex:1;display:grid;gap:5px;font-family:var(--font-display);font-weight:500;font-size:11px;color:var(--text-muted)}
+.wizard-bar{height:4px;border-radius:2px;background:rgba(255,255,255,.18)}.wizard-steps li.is-current,.wizard-steps li.is-done{color:var(--sys-cyan)}.wizard-steps li.is-current .wizard-bar,.wizard-steps li.is-done .wizard-bar{background:var(--sys-cyan)}.wizard-steps li.is-current{font-weight:600}
+.wizard-body{flex:1;display:flex;flex-direction:column;gap:14px}.wizard-body h1,.wizard-body h2{margin:0;font-family:var(--font-display);font-weight:600;font-size:27px;line-height:32px;color:var(--text-strong)}
+.wizard-story{align-items:center;text-align:center}.wizard-story p{margin:0;max-width:320px;font-size:14px;line-height:21px;color:#9fb0c8}.wizard-story .rank-portrait{box-shadow:0 0 40px rgba(61,140,255,.35)}
+.wizard-window{position:relative;width:100%;margin-top:6px;padding:18px 16px 14px;border:1px solid var(--sys-line);border-radius:6px;background:var(--sys-glass);text-align:left}.wizard-window p{max-width:none;color:#d5e0f0;font-size:13px;line-height:20px}
+.wizard-window-tag{position:absolute;top:-9px;left:14px;padding:0 8px;background:#060a12;font-family:var(--font-display);font-weight:600;font-size:11px;letter-spacing:2px;color:var(--sys-cyan)}
+.wizard-story .wizard-hunter{font-size:13px;color:var(--text-muted)}.wizard-hunter strong{color:var(--text-strong)}
+.wizard-lead{margin:0;font-size:13.5px;line-height:20px;color:#9fb0c8}
+.wizard-choices{display:grid;gap:10px}.wizard-card{position:relative;display:block;padding:14px 16px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.03);cursor:pointer}
+.wizard-card input,.wizard-pill input{position:absolute;opacity:0;pointer-events:none}.wizard-card.is-selected{border-color:var(--accent);background:rgba(198,250,85,.08);box-shadow:0 0 22px rgba(198,250,85,.12)}
+.wizard-card:focus-within,.wizard-pill:focus-within{outline:2px solid var(--sys-cyan);outline-offset:2px}
+.wizard-card-text{display:grid;gap:6px}.wizard-card-text strong{font-family:var(--font-display);font-size:18px;color:var(--text-strong)}.wizard-card-text small{font-size:13px;line-height:19px;color:var(--text-muted)}
+.wizard-chips{display:flex;flex-wrap:wrap;gap:6px}.wizard-chips span{padding:3px 9px;border-radius:999px;border:1px solid var(--sys-line);font-size:12px;color:#cfe8ff;background:rgba(92,200,255,.07)}
+.wizard-sub{margin:6px 0 0;font-family:var(--font-display);font-weight:500;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:#8fa3bf}.wizard-sub small{font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:12px;color:var(--text-muted)}
+.wizard-pills{display:flex;flex-wrap:wrap;gap:8px}.wizard-pill{position:relative;min-height:44px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.18);border-radius:999px;font-size:14px;cursor:pointer;color:var(--text)}
+.wizard-pill.is-selected{border-color:var(--accent);background:rgba(198,250,85,.12);color:var(--accent);font-weight:600}.wizard-count .wizard-pill{flex:1;min-width:56px}
+.wizard-summary{margin:0}.wizard-sessions{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.wizard-sessions>li{border:1px solid var(--sys-line);border-radius:10px;background:var(--sys-glass);overflow:hidden}.wizard-sessions>li.is-open{border-color:rgba(198,250,85,.5)}
+.wizard-sessions>li>button{width:100%;min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:none;border:0;color:inherit;text-align:left}
+.wizard-session-name{display:grid;gap:3px;min-width:0}.wizard-session-name strong{font-size:15px;color:var(--text-strong)}.wizard-session-name small{font-size:12px;color:var(--text-muted)}
+.wizard-sessions>li.is-open>button svg{transform:rotate(180deg)}
+.wizard-exercises{list-style:none;margin:0;padding:0 14px 10px;counter-reset:ex}.wizard-exercises li{counter-increment:ex;display:flex;align-items:center;gap:10px;min-height:40px;border-top:1px solid rgba(255,255,255,.07);font-size:14px}
+.wizard-exercises li:before{content:counter(ex);flex:0 0 22px;height:22px;display:grid;place-items:center;border-radius:50%;background:rgba(92,200,255,.14);font-size:11px;font-weight:700;color:var(--sys-cyan)}
+.wizard-exercises li>span:first-child{flex:1;min-width:0}.wizard-sets{flex:0 0 auto;font-family:var(--font-display);font-weight:600;color:var(--text-strong)}
+.wizard-note{margin:0;font-size:13px;color:var(--text-muted);text-align:center}
+.wizard-actions{display:grid;gap:8px;position:sticky;bottom:0;padding-top:8px;background:linear-gradient(180deg,transparent,#060a12 30%)}
+.wizard-cta{height:56px;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:center;gap:10px}
+.wizard-links{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.wizard-links .btn{min-height:44px}

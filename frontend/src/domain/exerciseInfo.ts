@@ -44,7 +44,18 @@ const INFO: Record<string, ExerciseInfo> = {
   'dead-bug': i('Tự thân, thảm', 'EASY', K, [], 'Lưng dưới ép sát sàn suốt bài.', 'Duỗi tay và chân đối bên chậm, về vị trí đầu rồi đổi bên.'),
   plank: i('Tự thân, thảm', 'EASY', K, ['SHOULDERS'], 'Khuỷu dưới vai, thân thẳng một đường.', 'Siết bụng và mông, thở đều, dừng khi lưng võng.'),
   'hanging-leg-raise': i('Xà đơn', 'HARD', K, [], 'Treo thẳng, không đung đưa.', 'Nâng chân bằng bụng dưới, hạ chậm.'),
-  'cable-crunch': i('Máy cáp, dây kéo', 'MEDIUM', K, [], 'Quỳ, hông cố định.', 'Cuộn thân bằng bụng, không kéo bằng tay.')
+  'cable-crunch': i('Máy cáp, dây kéo', 'MEDIUM', K, [], 'Quỳ, hông cố định.', 'Cuộn thân bằng bụng, không kéo bằng tay.'),
+  'bodyweight-squat': i('Tự thân', 'EASY', C, ['CORE'], 'Chân rộng bằng vai, gối đi cùng hướng mũi chân.', 'Ngồi xuống như ngồi ghế, gót chạm sàn, đứng lên bằng chân.'),
+  'glute-bridge': i('Tự thân, thảm', 'EASY', I, ['CORE'], 'Nằm ngửa, gối gập, bàn chân sát mông.', 'Đẩy hông lên đến thân thẳng, siết mông một nhịp rồi hạ chậm.'),
+  superman: i('Tự thân, thảm', 'EASY', I, ['LEGS'], 'Nằm sấp, hai tay duỗi về trước.', 'Nâng tay và chân lên nhẹ nhàng, giữ đều, không ngửa cổ.'),
+  'pike-push-up': i('Tự thân', 'MEDIUM', C, ['ARMS'], 'Hông cao, thân hình chữ V ngược.', 'Hạ đầu xuống giữa hai tay rồi đẩy lên, khuỷu không bung rộng.'),
+  'bench-dip': i('Ghế hoặc bậc vững', 'EASY', I, ['SHOULDERS'], 'Tay chống sau lưng, khuỷu hướng ra sau.', 'Hạ thân đến khuỷu khoảng 90°, đẩy lên bằng tay sau.'),
+  'db-floor-press': i('Tạ đơn, thảm', 'EASY', C, ['SHOULDERS', 'ARMS'], 'Nằm ngửa, gối gập, khuỷu khoảng 45° so với thân.', 'Hạ đến khi khuỷu chạm sàn nhẹ, đẩy lên không khoá khuỷu.'),
+  'db-row': i('Tạ đơn, ghế hoặc bàn', 'EASY', C, ['ARMS'], 'Một tay chống, lưng phẳng song song sàn.', 'Kéo khuỷu về hông, siết bả vai, hạ chậm.'),
+  'db-shoulder-press': i('Tạ đơn', 'EASY', C, ['ARMS', 'CORE'], 'Siết bụng, không ưỡn lưng.', 'Đẩy tạ lên qua đầu, hạ về ngang tai có kiểm soát.'),
+  'db-curl': i('Tạ đơn', 'EASY', I, [], 'Khuỷu cố định sát thân.', 'Cuốn lên không vung người, hạ chậm.'),
+  'bird-dog': i('Tự thân, thảm', 'EASY', K, ['BACK'], 'Chống bốn điểm, lưng phẳng như mặt bàn.', 'Duỗi tay và chân đối bên, giữ một nhịp rồi đổi bên, hông không xoay.'),
+  'mountain-climber': i('Tự thân', 'MEDIUM', K, ['SHOULDERS', 'LEGS'], 'Tư thế chống đẩy, vai trên cổ tay.', 'Đưa gối lên ngực luân phiên, giữ hông thấp và nhịp đều.')
 };
 const FALLBACK: ExerciseInfo = { equipment: 'Tuỳ chọn', level: 'MEDIUM', kind: 'COMPOUND', secondary: [], cues: [] };
 export const infoFor = (e: Exercise): ExerciseInfo => INFO[e.id] ?? FALLBACK;

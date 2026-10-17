@@ -12,7 +12,7 @@ describe('filterExercises by Vietnamese and English names', () => {
   it('finds an exercise by its Vietnamese name with or without accents, and by its English name', () => {
     expect(filterExercises(EXERCISES, null, 'hít đất').map(e => e.id)).toEqual(['push-up']);
     expect(filterExercises(EXERCISES, null, 'hit dat').map(e => e.id)).toEqual(['push-up']);
-    expect(filterExercises(EXERCISES, null, 'PUSH-UP').map(e => e.id)).toEqual(['push-up']);
+    expect(filterExercises(EXERCISES, null, 'PUSH-UP').map(e => e.id)).toEqual(['push-up', 'pike-push-up']);   // the English name also matches the pike variant
     expect(filterExercises(EXERCISES, null, 'goblet').map(e => e.id)).toContain('goblet-squat');
   });
   it('lists the Vietnamese name first in the library', async () => {

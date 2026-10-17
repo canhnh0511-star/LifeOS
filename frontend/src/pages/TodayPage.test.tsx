@@ -236,9 +236,9 @@ describe('quest detail and workout open in place (no popup)', () => {
 describe('Phase 1: the first screen is about training', () => {
   const gym = { ...quest('g', 'PENDING', 'Buổi A'), objectives: [{ id: 'o', title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10, value: 0 }] } as QuestDto;
   const logWith = (n: number) => ({ list: async () => Array.from({ length: n }, (_, i) => ({ exercise: 'Machine Chest Press', setNo: i + 1, reps: 10, weightKg: null })), record: async () => [], remove: async () => [], last: async () => ({ date: null, sets: [] }) });
-  it('puts "Tạo lịch tập mẫu" above the other quests when there is no gym plan', () => {
+  it('puts "Bắt đầu hành trình" above the other quests when there is no gym plan', () => {
     render(<TodayPage {...props} onImportPlan={() => {}} habits={[]} onToggleQuest={() => {}} dashboard={dashboard([quest('w', 'PENDING', 'Uống nước')])}/>);
-    const cta = screen.getByRole('button', { name: 'Tạo lịch tập mẫu' });
+    const cta = screen.getByRole('button', { name: 'Bắt đầu hành trình' });
     const quests = screen.getByLabelText('Việc tiếp theo');
     expect(cta.compareDocumentPosition(quests) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -258,7 +258,7 @@ describe('gym nudge on Today', () => {
   it('offers to load a gym plan when there is none', async () => {
     const onImportPlan = vi.fn();
     render(<TodayPage {...props} onImportPlan={onImportPlan} habits={[]} onToggleQuest={() => {}} dashboard={dashboard([quest('w', 'PENDING', 'Uống nước')])}/>);
-    await userEvent.click(within(screen.getByLabelText('Giáo án gym')).getByRole('button', { name: 'Tạo lịch tập mẫu' }));
+    await userEvent.click(within(screen.getByLabelText('Giáo án gym')).getByRole('button', { name: 'Bắt đầu hành trình' }));
     expect(onImportPlan).toHaveBeenCalled();
   });
   it('says when the next session is when today has none (2026-10-16 is a Friday, the session is on Monday)', () => {

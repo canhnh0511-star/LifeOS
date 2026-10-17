@@ -10,6 +10,7 @@ import { levelUps } from './domain/levelUps';
 import { EditHabitForm, GoalForm, HabitForm } from './components/forms';
 import { Modal } from './components/Modal';
 import { PlanImportForm } from './components/PlanImportForm';
+import { PlanWizard } from './components/PlanWizard';
 import type { SetLogApi } from './components/SetLog';
 import { Logo } from './components/primitives';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -25,12 +26,16 @@ import { ExercisesPage } from './pages/ExercisesPage';
 import './styles.css';
 
 type ModalKind = 'goal' | 'habit' | 'editHabit' | 'settings' | 'plan' | null;
-const MODAL_TITLES = { goal: 'Mục tiêu mới', habit: 'Thói quen mới', editHabit: 'Sửa thói quen', settings: 'Cài đặt hệ thống', plan: 'Nạp giáo án gym' } as const;
+const MODAL_TITLES = { goal: 'Mục tiêu mới', habit: 'Thói quen mới', editHabit: 'Sửa thói quen', settings: 'Cài đặt hệ thống', plan: 'Chọn giáo án có sẵn' } as const;
 /** Error notices start with this mark so the toast can tell them from system messages. */
 const ERROR_MARK = '⚠ ';
 const failure = (e: unknown, fallback: string) => ERROR_MARK + (e instanceof Error ? e.message : fallback);
 /** Fresh progress for level-up detection; a failure here must not hide that the action itself succeeded. */
 const latestProgress = () => api.getProgress().catch(() => undefined);
+/** The plan wizard opens by itself once, for an account with no goals, no habits and no XP yet (so a failed load never shows it to someone with data); "Để sau" or finishing it marks it as seen. */
+const WIZARD_SEEN = 'lifeos.wizard.seen';
+const wizardSeen = () => { try { return localStorage.getItem(WIZARD_SEEN) === '1'; } catch { return true; } };
+const markWizardSeen = () => { try { localStorage.setItem(WIZARD_SEEN, '1'); } catch { /* no storage: it may open again next visit */ } };
 
 export default function App() {
   const [tab, setTab] = useState<Tab>(tabFromHash);
@@ -38,6 +43,7 @@ export default function App() {
   const [period, setPeriod] = useState<'7d' | '30d'>('7d');
   const { dashboard, goals, habits, achievements, items, metrics, metricsFailed, reloadMetrics, analytics, weekly, loading, error, refresh: refreshNow } = useLifeOsData(selectedDate, period);
   const [modal, setModal] = useState<ModalKind>(null);
+  const [wizard, setWizard] = useState(false);
   const [editing, setEditing] = useState<HabitDto | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyBossId, setBusyBossId] = useState<string | null>(null);
@@ -51,6 +57,7 @@ export default function App() {
     window.addEventListener('hashchange', sync);
     return () => window.removeEventListener('hashchange', sync);
   }, []);
+  useEffect(() => { if (!loading && !error && dashboard && dashboard.progress.totalXp === 0 && dashboard.quests.length === 0 && goals.length === 0 && habits.length === 0 && !wizardSeen()) setWizard(true); }, [loading, error, dashboard, goals.length, habits.length]);
   useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(''), 4200); return () => clearTimeout(timer); }, [notice]);
 
   // Checklist taps go out one after another, each carrying an absolute value, so quick repeated taps cannot overtake each other.
@@ -139,7 +146,7 @@ export default function App() {
       for (const id of replace.goalIds) { await api.updateGoal(id, { status: 'ARCHIVED' }); archived++; }
       for (const id of replace.habitIds) { try { await api.updateHabit(id, { status: 'ARCHIVED' }); archived++; } catch { /* its goal is archived, so it stops showing anyway */ } }
       const r = await api.importHabitPlan(v);
-      setModal(null); setNotice(`Đã nạp giáo án: ${r.habits.length} buổi tập.${archived ? ' Giáo án cũ đã được lưu trữ, biến mất từ ngày mai.' : ''}`); refresh();
+      setModal(null); setWizard(false); setNotice(`Đã nạp giáo án: ${r.habits.length} buổi tập.${archived ? ' Giáo án cũ đã được lưu trữ, biến mất từ ngày mai.' : ''}`); refresh();
     } catch (e) { setNotice(failure(e, 'Không nạp được giáo án.') + (archived ? ' Giáo án cũ đã được lưu trữ; hãy nạp lại hoặc khôi phục trong Hành trình.' : '')); refresh(); }
   };
   const saveHabit = async (v: CreateHabitRequest) => { try { await api.createHabit(v); setModal(null); setNotice('Đã tạo thói quen mới.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi xảy ra.')); } };
@@ -179,7 +186,7 @@ export default function App() {
       <main className="page-content" data-dialog-fallback tabIndex={-1}>
         {error && <div role="alert" className="error-banner">{error}<button onClick={refresh}>Thử lại <RotateCcw size={14}/></button></div>}
         {loading && !dashboard ? <div className="loading-shell"><div className="loader"/><p>Đang chuẩn bị hành trình của bạn...</p></div> : <>
-          {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')} setLog={setLog} loadDay={loadDay} habits={habits} weekly={weekly} goTo={goTo}/>}
+          {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} onImportPlan={() => setWizard(true)} setLog={setLog} loadDay={loadDay} habits={habits} weekly={weekly} goTo={goTo}/>}
           {tab === 'exercises' && <ExercisesPage habits={habits} onAddToHabit={addToSession}/>}
           {tab === 'journey' && <JourneyPage onAddToHabit={addToSession} journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')}/>}
           {tab === 'character' && <CharacterPage loadBadges={loadBadges} dashboard={dashboard} items={items} busyItemCode={busyItemCode} onEquip={item => wear(item, true)} onUnequip={item => wear(item, false)}/>}
@@ -197,6 +204,7 @@ export default function App() {
       {modal === 'plan' && <PlanImportForm onClose={() => setModal(null)} onImport={importPlan} existingHabits={habits} existingGoals={goals}/>}
       {modal === 'settings' && <SettingsPanel isDemo={isDemo} onExport={exportData} onReset={reset} onClearToday={clearToday} onLogout={logout}/>}
     </Modal>}
+    {wizard && <PlanWizard displayName={dashboard?.user.displayName} goals={goals} habits={habits} onImport={importPlan} onClose={() => { setWizard(false); markWizardSeen(); }} onChooseProgram={() => { setWizard(false); setModal('plan'); }}/>}
     {celebration && <Celebration data={celebration} onClose={() => setCelebration(null)}/>}
     {notice && <div role={notice.startsWith(ERROR_MARK) ? 'alert' : 'status'} className={`toast ${notice.startsWith(ERROR_MARK) ? 'toast-error' : ''}`}><Sparkles size={18}/><span className="toast-text"><b className="toast-tag">{notice.startsWith(ERROR_MARK) ? 'LỖI' : 'HỆ THỐNG'}</b>{notice.replace(ERROR_MARK, '')}</span><button aria-label="Đóng thông báo" onClick={() => setNotice('')}><X size={15}/></button></div>}
   </div>;

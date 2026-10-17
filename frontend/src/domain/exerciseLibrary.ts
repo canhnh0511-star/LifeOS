@@ -22,7 +22,12 @@ const BASE: readonly Exercise[] = [
   ex('machine-chest-press', 'Machine Chest Press', 'CHEST', 2, 10), ex('seated-leg-curl', 'Seated Leg Curl', 'LEGS', 2, 10), ex('leg-extension', 'Leg Extension', 'LEGS', 2, 12),
   ex('goblet-squat', 'Goblet Squat', 'LEGS', 2, 10), ex('db-romanian-deadlift', 'Dumbbell Romanian Deadlift', 'LEGS', 2, 10), ex('machine-shoulder-press', 'Seated Machine Shoulder Press', 'SHOULDERS', 2, 10),
   ex('db-lateral-raise', 'Dumbbell Lateral Raise', 'SHOULDERS', 2, 12), ex('dead-bug', 'Dead Bug', 'CORE', 2, 8, 'rep', 'mỗi bên'),
-  ex('plank', 'Plank', 'CORE', 3, 45, 'giây'), ex('hanging-leg-raise', 'Hanging Leg Raise', 'CORE', 3, 12), ex('cable-crunch', 'Cable Crunch', 'CORE', 3, 15)
+  ex('plank', 'Plank', 'CORE', 3, 45, 'giây'), ex('hanging-leg-raise', 'Hanging Leg Raise', 'CORE', 3, 12), ex('cable-crunch', 'Cable Crunch', 'CORE', 3, 15),
+  // Home and dumbbell-only exercises (phase 2): what the goal wizard can offer when there is no gym.
+  ex('bodyweight-squat', 'Bodyweight Squat', 'LEGS', 3, 15), ex('glute-bridge', 'Glute Bridge', 'LEGS', 3, 15), ex('superman', 'Superman Hold', 'BACK', 3, 30, 'giây'),
+  ex('pike-push-up', 'Pike Push-up', 'SHOULDERS', 3, 10), ex('bench-dip', 'Bench Dip', 'ARMS', 3, 12),
+  ex('db-floor-press', 'Dumbbell Floor Press', 'CHEST', 3, 10), ex('db-row', 'One-arm Dumbbell Row', 'BACK', 3, 10, 'rep', 'mỗi bên'), ex('db-shoulder-press', 'Dumbbell Shoulder Press', 'SHOULDERS', 3, 10), ex('db-curl', 'Dumbbell Curl', 'ARMS', 3, 12),
+  ex('bird-dog', 'Bird Dog', 'CORE', 2, 10, 'rep', 'mỗi bên'), ex('mountain-climber', 'Mountain Climber', 'CORE', 3, 30, 'giây')
 ];
 /** Vietnamese display names, by exercise id (a beginner knows the movement by this name, not by the English one). */
 const VI: Record<string, string> = {
@@ -60,7 +65,18 @@ const VI: Record<string, string> = {
   'dead-bug': 'Con bọ chết (Dead Bug)',
   'plank': 'Plank (giữ thân thẳng)',
   'hanging-leg-raise': 'Treo xà nâng chân',
-  'cable-crunch': 'Gập bụng với máy cáp'
+  'cable-crunch': 'Gập bụng với máy cáp',
+  'bodyweight-squat': 'Squat không tạ',
+  'glute-bridge': 'Cầu mông',
+  'superman': 'Nằm sấp nâng người (Superman)',
+  'pike-push-up': 'Chống đẩy chữ V ngược (tập vai)',
+  'bench-dip': 'Nhún tay sau với ghế',
+  'db-floor-press': 'Đẩy ngực tạ đơn nằm sàn',
+  'db-row': 'Kéo tạ đơn một tay',
+  'db-shoulder-press': 'Đẩy vai với tạ đơn',
+  'db-curl': 'Cuốn tạ đơn (tay trước)',
+  'bird-dog': 'Chó chim (Bird Dog)',
+  'mountain-climber': 'Leo núi tại chỗ'
 };
 export const EXERCISES: readonly Exercise[] = BASE.map(e => ({ ...e, nameVi: VI[e.id] }));
 const byId = new Map(EXERCISES.map(e => [e.id, { ...e, ...(REST[e.id] ? { restSeconds: REST[e.id] } : {}) } as Exercise]));
