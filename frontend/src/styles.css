@@ -391,3 +391,10 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]),select{min-height
 @media(max-width:480px){.topbar .breadcrumb,.topbar .slash{display:none}.topbar-left strong{white-space:nowrap}.topbar-right{gap:6px}}
 @media(max-width:360px){.demo-pill{padding:0 8px;font-size:10px;letter-spacing:0}.topbar{padding-left:8px;padding-right:8px}.topbar-left{gap:4px}}
 .plan-replace{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.plan-replace input{margin-top:4px}
+/* Today made simpler: a short header, shortcuts, then what to do; the overview and chests sit in a fold below. */
+.today-hero.is-compact{min-height:0;padding:12px 16px}.today-hero.is-compact .hero-top{align-items:center}.today-hero.is-compact .hunter-level{font-size:20px}.today-hero.is-compact .hunter-status{max-width:70%}.today-hero.is-compact h1{font-size:22px}
+.today-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px}.today-actions .btn{justify-content:center;padding-left:8px;padding-right:8px}
+.today-more>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700;list-style:none}.today-more>summary::-webkit-details-marker{display:none}.today-more>summary::after{content:'▾';margin-left:auto;color:var(--text-muted)}.today-more[open]>summary::after{content:'▴'}
+.today-more[open]>summary{margin-bottom:12px}.today-more .today-tiles{margin-bottom:12px}
+.aw-stepper input.aw-value{width:100%;min-width:0;background:transparent;border:0;border-bottom:2px solid var(--line);border-radius:0;color:var(--text-strong);padding:0;min-height:56px!important}.aw-stepper input.aw-value:focus{outline:none;border-bottom-color:var(--accent)}.aw-rest .aw-stepper input.aw-value{min-height:44px!important}
+.aw-field{display:grid;gap:4px}.aw-label{font-size:13px;color:var(--text-muted)}

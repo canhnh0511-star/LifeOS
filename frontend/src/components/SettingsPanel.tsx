@@ -12,7 +12,7 @@ export function SettingsPanel({ isDemo, onExport, onReset, onLogout, onReload = 
   const setDemoDate = (date: string | null) => { try { if (date) localStorage.setItem(DEMO_DATE_KEY, date); else localStorage.removeItem(DEMO_DATE_KEY); } catch { /* storage unavailable */ } onReload(); };
   const [reduce, setReduce] = useState(reduceMotionPref);
   return <div className="settings-content">
-    <div className="setting-row"><div><strong>API mode</strong><span>{isDemo ? 'Local mock API (localStorage)' : 'Remote REST API'}</span></div><span className="setting-status">{isDemo ? 'DEMO' : 'LIVE'}</span></div>
+    <div className="setting-row"><div><strong>Chế độ dữ liệu</strong><span>{isDemo ? 'Dữ liệu thử lưu trên trình duyệt này' : 'Máy chủ thật (API)'}</span></div><span className="setting-status">{isDemo ? 'THỬ' : 'THẬT'}</span></div>
     <div className="setting-row"><div><strong>Múi giờ</strong><span>Áp dụng cho ngày và streak</span></div><span>Asia/Ho_Chi_Minh</span></div>
     <div className="setting-row"><label htmlFor="reduce-motion"><strong>Giảm chuyển động</strong><span>Tắt hiệu ứng rương và ăn mừng. Máy đã bật giảm chuyển động thì luôn được tôn trọng.</span></label><input id="reduce-motion" type="checkbox" checked={reduce} onChange={e => { setReduce(e.target.checked); setReduceMotionPref(e.target.checked); }}/></div>
     {isDemo && <div className="setting-row demo-date"><label htmlFor="demo-date"><strong>Ngày hôm nay (chỉ để thử)</strong><span>{faked ? `Đang giả lập ${faked}.` : 'Đang dùng ngày thật.'} Chọn một ngày có buổi tập (ví dụ thứ Hai) để xem Hôm nay như ngày đó.</span></label>

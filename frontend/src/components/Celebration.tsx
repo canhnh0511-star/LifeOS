@@ -24,7 +24,7 @@ export function Celebration({ data, onClose }: { data: CelebrationData; onClose:
   useEffect(() => { const timer = setTimeout(() => close.current(), DISMISS_MS); return () => clearTimeout(timer); }, [data]);
 
   const tier = data.boss?.boss.tier ?? 1;
-  const title = data.boss ? `${data.boss.boss.name} bị hạ!` : data.rank ? 'LÊN HẠNG!' : data.level !== null ? 'LEVEL UP!' : 'Chỉ số tăng cấp!';
+  const title = data.boss ? `${data.boss.boss.name} bị hạ!` : data.rank ? 'LÊN HẠNG!' : data.level !== null ? 'LÊN CẤP!' : 'Chỉ số tăng cấp!';
   return <div className={`celebration tier-${tier}`} onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
     <div className="celebration-rays" aria-hidden="true"/>
     <div ref={card} className="celebration-card" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>

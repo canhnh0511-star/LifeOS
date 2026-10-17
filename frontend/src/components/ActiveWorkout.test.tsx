@@ -37,7 +37,7 @@ describe('active workout (B-38)', () => {
   it('shows set N / M, adjusts reps and weight, records the set and starts the rest, without XP or completion', async () => {
     const api = fakeApi(); const onToggle = await start(api);
     expect(screen.getByText(/Set 1 \/ 2/)).toBeTruthy();
-    await waitFor(() => expect(screen.getByLabelText('mức tạ (kg) hiện tại').textContent).toBe('40'));
+    await waitFor(() => expect((screen.getByLabelText('mức tạ (kg) hiện tại') as HTMLInputElement).value).toBe('40'));
     await userEvent.click(screen.getByRole('button', { name: 'Tăng mức tạ (kg)' }));
     await userEvent.click(screen.getByRole('button', { name: 'Giảm rep' }));
     await userEvent.click(screen.getByRole('button', { name: 'Hoàn thành set' }));
@@ -86,5 +86,24 @@ describe('active workout (B-38)', () => {
     cleanup();
     await start(fakeApi());
     expect(screen.getByLabelText('thời gian nghỉ hiện tại').textContent).toBe('105 giây');
+  });
+  it('lets you type reps and weight directly (comma or dot)', async () => {
+    const api = fakeApi(); await start(api);
+    const reps = screen.getByLabelText('rep hiện tại') as HTMLInputElement, weight = screen.getByLabelText('mức tạ (kg) hiện tại') as HTMLInputElement;
+    await userEvent.clear(reps); await userEvent.type(reps, '12');
+    await userEvent.clear(weight); await userEvent.type(weight, '47,5');
+    await userEvent.click(screen.getByRole('button', { name: 'Hoàn thành set' }));
+    expect(api.record).toHaveBeenCalledWith('h', '2026-10-19', { exercise: 'Machine Chest Press', setNo: 1, reps: 12, weightKg: 47.5 });
+  });
+  it('offers to end the whole session once every set is done, with the same confirmation as the detail screen', async () => {
+    const all = [1, 2].map(n => ({ exercise: 'Machine Chest Press', setNo: n, reps: 10, weightKg: 40 })).concat([1, 2, 3].map(n => ({ exercise: 'Plank', setNo: n, reps: 45, weightKg: null as unknown as number })));
+    const onToggle = await start(fakeApi(all));
+    expect(onToggle).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: /Kết thúc buổi tập · \+40 XP/ }));
+    expect(onToggle).toHaveBeenCalledWith(expect.objectContaining({ habitId: 'h' }));
+  });
+  it('does not offer to end the session while sets are still missing', async () => {
+    await start(fakeApi());
+    expect(screen.queryByRole('button', { name: /Kết thúc buổi tập/ })).toBeNull();
   });
 });

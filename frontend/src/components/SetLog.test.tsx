@@ -9,7 +9,7 @@ import { nextSetNo, parseWeight, type SetLogApi } from './SetLog';
 afterEach(() => { cleanup(); localStorage.clear(); });
 
 const quest = (title = 'Machine Chest Press'): QuestDto => ({ habitId: 'h', goalId: 'g', goalTitle: 'G', title: 'Buổi A', targetMinutes: 45, xpReward: 40, category: 'HEALTH', date: '2026-10-19', status: 'PENDING', completedAt: null,
-  objectives: [{ id: 'o1', title, target: 20, unit: 'rep', step: 10, value: 0 }] } as QuestDto);
+  objectives: [title === 'Plank' ? { id: 'o1', title, target: 135, unit: 'giây', step: 45, value: 0 } : { id: 'o1', title, target: 20, unit: 'rep', step: 10, value: 0 }] } as QuestDto);
 
 /** An in-memory stand-in for the API that remembers what was written. */
 function fakeApi(initial: WorkoutSetDto[] = [], last: { date: string | null; sets: WorkoutSetDto[] } = { date: null, sets: [] }) {
@@ -116,5 +116,13 @@ describe('session header (B-37)', () => {
     expect(screen.getByLabelText('Nhóm cơ của buổi').textContent).toBe('Ngực');
     const start = screen.getByRole('button', { name: /Tập từng set/ }), list = screen.getByLabelText('Danh sách việc của Buổi A');
     expect(start.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe('plan numbers beat library defaults', () => {
+  it('uses sets and reps from the checklist line (a plan with 2 sets of 12 for Leg Press, whose library default is 3 x 12)', () => {
+    const q = quest('Leg Press'); q.objectives = [{ id: 'o1', title: 'Leg Press', target: 24, unit: 'rep', step: 12, value: 0 } as QuestDto['objectives'][number]];
+    open(fakeApi(), q);
+    expect(screen.getByLabelText('Nhật ký set Leg Press').textContent).toContain('Kế hoạch 2 set × 12 rep');
   });
 });

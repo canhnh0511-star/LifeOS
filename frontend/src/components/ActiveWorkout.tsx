@@ -23,20 +23,32 @@ export const firstOpenIndex = (exercises: readonly Exercise[], sets: readonly Wo
   return i === -1 ? Math.max(0, exercises.length - 1) : i;
 };
 
+/** A big number you can tap + / − or simply type; typing never commits something out of range, and the text follows the value when buttons change it. */
+function NumberField({ label, value, empty, onValue, decimal = false, min, max }: { label: string; value: number; empty?: string; onValue: (n: number) => void; decimal?: boolean; min: number; max: number }) {
+  const show = (v: number) => (v === 0 && empty !== undefined ? empty : kg(v));
+  const [text, setText] = useState(show(value));
+  useEffect(() => { setText(show(value)); }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  return <input className="aw-value" inputMode={decimal ? 'decimal' : 'numeric'} aria-label={`${label} hiện tại`} value={text} placeholder={empty}
+    onFocus={e => e.currentTarget.select()}
+    onChange={e => { setText(e.target.value); const n = Number(e.target.value.trim().replace(',', '.')); if (e.target.value.trim() !== '' && Number.isFinite(n) && n >= min && n <= max && (decimal || Number.isInteger(n))) onValue(n); }}
+    onBlur={() => setText(show(value))}/>;
+}
+
 interface Props {
   quest: QuestDto; date: string; exercises: Exercise[]; sets: WorkoutSetDto[]; busy: boolean; error: string;
-  last: SetLogApi['last']; onRemove: (exercise: string, setNo: number) => Promise<boolean>; onRecord: (input: { exercise: string; setNo: number; reps: number; weightKg: number | null }) => Promise<boolean>; onClose: () => void;
+  last: SetLogApi['last']; onRemove: (exercise: string, setNo: number) => Promise<boolean>; /** ends the session: the same confirmation as the button in the quest detail */ onFinish?: () => void; xp?: number; onRecord: (input: { exercise: string; setNo: number; reps: number; weightKg: number | null }) => Promise<boolean>; onClose: () => void;
 }
 
 /**
  * Step-by-step workout (B-38): one exercise and one set at a time, with − / + for reps, weight and rest.
  * "Hoàn thành set" records the set through the set log and starts the rest countdown. No XP and no quest completion here.
  */
-export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last, onRecord, onRemove, onClose }: Props) {
+export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last, onRecord, onRemove, onFinish, xp, onClose }: Props) {
   const [index, setIndex] = useState(() => firstOpenIndex(exercises, sets));
   const e = exercises[index]!;
   const mine = mineOf(sets, e), seconds = e.unit === 'giây';
   const setNo = nextSetNo(mine), allDone = mine.length >= e.sets;
+  const sessionDone = exercises.every(x => mineOf(sets, x).length >= x.sets);
   const [reps, setReps] = useState(e.reps);
   const [weight, setWeight] = useState(0);
   const [rest, setRest] = useState(() => savedRest(e));
@@ -63,12 +75,12 @@ export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last,
   const changeRest = (n: number) => { setRest(n); try { localStorage.setItem(restKey(e.id), String(n)); } catch { /* not saved */ } };
   const go = (to: number) => { setIndex(to); setRestEndsAt(null); };
   const unit = seconds ? 'giây' : 'rep';
-  const stepper = (label: string, value: string, dec: () => void, inc: () => void, disDec: boolean, disInc: boolean) =>
-    <div className="aw-stepper" role="group" aria-label={label}>
+  const stepper = (label: string, value: React.ReactNode, dec: () => void, inc: () => void, disDec: boolean, disInc: boolean, caption?: string) =>
+    <div className="aw-field">{caption && <span className="aw-label">{caption}</span>}<div className="aw-stepper" role="group" aria-label={label}>
       <button type="button" className="aw-step" aria-label={`Giảm ${label}`} disabled={disDec} onClick={dec}><Minus size={18}/></button>
-      <span className="aw-value" role="img" aria-label={`${label} hiện tại`}>{value}</span>
+      {typeof value === 'object' ? value : <span className="aw-value" role="img" aria-label={`${label} hiện tại`}>{value}</span>}
       <button type="button" className="aw-step" aria-label={`Tăng ${label}`} disabled={disInc} onClick={inc}><Plus size={18}/></button>
-    </div>;
+    </div></div>;
   if (showInfo) return <ExerciseDetail exercise={e} onClose={() => setShowInfo(false)}/>;
   return <Modal title={`Đang tập · ${quest.title}`} onClose={onClose} sheet>
     <div className="aw">
@@ -87,8 +99,8 @@ export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last,
         ? <p role="status" className="aw-done"><Check size={16}/> Đã xong {mine.length}/{e.sets} set bài này.</p>
         : <>
           <p className="aw-set">Set {setNo} / {e.sets} <small>Mục tiêu {e.reps} {unit}{e.note ? ` ${e.note}` : ''}</small></p>
-          {stepper(seconds ? 'giây' : 'rep', `${reps}`, () => setReps(r => Math.max(1, r - 1)), () => setReps(r => Math.min(1000, r + 1)), reps <= 1, reps >= 1000)}
-          {!seconds && stepper('mức tạ (kg)', weight ? kg(weight) : '—', () => setWeight(w => Math.max(0, w - WEIGHT_STEP)), () => setWeight(w => Math.min(1000, w + WEIGHT_STEP)), weight <= 0, weight >= 1000)}
+          {stepper(seconds ? 'giây' : 'rep', <NumberField label={seconds ? 'giây' : 'rep'} value={reps} onValue={setReps} min={1} max={1000}/>, () => setReps(r => Math.max(1, r - 1)), () => setReps(r => Math.min(1000, r + 1)), reps <= 1, reps >= 1000, seconds ? 'Thời gian giữ (giây)' : 'Số lần (rep)')}
+          {!seconds && stepper('mức tạ (kg)', <NumberField label="mức tạ (kg)" value={weight} empty="" decimal onValue={setWeight} min={0} max={1000}/>, () => setWeight(w => Math.max(0, w - WEIGHT_STEP)), () => setWeight(w => Math.min(1000, w + WEIGHT_STEP)), weight <= 0, weight >= 1000, 'Mức tạ (kg), bỏ trống nếu không dùng tạ')}
           <button type="button" className="btn btn-primary aw-complete" disabled={busy} onClick={complete}><Check size={18}/> Hoàn thành set</button>
         </>}
       <section aria-label="Nghỉ giữa set" className="sheet-timer">
@@ -97,6 +109,7 @@ export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last,
             <div className="aw-rest"><span>Nghỉ</span>{stepper('thời gian nghỉ', `${rest} giây`, () => changeRest(Math.max(REST_MIN, rest - REST_STEP)), () => changeRest(Math.min(REST_MAX, rest + REST_STEP)), rest <= REST_MIN, rest >= REST_MAX)}</div></>}
       </section>
       {error && <p role="alert" className="set-error">{error}</p>}
+      {sessionDone && onFinish && <button type="button" className="btn btn-primary aw-complete" disabled={busy} onClick={onFinish}><Check size={18}/> Kết thúc buổi tập{xp ? ` · +${xp} XP` : ''}</button>}
       <div className="sheet-actions">
         {allDone && index < exercises.length - 1 && <button type="button" className="btn btn-secondary" onClick={() => go(index + 1)}>Bài tiếp theo <ChevronRight size={16}/></button>}
         <button type="button" className="btn btn-quiet" onClick={onClose}>Thoát</button>

@@ -88,7 +88,7 @@ describe('TodayPage', () => {
     const goTo = vi.fn();
     render(<TodayPage {...props} goTo={goTo} onToggleQuest={() => {}} dashboard={dashboard([quest('a', 'PENDING')])}/>);
     expect(screen.queryByText('Chỉ số nhân vật')).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: /Level 2, hạng E, Tân binh, xem nhân vật/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Cấp 2, hạng E, Tân binh, xem nhân vật/ }));
     expect(goTo).toHaveBeenCalledWith('character');
   });
   it('keeps a checklist out of Today: the Main Quest shows only progress, and the lines live in the detail sheet', async () => {
@@ -102,7 +102,7 @@ describe('TodayPage', () => {
     expect(screen.queryByRole('button', { name: /Đánh dấu xong tất cả/ })).toBeNull();
     expect(document.querySelector('.quests-panel .quest-card')).not.toBeNull();
     expect(document.querySelector('.quests-panel button.quest-row')).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập|Mở danh sách việc|Xem chi tiết/ }));
     const sheet = screen.getByRole('dialog');
     expect(sheet.querySelectorAll('.objective')).toHaveLength(2);
     await userEvent.click(sheet.querySelector('button[aria-label^="Tăng Squat"]')!);
@@ -113,7 +113,7 @@ describe('TodayPage', () => {
     const hard = { ...quest('b', 'PENDING', 'Ngực + Tay sau'), xpReward: 50 };
     render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={dashboard([quest('a', 'COMPLETED'), hard, quest('c', 'PENDING')])}/>);
     const main = screen.getByLabelText('Việc tiếp theo');
-    expect(main.textContent).toContain('MAIN QUEST');
+    expect(main.textContent).toContain('VIỆC CHÍNH HÔM NAY');
     expect(main.textContent).toContain('Khó');
     expect(screen.getAllByText('Trọng tâm')).toHaveLength(1);
     expect(screen.getAllByText('Ngực + Tay sau')).toHaveLength(2); // featured card + its single list row; XP is claimed through one action
@@ -130,7 +130,7 @@ describe('TodayPage', () => {
   it('opens the quest detail from the Main Quest card and closes it without touching the quest', async () => {
     const onToggleQuest = vi.fn();
     render(<TodayPage {...props} onToggleQuest={onToggleQuest} dashboard={dashboard([quest('b', 'PENDING', 'Tập chân')])}/>);
-    await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập|Mở danh sách việc|Xem chi tiết/ }));
     const dialog = screen.getByRole('dialog', { name: 'Tập chân' });
     expect(within(dialog).getByRole('button', { name: 'Xác nhận hoàn thành' })).toBeTruthy();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Đóng' }));
@@ -174,7 +174,7 @@ describe('Today as a status window (B-35)', () => {
       { category: 'HEALTH', xp: 500, level: 6, levelStartXp: 0, nextLevelXp: 700 }, { category: 'CAREER', xp: 100, level: 2, levelStartXp: 0, nextLevelXp: 400 }] };
     render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={d} weekly={{ completedCount: 9, scheduledCount: 12 } as never}/>);
     const status = screen.getByLabelText('Trạng thái nhân vật');
-    expect(status.textContent).toContain('Lv. 12'); expect(status.textContent).toContain('Hạng C · Tiên phong'); expect(status.textContent).toContain('1.250 / 2.000 XP');
+    expect(status.textContent).toContain('Cấp 12'); expect(status.textContent).toContain('Hạng C · Tiên phong'); expect(status.textContent).toContain('1.250 / 2.000 XP');
     expect(screen.getByLabelText('Tóm tắt hôm nay').textContent).toContain('9/12');
     const stats = screen.getByLabelText('Chỉ số nhanh');
     expect(stats.querySelectorAll('li')).toHaveLength(2); expect(stats.textContent).toContain('6');
@@ -183,8 +183,8 @@ describe('Today as a status window (B-35)', () => {
     const onToggleQuest = vi.fn();
     render(<TodayPage {...props} onToggleQuest={onToggleQuest} dashboard={dashboard([{ ...quest('b', 'PENDING', 'Buổi A'), xpReward: 40 }])}/>);
     const card = screen.getByLabelText('Việc tiếp theo');
-    expect(card.textContent).toContain('+40 XP'); expect(card.textContent).toContain('MAIN QUEST');
-    await userEvent.click(within(card).getByRole('button', { name: /Bắt đầu buổi tập/ }));
+    expect(card.textContent).toContain('+40 XP'); expect(card.textContent).toContain('VIỆC CHÍNH HÔM NAY');
+    await userEvent.click(within(card).getByRole('button', { name: /Bắt đầu buổi tập|Mở danh sách việc|Xem chi tiết/ }));
     expect(screen.getByRole('dialog', { name: 'Buổi A' })).toBeTruthy();
     expect(onToggleQuest).not.toHaveBeenCalled();
   });
@@ -195,13 +195,13 @@ describe('Main Quest start button for a gym session', () => {
     const gym = { ...quest('g', 'PENDING', 'Buổi A'), objectives: [{ id: 'o', title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10, value: 0 }] } as QuestDto;
     const setLog = { list: async () => [], record: async () => [], remove: async () => [], last: async () => ({ date: null, sets: [] }) };
     render(<TodayPage {...props} setLog={setLog} onToggleQuest={() => {}} dashboard={dashboard([gym])}/>);
-    await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập|Mở danh sách việc|Xem chi tiết/ }));
     expect(await screen.findByRole('button', { name: 'Hoàn thành set' })).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'Thoát' }));
     expect(screen.getByRole('button', { name: /Xác nhận hoàn thành/ })).toBeTruthy();
     cleanup();
     render(<TodayPage {...props} setLog={setLog} onToggleQuest={() => {}} dashboard={dashboard([quest('b', 'PENDING', 'Piano')])}/>);
-    await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập|Mở danh sách việc|Xem chi tiết/ }));
     expect(screen.queryByRole('button', { name: 'Hoàn thành set' })).toBeNull();
     expect(screen.getByRole('button', { name: /Xác nhận hoàn thành/ })).toBeTruthy();
   });

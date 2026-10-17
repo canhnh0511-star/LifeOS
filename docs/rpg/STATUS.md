@@ -45,3 +45,10 @@ B-29 → B-30 → B-31. Các thay đổi B-25..B-28, B-32 và tài liệu này c
 - Tương phản: chữ nhạt `#aab6c7` trên `#0b1018`/`#151e2a` đạt 9,3:1 và 8,2:1; chữ chính 14,4:1 (AA).
 - Luồng thật đã chạy: nạp giáo án → Tập từng set → ghi set → Thống kê; Lịch tuần; Thư viện bài tập → chi tiết; Nhân vật/Kho đồ.
 - **Chưa làm được:** iPhone thật/safe-area/nút Back/PWA cài đặt, bản Railway, test backend, màn hình đọc (VoiceOver). Backend cho vật phẩm/huy hiệu gym (B-29) chưa làm.
+
+## Đợt chỉnh dễ dùng (owner phản hồi 2026-10-17: "khó dùng, không thân thiện")
+Owner chọn cả 4 nhóm: màn Hôm nay rối, chữ khó hiểu, nhiều bước để tập, menu khó tìm. Đã làm (chỉ frontend, XP/contract không đổi):
+- Hôm nay: đầu trang gọn, hàng lối tắt (Lịch tuần, Thư viện, Giáo án), "Việc chính hôm nay" ngay dưới, danh sách "Việc hôm nay"; ô số, chỉ số nhanh và rương gom vào mục gập "Tổng quan và phần thưởng" (tự mở khi có rương chưa mở).
+- Việt hoá nhãn (Workspace, Main Quest, Level, Build your journey, Progress is power, DEMO MODE...), bỏ mục sidebar không bấm được.
+- Tập: nhập thẳng số rep/kg (dấu phẩy hoặc chấm), nhãn rõ cho từng ô, nút "Kết thúc buổi tập · +XP" ngay trong màn tập khi đã đủ set (cùng xác nhận như nút trong chi tiết); số set/rep lấy từ dòng checklist của giáo án thay vì mặc định thư viện.
+- Đã kiểm chạy thật (backend thật + Chrome): nạp giáo án → tập đủ set → kết thúc buổi → "Hoàn thành! +40 XP", không lỗi API.

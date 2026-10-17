@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, Layers3, Menu, RotateCcw, Settings2, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { CalendarDays, Menu, RotateCcw, Settings2, Sparkles, X } from 'lucide-react';
 import { api, isDemo } from './api';
 import { exportDemoData, resetDemoData } from './api/mockClient';
 import { clearDayRecords } from './api/dayRecords';
@@ -164,29 +164,25 @@ export default function App() {
   return <div className="app-shell">
     <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
       <div className="sidebar-top"><Logo/><button className="mobile-close icon-btn" aria-label="Đóng menu" onClick={() => setMenuOpen(false)}><X size={20}/></button></div>
-      <div className="sidebar-section-label">WORKSPACE</div>
+      <div className="sidebar-section-label">MENU</div>
       <nav className="side-nav" aria-label="Điều hướng chính">{primaryNav.map(item => <button key={item.id} className={`nav-item ${tab === item.id ? 'active' : ''}`} aria-current={tab === item.id ? 'page' : undefined} onClick={() => goTo(item.id)}><item.icon size={19}/><span>{item.title}</span>{tab === item.id && <span className="nav-indicator"/>}</button>)}</nav>
-      <div className="sidebar-separator"/>
-      <div className="sidebar-section-label">YOUR SYSTEM</div>
-      <div className="sidebar-link"><Layers3 size={17}/><span>Personal growth OS</span></div>
-      <div className="sidebar-link"><ShieldCheck size={17}/><span>Private by design</span></div>
       <div className="sidebar-spacer"/>
-      <div className="sidebar-tip"><span className="tip-icon"><Sparkles size={18}/></span><strong>Little steps, big gains.</strong><p>Không cần hoàn hảo. Chỉ cần tốt hơn hôm qua một chút.</p><div className="tip-glow"/></div>
-      <button className="profile-mini" onClick={() => setModal('settings')}><span className="avatar">C</span><span className="profile-text"><strong>{dashboard?.user.displayName || 'Life OS User'}</strong><small>Personal workspace</small></span><Settings2 size={17}/></button>
+      <div className="sidebar-tip"><span className="tip-icon"><Sparkles size={18}/></span><strong>Từng bước nhỏ, tiến bộ lớn.</strong><p>Không cần hoàn hảo. Chỉ cần tốt hơn hôm qua một chút.</p><div className="tip-glow"/></div>
+      <button className="profile-mini" onClick={() => setModal('settings')}><span className="avatar">C</span><span className="profile-text"><strong>{dashboard?.user.displayName || 'Bạn'}</strong><small>Tài khoản và cài đặt</small></span><Settings2 size={17}/></button>
     </aside>
     {menuOpen && <button className="sidebar-scrim" aria-label="Đóng menu" onClick={() => setMenuOpen(false)}/>}
     <div className="main-area">
-      <header className="topbar"><div className="topbar-left"><button className="mobile-menu icon-btn" aria-label="Mở menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><Menu size={21}/></button><span className="breadcrumb">Workspace</span><span className="slash">/</span><strong>{primaryNav.find(n => n.id === tab)?.title}</strong></div><div className="topbar-right"><span className="demo-pill"><span/> {isDemo ? 'DEMO MODE' : 'CONNECTED'}</span><span className="top-date"><CalendarDays size={16}/> {formatDate(today, { day: 'numeric', month: 'short', year: 'numeric' })}</span><button onClick={() => setModal('settings')} aria-label="Cài đặt" className="icon-btn top-settings"><Settings2 size={20}/></button><button onClick={() => setModal('settings')} aria-label="Tài khoản và cài đặt" className="top-avatar">C</button></div></header>
+      <header className="topbar"><div className="topbar-left"><button className="mobile-menu icon-btn" aria-label="Mở menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><Menu size={21}/></button><span className="breadcrumb">Không gian của bạn</span><span className="slash">/</span><strong>{primaryNav.find(n => n.id === tab)?.title}</strong></div><div className="topbar-right"><span className="demo-pill"><span/> {isDemo ? 'CHẾ ĐỘ THỬ' : 'ĐÃ KẾT NỐI'}</span><span className="top-date"><CalendarDays size={16}/> {formatDate(today, { day: 'numeric', month: 'short', year: 'numeric' })}</span><button onClick={() => setModal('settings')} aria-label="Cài đặt" className="icon-btn top-settings"><Settings2 size={20}/></button><button onClick={() => setModal('settings')} aria-label="Tài khoản và cài đặt" className="top-avatar">C</button></div></header>
       <main className="page-content" data-dialog-fallback tabIndex={-1}>
         {error && <div role="alert" className="error-banner">{error}<button onClick={refresh}>Thử lại <RotateCcw size={14}/></button></div>}
         {loading && !dashboard ? <div className="loading-shell"><div className="loader"/><p>Đang chuẩn bị hành trình của bạn...</p></div> : <>
-          {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')} setLog={setLog} loadDay={loadDay} habits={habits} weekly={weekly} goTo={goTo}/>}
+          {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')} setLog={setLog} loadDay={loadDay} habits={habits} onAddToHabit={addToSession} weekly={weekly} goTo={goTo}/>}
           {tab === 'journey' && <JourneyPage onAddToHabit={addToSession} journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')}/>}
           {tab === 'character' && <CharacterPage loadBadges={loadBadges} dashboard={dashboard} items={items} busyItemCode={busyItemCode} onEquip={item => wear(item, true)} onUnequip={item => wear(item, false)}/>}
           {tab === 'body' && <BodyPage metrics={metrics} failed={metricsFailed} onRetry={() => { void reloadMetrics(); }} today={today} busy={bodyBusy} onRecord={recordMeasure} onRemoveEntry={removeMeasure} onCreate={createMetric} onDelete={deleteMetric}/>}
           {tab === 'insights' && <InsightsPage analytics={analytics} period={period} onPeriod={setPeriod} currentStreak={dashboard?.progress.currentStreak || 0} loadStats={loadStats}/>}
         </>}
-        <footer className="footer"><span>© Life OS · Built for progress, not perfection.</span><span>Version 0.1.0 · {isDemo ? 'Mock API' : 'Real API'} · Asia/Ho_Chi_Minh</span></footer>
+        <footer className="footer"><span>© Life OS · Tiến bộ, không cần hoàn hảo.</span><span>Phiên bản 0.1.0 · {isDemo ? 'Dữ liệu thử' : 'Máy chủ thật'} · Asia/Ho_Chi_Minh</span></footer>
       </main>
     </div>
     <nav className="bottom-nav" aria-label="Điều hướng mobile">{primaryNav.map(item => <button key={item.id} className={tab === item.id ? 'active' : ''} aria-current={tab === item.id ? 'page' : undefined} onClick={() => goTo(item.id)}><item.icon size={21}/><span>{item.title}</span></button>)}</nav>

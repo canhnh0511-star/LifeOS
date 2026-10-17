@@ -3,7 +3,7 @@ import { Check, Clock3, Dumbbell, Pause, Pin, PinOff, Play, RotateCcw, Timer, Un
 import type { QuestDto, QuestObjectiveDto } from '../api/types';
 import { difficultyForXp, difficultyLabel } from '../domain/difficulty';
 import { categoryLabel } from '../domain/rules';
-import { exerciseByName, muscleLabel } from '../domain/exerciseLibrary';
+import { exerciseByName, isLibraryLine, muscleLabel } from '../domain/exerciseLibrary';
 import { clock, elapsedMs, isRunning, loadTimer, pauseTimer, saveTimer, startTimer, idleTimer, type TimerState } from '../ui/focusTimer';
 import { Modal } from './Modal';
 import { ExerciseSets, useSetLog, type SetLogApi } from './SetLog';
@@ -27,7 +27,8 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
   const [training, setTraining] = useState(autoTrain && !!setLog && quest.status !== 'COMPLETED' && quest.objectives.some(o => !!exerciseByName(o.title)));
   const [detail, setDetail] = useState<string | null>(null);
   const log = useSetLog(setLog, quest.habitId, date);
-  const loggable = setLog ? quest.objectives.map(o => exerciseByName(o.title)).filter((e): e is NonNullable<typeof e> => !!e) : [];
+  // The plan can prescribe other numbers than the library default (e.g. 2 sets instead of 3): the checklist line is the truth (target = sets x reps, step = reps).
+  const loggable = setLog ? quest.objectives.flatMap(o => { const e = exerciseByName(o.title); if (!e || !isLibraryLine(o)) return []; const sets = o.step > 0 && o.target % o.step === 0 ? o.target / o.step : e.sets; return [{ ...e, sets, reps: o.step > 0 ? o.step : e.reps }]; }) : [];
   const done = quest.status === 'COMPLETED';
   const running = isRunning(timer), resting = restEndsAt !== null && restEndsAt > now;
   useEffect(() => { if (!running && !resting) return; const id = setInterval(() => setNow(Date.now()), 500); return () => clearInterval(id); }, [running, resting]);
@@ -43,7 +44,7 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
   const suggestedRest = suggested?.restSeconds;
   const detailExercise = detail ? exerciseByName(detail) : undefined;
   if (detailExercise) return <ExerciseDetail exercise={detailExercise} onClose={() => setDetail(null)}/>;
-  if (training && setLog) return <ActiveWorkout quest={quest} date={date} exercises={loggable} sets={log.sets} busy={log.busy} error={log.error} last={setLog.last} onRecord={log.record} onRemove={log.remove} onClose={() => setTraining(false)}/>;
+  if (training && setLog) return <ActiveWorkout quest={quest} date={date} exercises={loggable} sets={log.sets} busy={log.busy} error={log.error} last={setLog.last} onRecord={log.record} onRemove={log.remove} onFinish={quest.status === 'COMPLETED' ? undefined : () => { onToggle(quest); setTraining(false); }} xp={quest.xpReward} onClose={() => setTraining(false)}/>;
   return <Modal title={quest.title} onClose={onClose} sheet>
     <div className="sheet">
       <p className="sheet-meta"><Clock3 size={14}/> {quest.targetMinutes} phút · {categoryLabel(quest.category)} · <Zap size={14}/> {done ? 'Đã nhận' : '+'}{quest.xpReward} XP <span className={`diff-chip diff-${d.toLowerCase()}`}>{difficultyLabel[d]}</span></p>

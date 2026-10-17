@@ -44,7 +44,7 @@ describe('Celebration', () => {
   it('is a labelled modal dialog that takes focus and gives it back on Escape', async () => {
     render(<Harness data={{ level: 5, areas: [] }}/>); const trigger = screen.getByText('trigger');
     await userEvent.click(trigger);
-    const dialog = screen.getByRole('dialog', { name: 'LEVEL UP!' });
+    const dialog = screen.getByRole('dialog', { name: 'LÊN CẤP!' });
     expect(dialog.getAttribute('aria-modal')).toBe('true');
     expect(dialog.contains(document.activeElement)).toBe(true);
     await userEvent.keyboard('{Escape}');

@@ -10,7 +10,7 @@ type Day = { state: 'loading' } | { state: 'error' } | { state: 'ok'; data: Dail
 interface Props { today: string; selectedDate: string; loadDay: (date: string) => Promise<DailyDashboardDto>; onPick: (date: string) => void; onClose: () => void; }
 
 /**
- * The week at a glance (B-36): Monday to Sunday, one card per day with its sessions (or "Nghỉ"), the Main Quest marked.
+ * The week at a glance (B-36): Monday to Sunday, one card per day with its sessions (or "Nghỉ"), the Việc chính marked.
  * Days after today are a preview only; a past day or today can be opened in the Today screen.
  */
 export function WeekPlan({ today, selectedDate, loadDay, onPick, onClose }: Props) {
@@ -43,7 +43,7 @@ export function WeekPlan({ today, selectedDate, loadDay, onPick, onClose }: Prop
           : quests.length === 0 ? <small className="wk-note"><Moon size={13}/> Nghỉ / hồi phục</small>
           : <ul className="wk-quests">{quests.map(q => <li key={q.habitId} className={q.status === 'COMPLETED' ? 'is-done' : ''}>
               {q.status === 'COMPLETED' ? <Check size={14} aria-label="Đã xong"/> : <Clock3 size={14} aria-hidden="true"/>}
-              <span>{q.title}{main === q.habitId && <b className="wk-main"><Star size={11}/> Main Quest</b>}</span><small>{q.targetMinutes} phút</small></li>)}</ul>;
+              <span>{q.title}{main === q.habitId && <b className="wk-main"><Star size={11}/> Việc chính</b>}</span><small>{q.targetMinutes} phút</small></li>)}</ul>;
         return <li key={d} className={`wk-day${isToday ? ' is-today' : ''}${future ? ' is-future' : ''}`} aria-label={`${WEEKDAY_SHORT[i]} ${formatDate(d, { day: 'numeric', month: 'numeric', year: undefined })}${isToday ? ', hôm nay' : ''}`}>
           <div className="wk-date"><strong>{WEEKDAY_SHORT[i]}</strong><small>{formatDate(d, { day: 'numeric', month: 'numeric', year: undefined })}</small></div>
           <div className="wk-body">{body}</div>

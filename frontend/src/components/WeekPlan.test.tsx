@@ -17,7 +17,7 @@ describe('week plan (B-36)', () => {
     open();
     const mon = screen.getByLabelText('T2 19/10'), wed = screen.getByLabelText('T4 21/10, hôm nay');
     expect(await within(mon).findByText('Buổi A')).toBeTruthy();
-    expect(await within(wed).findByText('Main Quest')).toBeTruthy();
+    expect(await within(wed).findByText('Việc chính')).toBeTruthy();
     expect(await within(screen.getByLabelText('T3 20/10')).findByText(/Nghỉ/)).toBeTruthy();
     await waitFor(() => expect(screen.getByText(/1\/2 nhiệm vụ/)).toBeTruthy());
     expect(screen.getAllByRole('listitem').length).toBeGreaterThanOrEqual(7);
