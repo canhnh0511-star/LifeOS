@@ -39,7 +39,6 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   const [opened, setOpened] = useState(loadOpened);
   const cur = dashboard?.progress;
   const total = dashboard?.scheduledCount || 0, done = dashboard?.completedCount || 0;
-  const dayPct = pct(done, total);
   const levelPct = cur ? pct(cur.totalXp - cur.levelStartXp, cur.nextLevelXp - cur.levelStartXp) : 0;
   const level = cur?.level || 1, stage = stageForLevel(level), rank = stage.rank;
   const weeklyDone = weekly?.completedCount ?? 0, weeklyTotal = weekly?.scheduledCount ?? 0;
@@ -60,9 +59,9 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   const rewardHint = !rewards.length ? '' : (unopened ? 'Chạm vào rương để mở' + (nextChest ? ' · ' : '') : '') + (nextChest ? `Còn ${Math.max(1, nextChest.threshold - done)} nhiệm vụ để mở ${tierName(nextChest.tier)}` : unopened ? '' : 'Đã mở hết rương');
   const NextIcon = next ? categoryIcons[next.category] : null;
   return <>
-    <div className="page-header today-banner"><div><h1>{isToday ? <>Hôm <span className="text-gradient">nay</span></> : <span className="text-gradient">Ngày đã chọn</span>}</h1><p>{dateText(selectedDate)} · {total === 0 ? 'chưa có nhiệm vụ nào' : `${done}/${total} nhiệm vụ đã xong`}</p></div><button className="btn btn-outlined" onClick={onNewHabit}><Plus size={17}/> Thói quen mới</button></div>
-    <div className="today-simple">
-      <section className="hunter-status" aria-label="Trạng thái nhân vật">
+    <section className="today-hero" aria-label="Trạng thái nhân vật">
+      <div className="hero-top"><div><h1>{isToday ? <>Hôm <span className="text-gradient">nay</span></> : <span className="text-gradient">Ngày đã chọn</span>}</h1><p>{dateText(selectedDate)} · {total === 0 ? 'chưa có nhiệm vụ nào' : `${done}/${total} nhiệm vụ đã xong`}</p></div><button className="btn btn-outlined hero-new" onClick={onNewHabit} aria-label="Thói quen mới"><Plus size={17}/><span>Thói quen mới</span></button></div>
+      <div className="hunter-status">
         <button className="hunter-main" onClick={() => goTo('character')} aria-label={`Level ${level}, hạng ${rank}, ${stage.name}, xem nhân vật`}>
           <span className="hunter-level">Lv. {level}</span>
           <span className="hunter-title">Hạng {rank} · {stage.name}</span>
@@ -70,14 +69,27 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
           <small>{number(cur?.totalXp || 0)} / {number(cur?.nextLevelXp || 0)} XP</small>
         </button>
         <span className="hunter-rank"><RankBadge level={level} size="lg" decorative/></span>
-      </section>
+      </div>
+    </section>
+    <div className="today-simple">
+      {next && NextIcon && <article className="next-up" aria-label="Việc tiếp theo">
+        <div className="next-up-label">NHIỆM VỤ HÔM NAY · MAIN QUEST <Difficulty xp={next.xpReward}/><span className="next-up-xp"><Zap size={13}/> +{next.xpReward} XP</span></div>
+        <div className="next-up-main"><IconBubble icon={NextIcon} tone={categoryColors[next.category]}/><div><h2>{next.title}</h2><small><Clock3 size={13}/> {next.targetMinutes} phút · {categoryLabel(next.category)} · +{next.xpReward} XP{next.objectives.length > 0 && ` · ${metCount(next.objectives)}/${next.objectives.length} việc`}</small></div></div>
+        {isRunning(loadTimer(next.habitId, selectedDate)) && <small className="timer-running" role="status"><Timer size={13}/> Đồng hồ buổi tập đang chạy</small>}
+        {next.objectives.length > 0
+          ? <>
+              <ObjectiveList quest={next} onSet={(o, v) => onSetObjective(next, o, v)}/>
+              <button className="btn btn-quiet next-up-quick" disabled={busyId === next.habitId} onClick={() => onToggleQuest(next)}><Check size={16}/> Đánh dấu xong tất cả</button>
+            </>
+          : <button className="btn btn-primary" disabled={busyId === next.habitId} onClick={() => onToggleQuest(next)}><Check size={17}/> Hoàn thành</button>}
+        <button className="btn btn-primary next-up-start" onClick={() => setDetailId(next.habitId)}><ClipboardList size={17}/> Bắt đầu buổi tập</button>
+      </article>}
       <div className="today-tiles" aria-label="Tóm tắt hôm nay">
         <div className="today-tile" title="Số ngày liên tiếp hoàn thành ít nhất một nửa nhiệm vụ trong ngày"><Flame size={22}/><span><small>Chuỗi ngày</small><strong>{dashboard?.dayStreak || 0} ngày</strong></span></div>
         <div className="today-tile"><Zap size={22}/><span><small>{isToday ? 'XP hôm nay' : 'XP ngày này'}</small><strong>+{dashboard?.earnedXpToday || 0}</strong></span></div>
         <div className="today-tile" title="Nhiệm vụ đã xong trên số có lịch trong 7 ngày qua"><CalendarDays size={22}/><span><small>7 ngày qua</small><strong>{weeklyDone}/{weeklyTotal}</strong></span></div>
         <div className="today-tile"><Check size={22}/><span><small>Hôm nay</small><strong>{done}/{total}</strong></span></div>
       </div>
-      <div className="today-progress-line" aria-hidden="true"><ProgressBar value={dayPct} variant="green" size="slim"/></div>
       {(cur?.areas?.length ?? 0) > 0 && <section className="quick-stats" aria-label="Chỉ số nhanh">
         <h2 className="quick-stats-title">Chỉ số nhanh</h2>
         <ul>{cur!.areas.map(a => { const Icon = categoryIcons[a.category]; return <li key={a.category}><Icon size={20} aria-hidden="true"/><strong>{a.level}</strong><small>{categoryLabel(a.category)}</small></li>; })}</ul>
@@ -95,18 +107,6 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
         })}</ul>
       </section>}
 
-      {next && NextIcon && <article className="next-up" aria-label="Việc tiếp theo">
-        <div className="next-up-label">NHIỆM VỤ HÔM NAY · MAIN QUEST <Difficulty xp={next.xpReward}/><span className="next-up-xp"><Zap size={13}/> +{next.xpReward} XP</span></div>
-        <div className="next-up-main"><IconBubble icon={NextIcon} tone={categoryColors[next.category]}/><div><h2>{next.title}</h2><small><Clock3 size={13}/> {next.targetMinutes} phút · {categoryLabel(next.category)} · +{next.xpReward} XP{next.objectives.length > 0 && ` · ${metCount(next.objectives)}/${next.objectives.length} việc`}</small></div></div>
-        {isRunning(loadTimer(next.habitId, selectedDate)) && <small className="timer-running" role="status"><Timer size={13}/> Đồng hồ buổi tập đang chạy</small>}
-        {next.objectives.length > 0
-          ? <>
-              <ObjectiveList quest={next} onSet={(o, v) => onSetObjective(next, o, v)}/>
-              <button className="btn btn-quiet next-up-quick" disabled={busyId === next.habitId} onClick={() => onToggleQuest(next)}><Check size={16}/> Đánh dấu xong tất cả</button>
-            </>
-          : <button className="btn btn-primary" disabled={busyId === next.habitId} onClick={() => onToggleQuest(next)}><Check size={17}/> Hoàn thành</button>}
-        <button className="btn btn-primary next-up-start" onClick={() => setDetailId(next.habitId)}><ClipboardList size={17}/> Bắt đầu buổi tập</button>
-      </article>}
       {allDone && <article className="next-up next-up-done" aria-label="Đã xong hôm nay">
         <div className="next-up-main"><PartyPopper size={28}/><div><h2>Bạn đã hoàn thành hết hôm nay.</h2><small>Nghỉ ngơi, hoặc xem nhân vật của bạn tiến bộ thế nào.</small></div></div>
         <button className="btn btn-secondary" onClick={() => goTo('character')}>Xem nhân vật</button>
