@@ -5,7 +5,7 @@ import { difficultyForXp, difficultyLabel } from '../domain/difficulty';
 import { categoryLabel } from '../domain/rules';
 import { exerciseByName, isLibraryLine, muscleLabel } from '../domain/exerciseLibrary';
 import { clock, elapsedMs, isRunning, loadTimer, pauseTimer, saveTimer, startTimer, idleTimer, type TimerState } from '../ui/focusTimer';
-import { Modal } from './Modal';
+import { InlinePanel } from './InlinePanel';
 import { ExerciseSets, useSetLog, type SetLogApi } from './SetLog';
 import { ActiveWorkout } from './ActiveWorkout';
 import { ExerciseDetail } from './ExerciseDetail';
@@ -44,7 +44,7 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
   const suggestedRest = suggested?.restSeconds;
   const detailExercise = detail ? exerciseByName(detail) : undefined;
   if (training && setLog) return <ActiveWorkout quest={quest} date={date} exercises={loggable} sets={log.sets} busy={log.busy} error={log.error} last={setLog.last} onRecord={log.record} onRemove={log.remove} onFinish={quest.status === 'COMPLETED' ? undefined : () => { onToggle(quest); setTraining(false); }} xp={quest.xpReward} onClose={() => setTraining(false)}/>;
-  return <Modal title={quest.title} onClose={onClose} sheet>
+  return <InlinePanel title={quest.title} onClose={onClose}>
     <div className="sheet">
       <p className="sheet-meta"><Clock3 size={14}/> {quest.targetMinutes} phút · {categoryLabel(quest.category)} · <Zap size={14}/> {done ? 'Đã nhận' : '+'}{quest.xpReward} XP <span className={`diff-chip diff-${d.toLowerCase()}`}>{difficultyLabel[d]}</span></p>
       {loggable.length > 0 && <p className="xd-chips" aria-label="Nhóm cơ của buổi">{[...new Set(loggable.map(e => e.group))].map(g => <span key={g} className="diff-chip">{muscleLabel[g]}</span>)}</p>}
@@ -91,5 +91,5 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
           : <button className="btn btn-secondary" disabled={busy} onClick={() => setConfirmUndo(true)}><Undo2 size={16}/> Hoàn tác</button>)
         : <button className="btn btn-primary" disabled={busy} onClick={() => onToggle(quest)}><Check size={17}/> Xác nhận hoàn thành</button>}
     </div>
-  </Modal>;
+  </InlinePanel>;
 }

@@ -2,7 +2,7 @@
 
 Nguồn: `docs/LIFE_OS_SOLO_LEVELING_GYM_REFOCUS.md` §8–9; bằng chứng: `docs/audit/PHASE0_AUDIT.md`. Ticket cũ còn hiệu lực: `docs/tickets/` (B-25 → B-41, B-11 → B-13).
 
-**Nguyên tắc giao diện (owner 2026-10-17):** chi tiết bài tập **không** mở popup và **không** chuyển sang màn riêng; bung ra ngay tại chỗ (chạm để mở, "Thu gọn" để đóng, mỗi lần một bài trong danh sách). Hình minh hoạ (4b) cũng nằm trong khối bung ra đó và trên thẻ bài đang tập.
+**Nguyên tắc giao diện (owner 2026-10-17):** chi tiết bài tập **không** mở popup và **không** chuyển sang màn riêng; bung ra ngay tại chỗ (chạm để mở, "Thu gọn" để đóng, mỗi lần một bài trong danh sách; buổi tập và màn đang tập cũng mở tại chỗ trong Hôm nay). Hình minh hoạ (4b) cũng nằm trong khối bung ra đó và trên thẻ bài đang tập.
 
 **Phase 1 — dùng được (P0)**, mỗi mục có test:
 1. ✅ (2026-10-17, mock + test) Hôm nay chưa có giáo án: nút "Tạo lịch tập mẫu" là hành động chính; việc không phải gym thu gọn. *Kiểm:* test TodayPage + ảnh 390px.
@@ -18,7 +18,7 @@ Nguồn: `docs/LIFE_OS_SOLO_LEVELING_GYM_REFOCUS.md` §8–9; bằng chứng: `d
 5. ✅ (2026-10-17, mock + 330 test) Nav 4 mục Hôm nay · Bài tập · Tiến độ · Nhân vật (ẩn, không xoá Hành trình/Số đo).
 
 6. ✅ (2026-10-17, mock + 335 test) Màn tập: "Đã xong x/y bài", gợi ý động tác một dòng, "Lần trước", nhãn "Set N"/✓ cho từng set, nút "Tạm dừng" (set lưu ngay). **Chưa làm:** thời gian đã tập (cần mốc bắt đầu đáng tin), ảnh bài.
-6b. ✅ (2026-10-17, mock + 337 test) Chi tiết bài mở tại chỗ ở: tab Bài tập, thư viện, màn đang tập ("Kỹ thuật"), danh sách bài trong buổi. **Còn là popup/sheet:** chi tiết nhiệm vụ của Hôm nay và chính màn đang tập (đang chờ owner nói có muốn đổi không).
+6b. ✅ (2026-10-17, mock + 339 test) Không còn popup/sheet cho chi tiết: chi tiết bài mở tại chỗ (tab Bài tập, thư viện, màn tập, checklist) và chi tiết buổi tập + màn đang tập mở ngay trong trang Hôm nay, dưới đúng thẻ vừa bấm (`InlinePanel`: tự cuộn tới, focus vào tiêu đề, Esc hoặc "Thu gọn" để đóng). Chỉ còn dialog thật cho: hộp mở rương, cài đặt, form tạo/sửa, nạp giáo án.
 7. Tổng kết buổi tập (số bài/set, thời lượng nếu đo được, XP, bước tiếp theo) — chưa làm; làm sau 4b.
 
 **Phase 2 — RPG (P1):** hoàn thành buổi thưởng XP đúng một lần (đã có), tổng kết buổi, huy hiệu, avatar. **Phase 3 — hoàn thiện (P2):** QA di động, offline/lỗi, truy cập.

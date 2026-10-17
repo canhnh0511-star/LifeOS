@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { BookOpen, CalendarDays, Check, ChevronLeft, ChevronRight, Circle, ClipboardList, Dumbbell, Clock3, Timer, Flame, Lock, PartyPopper, Plus, Zap } from 'lucide-react';
 import type { AnalyticsDto, HabitDto, DailyDashboardDto, DailyRewardDto, QuestDto, QuestObjectiveDto } from '../api/types';
 import { stageForLevel } from '../domain/characterStage';
@@ -78,6 +78,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
     setLog.list(next.habitId, selectedDate).then(sets => { if (live) setLoggedSets(sets.length); }, () => { if (live) setLoggedSets(0); });
     return () => { live = false; };
   }, [setLog, nextIsGym, next?.habitId, selectedDate, detailId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const panel = detail ? <QuestSheet key={`${detail.habitId}:${autoTrain}`} autoTrain={autoTrain} setLog={setLog} quest={detail} date={selectedDate} busy={busyId === detail.habitId} onClose={() => { setDetailId(null); setAutoTrain(false); }} onToggle={onToggleQuest} onSetObjective={onSetObjective} main={next?.habitId === detail.habitId} pinned={pinnedId === detail.habitId} canPin={isToday} onPin={pin}/> : null;
   const NextIcon = next ? categoryIcons[next.category] : null;
   return <>
     {showWeek && loadDay && <WeekPlan today={today} selectedDate={selectedDate} loadDay={loadDay} onPick={d => { onSelectDate(() => d); setShowWeek(false); }} onClose={() => setShowWeek(false)}/>}
@@ -110,6 +111,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
           {next.objectives.length === 0 && <button className="btn btn-quiet next-up-quick" disabled={busyId === next.habitId} onClick={() => onToggleQuest(next)}><Check size={16}/> Hoàn thành</button>}
         </div>
       </article>}
+      {detail && next?.habitId === detail.habitId && panel}
       {!noPlan && gymNudge}
       {allDone && <article className="next-up next-up-done" aria-label="Đã xong hôm nay">
         <div className="next-up-main"><PartyPopper size={28}/><div><h2>Bạn đã hoàn thành hết hôm nay.</h2><small>Nghỉ ngơi, hoặc xem nhân vật của bạn tiến bộ thế nào.</small></div></div>
@@ -121,7 +123,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
           <div className="date-controls"><button aria-label="Ngày trước" onClick={() => onSelectDate(d => moveDate(d, -1))}><ChevronLeft size={17}/></button><span>{isToday ? 'Hôm nay' : formatDate(selectedDate, { day: 'numeric', month: 'short' })}</span><button disabled={selectedDate >= today} aria-label="Ngày tiếp theo" onClick={() => onSelectDate(d => moveDate(d, 1))}><ChevronRight size={17}/></button></div></div>
         <div className="quest-list">{!dashboard?.quests.length
           ? <EmptyState icon={CalendarDays} title="Không có nhiệm vụ trong ngày này" details="Tạo một thói quen mới hoặc chọn ngày khác." action={<><button className="btn btn-secondary" onClick={onNewHabit}><Plus size={16}/> Tạo thói quen</button>{onImportPlan && <button className="btn btn-quiet" onClick={onImportPlan}><Dumbbell size={16}/> Nạp giáo án gym</button>}</>}/>
-          : pendingFirst(dashboard.quests).map(q => {
+          : pendingFirst(dashboard.quests).map(q => { const renderQuest = () => {
             const Icon = categoryIcons[q.category]; const completed = q.status === 'COMPLETED';
             if (q.objectives.length > 0) {
               // A quest with a checklist is a card, not one big button: its lines are the controls.
@@ -135,7 +137,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
               <span className="quest-body"><strong>{q.title}</strong><small><Clock3 size={13}/> {q.targetMinutes} phút <i/> {categoryLabel(q.category)} <Difficulty xp={q.xpReward}/>{next?.habitId === q.habitId && <b className="main-tag">Trọng tâm</b>}</small></span>
               <span className={`xp-tag ${completed ? 'earned' : ''}`}>{completed ? <Check size={13}/> : <Zap size={13}/>} {completed ? 'Xong' : `+${q.xpReward} XP`}</span>
             </button><button type="button" className="quest-detail-btn" aria-label={`Chi tiết ${q.title}`} onClick={() => setDetailId(q.habitId)}><ClipboardList size={17}/></button></div>;
-          })}</div>
+          }; return <Fragment key={q.habitId}>{renderQuest()}{detail?.habitId === q.habitId && next?.habitId !== q.habitId && panel}</Fragment>; })}</div>
       </article>
       <details className="panel today-more" open={unopened || undefined}>
         <summary>Tổng quan và phần thưởng</summary>
@@ -164,7 +166,6 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
 
       </details>
     </div>
-    {detail && <QuestSheet key={`${detail.habitId}:${autoTrain}`} autoTrain={autoTrain} setLog={setLog} quest={detail} date={selectedDate} busy={busyId === detail.habitId} onClose={() => { setDetailId(null); setAutoTrain(false); }} onToggle={onToggleQuest} onSetObjective={onSetObjective} main={next?.habitId === detail.habitId} pinned={pinnedId === detail.habitId} canPin={isToday} onPin={pin}/>}
     {opening && <ChestOpening reward={opening} onRevealed={() => setOpened(prev => withOpened(prev, selectedDate, opening.tier, true))} onClose={() => setOpening(null)}/>}
   </>;
 }

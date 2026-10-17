@@ -103,7 +103,7 @@ describe('TodayPage', () => {
     expect(document.querySelector('.quests-panel .quest-card')).not.toBeNull();
     expect(document.querySelector('.quests-panel button.quest-row')).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập|Mở danh sách việc|Xem chi tiết/ }));
-    const sheet = screen.getByRole('dialog');
+    const sheet = screen.getByRole('region', { name: 'Tập chân' });
     expect(sheet.querySelectorAll('.objective')).toHaveLength(2);
     await userEvent.click(sheet.querySelector('button[aria-label^="Tăng Squat"]')!);
     expect(onSetObjective).toHaveBeenCalledWith(expect.objectContaining({ habitId: 'gym' }), expect.objectContaining({ id: 'o1' }), 15);
@@ -131,10 +131,10 @@ describe('TodayPage', () => {
     const onToggleQuest = vi.fn();
     render(<TodayPage {...props} onToggleQuest={onToggleQuest} dashboard={dashboard([quest('b', 'PENDING', 'Tập chân')])}/>);
     await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập|Mở danh sách việc|Xem chi tiết/ }));
-    const dialog = screen.getByRole('dialog', { name: 'Tập chân' });
+    const dialog = screen.getByRole('region', { name: 'Tập chân' });
     expect(within(dialog).getByRole('button', { name: 'Xác nhận hoàn thành' })).toBeTruthy();
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Đóng' }));
-    expect(screen.queryByRole('dialog')).toBeNull(); expect(onToggleQuest).not.toHaveBeenCalled();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Thu gọn' }));
+    expect(screen.queryByRole('region', { name: 'Tập chân' })).toBeNull(); expect(onToggleQuest).not.toHaveBeenCalled();
   });
   it('opens the detail from any quest row without completing it, and flags a timer that is still running', async () => {
     const onToggleQuest = vi.fn();
@@ -142,7 +142,7 @@ describe('TodayPage', () => {
     render(<TodayPage {...props} onToggleQuest={onToggleQuest} dashboard={dashboard([quest('a', 'PENDING', 'Vai'), quest('b', 'PENDING', 'Lưng')])}/>);
     expect(screen.getByRole('status').textContent).toContain('Đồng hồ buổi tập đang chạy');
     await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Lưng' }));
-    expect(screen.getByRole('dialog', { name: 'Lưng' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Lưng' })).toBeTruthy();
     expect(onToggleQuest).not.toHaveBeenCalled();
   });
   it('pins another quest as Main from its detail, keeps it single, remembers it, and lists finished quests last', async () => {
@@ -153,7 +153,7 @@ describe('TodayPage', () => {
     expect(screen.getByLabelText('Việc tiếp theo').textContent).toContain('Vai');
     await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Lưng' }));
     await userEvent.click(screen.getByRole('button', { name: /Đặt làm nhiệm vụ trọng tâm/ }));
-    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Đóng' }));
+    await userEvent.click(within(screen.getByRole('region', { name: 'Lưng' })).getByRole('button', { name: 'Thu gọn' }));
     expect(screen.getByLabelText('Việc tiếp theo').textContent).toContain('Lưng');
     expect(screen.getAllByText('Trọng tâm')).toHaveLength(1);
     unmount();
@@ -161,7 +161,7 @@ describe('TodayPage', () => {
     expect(screen.getByLabelText('Việc tiếp theo').textContent).toContain('Lưng');
     await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Lưng' }));
     await userEvent.click(screen.getByRole('button', { name: /Bỏ ghim/ }));
-    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Đóng' }));
+    await userEvent.click(within(screen.getByRole('region', { name: 'Lưng' })).getByRole('button', { name: 'Thu gọn' }));
     expect(screen.getByLabelText('Việc tiếp theo').textContent).toContain('Vai');
   });
 });
@@ -185,7 +185,7 @@ describe('Today as a status window (B-35)', () => {
     const card = screen.getByLabelText('Việc tiếp theo');
     expect(card.textContent).toContain('+40 XP'); expect(card.textContent).toContain('VIỆC CHÍNH HÔM NAY');
     await userEvent.click(within(card).getByRole('button', { name: /Bắt đầu buổi tập|Mở danh sách việc|Xem chi tiết/ }));
-    expect(screen.getByRole('dialog', { name: 'Buổi A' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Buổi A' })).toBeTruthy();
     expect(onToggleQuest).not.toHaveBeenCalled();
   });
 });
@@ -204,6 +204,31 @@ describe('Main Quest start button for a gym session', () => {
     await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập|Mở danh sách việc|Xem chi tiết/ }));
     expect(screen.queryByRole('button', { name: 'Hoàn thành set' })).toBeNull();
     expect(screen.getByRole('button', { name: /Xác nhận hoàn thành/ })).toBeTruthy();
+  });
+});
+
+describe('quest detail and workout open in place (no popup)', () => {
+  const gym = { ...quest('g', 'PENDING', 'Buổi A'), objectives: [{ id: 'o', title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10, value: 0 }] } as QuestDto;
+  const setLog = { list: async () => [], record: async () => [], remove: async () => [], last: async () => ({ date: null, sets: [] }) };
+  it('opens the workout right under the main quest card, with no dialog, and Escape collapses it', async () => {
+    render(<TodayPage {...props} setLog={setLog} onToggleQuest={() => {}} dashboard={dashboard([gym])}/>);
+    await userEvent.click(screen.getByRole('button', { name: 'Bắt đầu buổi tập' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const panel = await screen.findByRole('region', { name: 'Đang tập · Buổi A' });
+    expect(screen.getByLabelText('Việc tiếp theo').compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Hoàn thành set' })).toBeTruthy();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('region', { name: /Đang tập/ })).toBeNull();
+    expect(screen.getByLabelText('Việc tiếp theo')).toBeTruthy(); // Today is still there
+  });
+  it('opens a non-main quest right below its own row', async () => {
+    render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={dashboard([quest('a', 'PENDING', 'Vai'), quest('b', 'PENDING', 'Lưng')])}/>);
+    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Lưng' }));
+    const panel = screen.getByRole('region', { name: 'Lưng' });
+    const row = screen.getByRole('button', { name: 'Chi tiết Lưng' }).closest('.quest-row-wrap')!;
+    expect(row.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(row.nextElementSibling).toBe(panel);
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });
 

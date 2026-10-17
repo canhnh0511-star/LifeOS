@@ -412,3 +412,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]),select{min-height
 /* Exercise detail opens in place */
 .xd-inline{padding:14px;margin:8px 0 4px;border:1px solid var(--border,#2a3646);border-radius:14px;background:#0f1722}.xd-collapse{justify-self:start}
 .xl-list>li.is-open{display:grid;gap:0}.xl-list>li.is-open>.xl-item{border-bottom-left-radius:0;border-bottom-right-radius:0}
+
+/* Quest detail and workout open in place on Today (no sheet) */
+.inline-panel{display:grid;gap:14px;scroll-margin-top:72px;border-color:var(--accent,#c6f541)}
+.inline-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.inline-panel-head h2{margin:2px 0 0;font-size:20px;outline:none}
