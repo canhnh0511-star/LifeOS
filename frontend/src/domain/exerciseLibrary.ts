@@ -78,3 +78,11 @@ export function planRequest(program: Program, startDate: string): ImportHabitPla
     habits: program.days.map(d => ({ title: d.title, targetMinutes: program.sessionMinutes ?? DEFAULT_MINUTES, xpReward: program.sessionXp ?? DEFAULT_XP, weekdays: d.weekdays, objectives: d.exerciseIds.map(id => objectiveFor(prescribed(d, id))) }))
   }] };
 }
+
+/** The checklist of a habit with one library exercise added at the end; null when the habit already has it (by name). */
+export function withExercise(habit: { objectives: { title: string; target: number; unit: string; step: number }[] }, e: Exercise): ObjectiveInput[] | null {
+  if (habit.objectives.some(o => o.title.trim().toLowerCase() === e.name.toLowerCase())) return null;
+  return [...habit.objectives.map(o => ({ title: o.title, target: o.target, unit: o.unit, step: o.step })), objectiveFor(e)];
+}
+/** A habit is a gym session when at least one checklist line is a library exercise. */
+export const isGymHabit = (habit: { status?: string; objectives: { title: string }[] }) => habit.status !== 'ARCHIVED' && habit.objectives.some(o => !!exerciseByName(o.title));

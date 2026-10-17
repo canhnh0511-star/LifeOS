@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { BookOpen, Dumbbell, Plus, Target } from 'lucide-react';
-import type { AchievementDto, AnalyticsDto, BossDto, GoalDto, HabitDto, JourneyDto } from '../api/types';
+import type { ObjectiveInput, AchievementDto, AnalyticsDto, BossDto, GoalDto, HabitDto, JourneyDto } from '../api/types';
 import { categoryLabel } from '../domain/rules';
 import { AchievementList } from '../components/AchievementList';
 import { ExerciseLibrary } from '../components/ExerciseLibrary';
@@ -12,16 +12,16 @@ import { pct } from '../ui/format';
 interface Props {
   journey: JourneyDto | null | undefined; goals: GoalDto[]; habits: HabitDto[]; achievements: AchievementDto[]; weekly: AnalyticsDto | null;
   busyBossId: string | null; onBoss: (boss: BossDto, defeat: boolean) => void;
-  onToggleGoal: (goal: GoalDto) => void; onToggleHabit: (habit: HabitDto) => void; onEditHabit: (habit: HabitDto) => void; onNewGoal: () => void; onNewHabit: () => void; onImportPlan?: () => void;
+  onToggleGoal: (goal: GoalDto) => void; onToggleHabit: (habit: HabitDto) => void; onEditHabit: (habit: HabitDto) => void; onNewGoal: () => void; onNewHabit: () => void; onImportPlan?: () => void; onAddToHabit?: (habitId: string, objectives: ObjectiveInput[]) => Promise<void>;
 }
 
-export function JourneyPage({ journey, goals, habits, achievements, weekly, busyBossId, onBoss, onToggleGoal, onToggleHabit, onEditHabit, onNewGoal, onNewHabit, onImportPlan }: Props) {
+export function JourneyPage({ journey, goals, habits, achievements, weekly, busyBossId, onBoss, onToggleGoal, onToggleHabit, onEditHabit, onNewGoal, onNewHabit, onImportPlan, onAddToHabit }: Props) {
   const [library, setLibrary] = useState(false);
   const journeyPct = journey ? pct(journey.elapsedDays, journey.durationDays) : 0;
   const journeyDonePct = journey ? pct(journey.completedToDate, journey.totalScheduledToDate) : 0;
   const categoryStats = useMemo(() => Object.fromEntries((weekly?.categories || []).map(c => [c.category, c])), [weekly]);
   return <>
-            {library && <ExerciseLibrary onClose={() => setLibrary(false)}/>}
+            {library && <ExerciseLibrary onClose={() => setLibrary(false)} habits={habits} onAddToHabit={onAddToHabit}/>}
             <div className="page-header"><div><div className="eyebrow"><span className="eyebrow-dash"/> PLAN WITH PURPOSE</div><h1>Build your <span className="text-gradient">journey.</span></h1><p>Chuyển mục tiêu lớn thành những thói quen nhỏ có thể duy trì.</p></div><button className="btn btn-primary" onClick={onNewGoal}><Plus size={18}/> Mục tiêu mới</button></div>
             <article className="journey-banner"><div><span className="section-eyebrow">YOUR TRANSFORMATION</span><h2>{journey?.title || '66-Day Transformation'}</h2><p>Thời gian trôi qua không đồng nghĩa với tiến bộ. Mình theo dõi cả hai.</p></div><div className="journey-stats"><div><strong>{journey?.elapsedDays || 0}<small> / {journey?.durationDays || 66}</small></strong><span>Ngày đã qua (chỉ là thời gian)</span><ProgressBar value={journeyPct} variant="blue" size="slim"/></div><div><strong>{journeyDonePct}<small>%</small></strong><span>Hoàn thành nhiệm vụ có lịch</span><small className="journey-count">{journey?.completedToDate ?? 0}/{journey?.totalScheduledToDate ?? 0} nhiệm vụ đến hôm nay</small><ProgressBar value={journeyDonePct} variant="green" size="slim"/></div></div></article>
             {journey && <section className="campaign-section" aria-label="Chiến dịch"><div className="section-header"><div><div className="section-eyebrow">CAMPAIGN</div><h2>Bản đồ cửa ải</h2></div></div><CampaignMap chapters={journey.chapters} busyBossId={busyBossId} onDefeat={b => onBoss(b, true)} onUndo={b => onBoss(b, false)}/></section>}

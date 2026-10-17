@@ -41,7 +41,7 @@
 | B-36 | Màn lịch tập tuần (màn 2) | Xong (nút "Lịch tuần" ở Hôm nay; T2–CN, Main Quest, xem trước ngày tới) |
 | B-37 | Chi tiết buổi tập dạng danh sách và chi tiết bài (màn 3, 4) | Chi tiết bài xong (nhóm cơ chính/phụ, dụng cụ, độ khó, loại bài, kỹ thuật); danh sách buổi tập còn lại |
 | B-38 | Màn đang tập từng set (màn 5) | Xong; chỉ frontend, giữ màu xanh |
-| B-39 | Thư viện bài tập và lọc nhóm cơ (màn 6, 7) | Xong (tìm, lọc nhóm cơ, mở chi tiết; vào từ Hành trình); thêm bài vào buổi tập chưa làm |
+| B-39 | Thư viện bài tập và lọc nhóm cơ (màn 6, 7) | Xong (tìm, lọc nhóm cơ, mở chi tiết; vào từ Hành trình); thêm bài vào buổi tập xong (checklist mới có hiệu lực từ ngày mai) |
 | B-40 | Nhân vật và kho đồ theo ảnh tham chiếu (màn 8, 9; gộp B-29) | Xong phần frontend: thẻ "Cấp kế tiếp", lọc kho đồ, gợi ý nơi rơi. Vật phẩm/huy hiệu gym cần backend nên hoãn |
 | B-41 | Thống kê tập luyện (màn 10) | Xong (mục Tập luyện trong Thống kê, 7/30 ngày, tính ở client từ nhật ký set; không có tab "Tất cả" vì chưa có endpoint tổng hợp) |
 

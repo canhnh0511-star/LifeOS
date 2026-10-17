@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
-import { EXERCISES, muscleLabel, type Exercise, type MuscleGroup } from '../domain/exerciseLibrary';
+import type { HabitDto, ObjectiveInput } from '../api/types';
+import { EXERCISES, isGymHabit, muscleLabel, withExercise, type Exercise, type MuscleGroup } from '../domain/exerciseLibrary';
 import { infoFor, levelLabel } from '../domain/exerciseInfo';
 import { Modal } from './Modal';
 import { ExerciseDetail } from './ExerciseDetail';
@@ -15,12 +16,35 @@ export function filterExercises(list: readonly Exercise[], group: MuscleGroup | 
 }
 
 /** The exercise library (B-39): search, filter by muscle group, open an exercise for its detail. */
-export function ExerciseLibrary({ onClose }: { onClose: () => void }) {
+function AddToSession({ exercise, habits, onAdd }: { exercise: Exercise; habits: HabitDto[]; onAdd: (habitId: string, objectives: ObjectiveInput[]) => Promise<void> }) {
+  const sessions = habits.filter(isGymHabit);
+  const [id, setId] = useState(sessions[0]?.id ?? '');
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  if (sessions.length === 0) return <p className="form-note">Chưa có buổi tập nào. Nạp giáo án gym ở Hành trình để thêm bài vào buổi.</p>;
+  const habit = sessions.find(h => h.id === id) ?? sessions[0];
+  const add = async () => {
+    const next = withExercise(habit, exercise);
+    if (!next) { setMsg({ ok: false, text: `${habit.title} đã có bài này.` }); return; }
+    setBusy(true);
+    try { await onAdd(habit.id, next); setMsg({ ok: true, text: `Đã thêm vào ${habit.title}. Danh sách mới có hiệu lực từ ngày mai, các ngày đã qua giữ nguyên.` }); }
+    catch (e) { setMsg({ ok: false, text: e instanceof Error ? e.message : 'Không thêm được bài.' }); }
+    finally { setBusy(false); }
+  };
+  return <section aria-label="Thêm vào buổi tập" className="xd-add">
+    <h3 className="sheet-h">Thêm vào buổi tập</h3>
+    <select aria-label="Chọn buổi tập" value={habit.id} onChange={e => { setId(e.target.value); setMsg(null); }}>{sessions.map(h => <option key={h.id} value={h.id}>{h.title}</option>)}</select>
+    <button type="button" className="btn btn-primary" disabled={busy} onClick={add}>Thêm {exercise.sets}×{exercise.reps} {exercise.unit === 'giây' ? 'giây' : 'rep'}</button>
+    {msg && <p role={msg.ok ? 'status' : 'alert'} className={msg.ok ? 'form-note' : 'set-error'}>{msg.text}</p>}
+  </section>;
+}
+
+export function ExerciseLibrary({ onClose, habits, onAddToHabit }: { onClose: () => void; habits?: HabitDto[]; onAddToHabit?: (habitId: string, objectives: ObjectiveInput[]) => Promise<void> }) {
   const [group, setGroup] = useState<MuscleGroup | null>(null);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState<Exercise | null>(null);
   const shown = useMemo(() => filterExercises(EXERCISES, group, query), [group, query]);
-  if (open) return <ExerciseDetail exercise={open} onClose={() => setOpen(null)}/>;
+  if (open) return <ExerciseDetail exercise={open} onClose={() => setOpen(null)} action={habits && onAddToHabit && <AddToSession exercise={open} habits={habits} onAdd={onAddToHabit}/>}/>;
   return <Modal title="Thư viện bài tập" onClose={onClose} sheet>
     <div className="xl">
       <label className="xl-search"><Search size={16}/><input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Tìm bài tập, nhóm cơ, dụng cụ" aria-label="Tìm bài tập"/></label>
