@@ -477,3 +477,21 @@ h1,h2,h3,.hunter-level,.section-eyebrow,.eyebrow,.rank-card-state{font-family:va
 .session-summary{border:1px solid rgba(198,250,85,.4);border-radius:12px;padding:12px 14px;background:linear-gradient(180deg,rgba(198,250,85,.07),transparent)}
 .session-summary dl{margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px}.session-summary dt{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted)}
 .session-summary dd{margin:2px 0 0;font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--text-strong)}.session-summary .session-xp{color:var(--accent)}
+
+/* Hệ thống window + Tiến độ (designed screen) */
+.sys-head{display:grid;gap:4px;margin:4px 0 6px}.sys-eyebrow{font-family:var(--font-display);font-weight:500;font-size:11px;letter-spacing:1.8px;color:#8fa3bf}.sys-head h1{margin:0;font-family:var(--font-display);font-weight:600;font-size:26px;line-height:30px;color:#f4f8fd}
+.sys-panel{position:relative;margin-top:22px;padding:22px 14px 10px;border:1px solid var(--sys-line);border-radius:6px;background:var(--sys-glass);box-shadow:0 0 26px rgba(61,140,255,.14)}
+.sys-panel-tag{position:absolute;top:-9px;left:14px;max-width:calc(100% - 28px);padding:0 8px;background:#060a12;font-family:var(--font-display);font-weight:600;font-size:11px;line-height:16px;letter-spacing:2px;color:var(--sys-cyan)}
+.sys-red{border-color:rgba(255,92,122,.45);background:linear-gradient(180deg,rgba(44,18,34,.7),rgba(10,18,34,.92));box-shadow:0 0 24px rgba(255,92,122,.1)}.sys-red .sys-panel-tag{color:#ff8ca2}
+.sys-purple{border-color:rgba(168,126,255,.45)}.sys-purple .sys-panel-tag{color:#c3a6ff}.sys-green{border-color:rgba(198,250,85,.4)}.sys-green .sys-panel-tag{color:#c6fa55}
+.progress-page{max-width:560px;margin:0 auto;padding-bottom:12px}
+.prog-days{list-style:none;margin:0;padding:0;display:flex;justify-content:space-between}.prog-days li{width:36px;display:grid;justify-items:center;gap:4px;font-size:11px;color:#9fb0c8}
+.prog-dot{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center}.prog-dot.is-done{background:#c6fa55;border-color:#c6fa55;color:#0b1405}
+.prog-days li.is-today{color:var(--sys-cyan);font-weight:700}.prog-days li.is-today .prog-dot{border:2px solid var(--sys-cyan);box-shadow:0 0 14px rgba(92,200,255,.6)}.prog-days li.is-today .prog-dot.is-done{background:#c6fa55}
+.prog-boss{margin-top:12px;padding-top:10px;display:flex;gap:10px;align-items:center;border-top:1px solid rgba(255,255,255,.08)}.prog-boss img{width:40px;height:40px;border-radius:6px;object-fit:cover;border:1px solid rgba(255,92,122,.4)}.prog-boss>div{flex:1;min-width:0}
+.prog-boss p{margin:0;display:flex;justify-content:space-between;gap:8px;font-size:12px;line-height:16px;color:#c9d5e6}.prog-boss p strong{font-weight:600}
+.prog-bar{margin-top:5px;height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}.prog-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#ff5c7a,#ff8ca2)}
+.prog-lifts,.prog-groups{list-style:none;margin:0;padding:0}.prog-lifts li{display:flex;align-items:center;gap:10px;min-height:56px;border-bottom:1px solid rgba(255,255,255,.07)}.prog-lifts li:last-child{border-bottom:0}.prog-lifts li>div{flex:1;min-width:0;display:grid;justify-items:start;gap:2px}
+.prog-lifts strong{font-size:13.5px;line-height:18px;font-weight:600;color:#f4f8fd}.prog-gain{height:18px;padding:0 7px;border-radius:9px;background:rgba(198,250,85,.14);color:#c6fa55;font-size:11px;line-height:18px;font-weight:700}
+.prog-lifts b{width:62px;text-align:right;font-family:var(--font-display);font-weight:700;font-size:20px;color:#f4f8fd}.prog-lifts b small{font-size:12px;font-weight:500;color:#9fb0c8}
+.prog-groups li{display:grid;grid-template-columns:52px 1fr 34px;align-items:center;gap:12px;height:32px;font-size:13px;color:#c9d5e6}.prog-groups .prog-bar{margin:0}.prog-groups .prog-bar i{background:var(--sys-cyan)}.prog-groups b{text-align:right;font-family:var(--font-display);color:#f4f8fd}.prog-groups li.is-empty b{color:#ffb05c}

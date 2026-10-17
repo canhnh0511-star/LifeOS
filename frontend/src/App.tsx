@@ -16,6 +16,7 @@ import { Logo } from './components/primitives';
 import { SettingsPanel } from './components/SettingsPanel';
 import { useLifeOsData } from './hooks/useLifeOsData';
 import { InsightsPage } from './pages/InsightsPage';
+import { loadGymHistory } from './domain/gymHistory';
 import { JourneyPage } from './pages/JourneyPage';
 import { CharacterPage } from './pages/CharacterPage';
 import { BodyPage } from './pages/BodyPage';
@@ -40,8 +41,8 @@ const markWizardSeen = () => { try { localStorage.setItem(WIZARD_SEEN, '1'); } c
 export default function App() {
   const [tab, setTab] = useState<Tab>(tabFromHash);
   const [selectedDate, setSelectedDate] = useState(todayInTimezone());
-  const [period, setPeriod] = useState<'7d' | '30d'>('7d');
-  const { dashboard, goals, habits, achievements, items, metrics, metricsFailed, reloadMetrics, analytics, weekly, loading, error, refresh: refreshNow } = useLifeOsData(selectedDate, period);
+  const period = '7d' as const;
+  const { dashboard, goals, habits, achievements, items, metrics, metricsFailed, reloadMetrics, weekly, loading, error, refresh: refreshNow } = useLifeOsData(selectedDate, period);
   const [modal, setModal] = useState<ModalKind>(null);
   const [wizard, setWizard] = useState(false);
   const [editing, setEditing] = useState<HabitDto | null>(null);
@@ -136,7 +137,7 @@ export default function App() {
   const saveGoal = async (v: CreateGoalRequest) => { try { await api.createGoal(v); setModal(null); setNotice('Đã tạo mục tiêu mới.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi xảy ra.')); } };
   // Stable object so the sheet does not reload its sets on every render. Errors reach the sheet as messages, not toasts.
   const loadBadges = useMemo(() => () => api.getBadges(), []);
-  const loadStats = useMemo(() => (days: number) => api.getWorkoutStats(days), []);
+  const loadHistory = useMemo(() => () => loadGymHistory(api, today, 35), [today]);
   const loadDay = useMemo(() => (date: string) => api.getDashboard(date), []);
   const setLog = useMemo<SetLogApi>(() => ({ list: api.getWorkoutSets, record: api.recordWorkoutSet, remove: api.removeWorkoutSet, last: api.getLastWorkoutSets }), []);
   const importPlan = async (v: ImportHabitPlanRequest, replace: { goalIds: string[]; habitIds: string[] } = { goalIds: [], habitIds: [] }) => {
@@ -191,7 +192,7 @@ export default function App() {
           {tab === 'journey' && <JourneyPage onAddToHabit={addToSession} journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')}/>}
           {tab === 'character' && <CharacterPage loadBadges={loadBadges} dashboard={dashboard} items={items} busyItemCode={busyItemCode} onEquip={item => wear(item, true)} onUnequip={item => wear(item, false)}/>}
           {tab === 'body' && <BodyPage metrics={metrics} failed={metricsFailed} onRetry={() => { void reloadMetrics(); }} today={today} busy={bodyBusy} onRecord={recordMeasure} onRemoveEntry={removeMeasure} onCreate={createMetric} onDelete={deleteMetric}/>}
-          {tab === 'insights' && <InsightsPage analytics={analytics} period={period} onPeriod={setPeriod} currentStreak={dashboard?.progress.currentStreak || 0} loadStats={loadStats}/>}
+          {tab === 'insights' && <InsightsPage habits={habits} today={today} loadHistory={loadHistory}/>}
         </>}
         <footer className="footer"><span>© Life OS · Tiến bộ, không cần hoàn hảo.</span><span>Phiên bản 0.1.0 · {isDemo ? 'Dữ liệu thử' : 'Máy chủ thật'} · Asia/Ho_Chi_Minh</span></footer>
       </main>
