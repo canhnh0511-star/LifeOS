@@ -124,6 +124,16 @@ export const PROGRAMS: readonly Program[] = [
     { title: 'Toàn thân A', weekdays: [1], groups: ['LEGS', 'CHEST', 'BACK', 'SHOULDERS', 'CORE'], exerciseIds: ['back-squat', 'bench-press', 'barbell-row', 'overhead-press', 'plank'] },
     { title: 'Toàn thân B', weekdays: [3], groups: ['BACK', 'CHEST', 'LEGS', 'CORE'], exerciseIds: ['deadlift', 'incline-db-press', 'lat-pulldown', 'walking-lunge', 'hanging-leg-raise'] },
     { title: 'Toàn thân C', weekdays: [5], groups: ['LEGS', 'CHEST', 'BACK', 'ARMS'], exerciseIds: ['leg-press', 'push-up', 'seated-row', 'barbell-curl', 'triceps-pushdown'] }
+  ] },
+  { id: 'recomp-3', name: 'Tăng cơ · giảm mỡ toàn thân (3 buổi)', description: 'Thứ 2, 4, 6. Mỗi buổi tạ toàn thân 6 bài, 3 set, hợp người mới đang muốn giảm mỡ và lên cơ.',
+    goalNote: 'Toàn thân 3 buổi (thứ 2, 4, 6), mỗi buổi 6 bài 3 set × 10–12 rep, nghỉ 60–90 giây, dừng khi còn đủ sức làm thêm 2 rep. Thứ 3 và thứ 7: cardio nhẹ 30–40 phút (đi bộ dốc, đạp xe). Chủ nhật nghỉ. Ăn thấp hơn mức duy trì khoảng 500 kcal, đủ đạm. Khi làm đủ 3 × 12 thoải mái thì tăng tạ 2,5–5%.',
+    sessionMinutes: 55, sessionXp: 50, days: [
+    { title: 'Buổi A — Toàn thân (đẩy, kéo, chân)', weekdays: [1], groups: ['LEGS', 'CHEST', 'BACK', 'SHOULDERS', 'CORE'], exerciseIds: ['leg-press', 'machine-chest-press', 'lat-pulldown', 'db-shoulder-press', 'glute-bridge', 'plank'],
+      overrides: { 'machine-chest-press': { sets: 3, reps: 10 }, 'db-shoulder-press': { sets: 3, reps: 10 }, 'glute-bridge': { sets: 3, reps: 12 }, plank: { sets: 3, reps: 40 } } },
+    { title: 'Buổi B — Toàn thân (tạ đơn)', weekdays: [3], groups: ['LEGS', 'CHEST', 'BACK', 'SHOULDERS', 'CORE'], exerciseIds: ['goblet-squat', 'push-up', 'db-row', 'db-romanian-deadlift', 'db-lateral-raise', 'bird-dog'],
+      overrides: { 'goblet-squat': { sets: 3, reps: 10 }, 'push-up': { sets: 3, reps: 10 }, 'db-romanian-deadlift': { sets: 3, reps: 10 }, 'db-lateral-raise': { sets: 3, reps: 12 }, 'bird-dog': { sets: 3, reps: 10 } } },
+    { title: 'Buổi C — Toàn thân (kết hợp)', weekdays: [5], groups: ['LEGS', 'CHEST', 'BACK', 'SHOULDERS', 'CORE'], exerciseIds: ['leg-press', 'push-up', 'db-row', 'db-shoulder-press', 'glute-bridge', 'plank'],
+      overrides: { 'push-up': { sets: 3, reps: 10 }, 'db-shoulder-press': { sets: 3, reps: 10 }, 'glute-bridge': { sets: 3, reps: 12 }, plank: { sets: 3, reps: 40 } } }
   ] }
 ];
 

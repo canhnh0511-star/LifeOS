@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { EXERCISES, PROGRAMS, exerciseById, exercisesFor, muscleLabel, objectiveFor, exerciseByName, viName, planRequest, prescribed, type MuscleGroup } from './exerciseLibrary';
+import { goalFromTitle } from './planBuilder';
 
 describe('exercise library (B-32)', () => {
   it('has unique ids and names, and several exercises for every muscle group', () => {
@@ -84,5 +85,20 @@ describe('Vietnamese exercise names', () => {
     expect(viName('goblet squat ')).toBe('Squat ôm tạ trước ngực (Goblet)');
     expect(viName('Uống nước')).toBe('Uống nước');
     expect(objectiveFor(exerciseById('goblet-squat')).title).toBe('Goblet Squat');
+  });
+});
+
+describe('program "Tăng cơ · giảm mỡ toàn thân"', () => {
+  const p = PROGRAMS.find(x => x.id === 'recomp-3')!;
+  it('has three full-body sessions of 6 exercises, 3 sets each, on Monday, Wednesday and Friday', () => {
+    expect(p.days.map(d => d.weekdays[0])).toEqual([1, 3, 5]);
+    for (const d of p.days) { expect(d.exerciseIds).toHaveLength(6); for (const id of d.exerciseIds) expect(prescribed(d, id).sets).toBe(3); }
+  });
+  it('uses the twelve exercises of the plan, all in the library', () => {
+    const ids = new Set(p.days.flatMap(d => d.exerciseIds));
+    for (const id of ['leg-press', 'machine-chest-press', 'lat-pulldown', 'db-shoulder-press', 'glute-bridge', 'plank', 'goblet-squat', 'push-up', 'db-row', 'db-romanian-deadlift', 'db-lateral-raise', 'bird-dog']) expect(ids.has(id)).toBe(true);
+  });
+  it('is read as a muscle-gain plan so rest between sets is 60-90 seconds', () => {
+    expect(goalFromTitle(planRequest(p, '2026-10-19').goals[0].title)).toBe('MUSCLE');
   });
 });
