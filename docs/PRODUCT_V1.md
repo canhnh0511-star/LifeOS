@@ -9,4 +9,4 @@
 - **Ngoài phạm vi v1:** thói quen không phải gym, công việc, tài chính, lịch, dinh dưỡng, xã hội, mua hàng, kế hoạch do AI tạo chưa kiểm, cây kỹ năng lớn, hình phạt.
 - **Bất biến giữ nguyên:** ledger XP bất biến và idempotent; ngày theo timezone người dùng, thời điểm theo UTC; không đổi lịch hồi tố; không đụng dữ liệu người dùng (xem `docs/DOMAIN_RULES.md`).
 - **Giao diện:** giữ nền tối + xanh lục hiện tại; 2D; chữ Việt, tên Anh chỉ là phụ.
-- **Trạng thái:** bản nháp chờ owner duyệt; chưa thay thế CLAUDE.md.
+- **Trạng thái:** đã được owner duyệt hướng (2026-10-17, ADR-039); `CLAUDE.md` đã trỏ về file này.
