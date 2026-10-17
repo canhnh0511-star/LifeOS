@@ -27,7 +27,7 @@ describe('CharacterPage and the Nhân vật tab', () => {
   });
   it('shows the portrait for the current rank and opens the rank gallery in place', async () => {
     render(<CharacterPage dashboard={dashboard} items={[]} busyItemCode={null} onEquip={() => {}} onUnequip={() => {}}/>);
-    expect(screen.getByRole('img', { name: /Hạng E: gầy, mệt mỏi/ })).toBeTruthy();   // level 3 = rank E
+    expect(screen.getByRole('img', { name: /Hạng E: áo rách/ })).toBeTruthy();   // level 3 = rank E
     expect(screen.queryByRole('list', { name: 'Diện mạo theo hạng' })).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: /Diện mạo theo hạng/ }));
     const gallery = screen.getByRole('region', { name: 'Diện mạo theo hạng' });          // inline, not a dialog

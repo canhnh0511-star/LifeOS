@@ -2,7 +2,7 @@ import { stageForLevel } from '../domain/characterStage';
 
 /**
  * The hunter's portrait for the rank that `level` falls in. Cosmetic only (derived from the level, nothing stored).
- * `locked` dims it for a rank that is not reached yet. Source art is small, so keep `size` at or below ~200 CSS px.
+ * `locked` dims it for a rank that is not reached yet. Source art is 640px square, enough for ~210 CSS px on 3x screens.
  */
 export function RankPortrait({ level, size = 120, locked = false }: { level: number; size?: number; locked?: boolean }) {
   const stage = stageForLevel(level);

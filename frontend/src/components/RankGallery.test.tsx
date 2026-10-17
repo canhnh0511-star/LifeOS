@@ -9,7 +9,7 @@ afterEach(cleanup);
 describe('RankPortrait', () => {
   it('shows the portrait of the rank for that level, with a description in the alt text', () => {
     render(<RankPortrait level={7}/>);
-    const img = screen.getByRole('img', { name: /Hạng D.*áo khoác đen/ }) as HTMLImageElement;
+    const img = screen.getByRole('img', { name: /Hạng D.*rồng xanh lục/ }) as HTMLImageElement;
     expect(img.getAttribute('src')).toBe('/art/ranks/rank-d.jpg');
   });
   it('can be dimmed for a rank not reached yet', () => {
