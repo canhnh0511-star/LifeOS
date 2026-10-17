@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearDayRecords, exportDemoData, mockClient, resetDemoData, setDailyRewardsEnabled } from './mockClient';
+import { clearDayRecords } from './dayRecords';
+import { exportDemoData, mockClient, resetDemoData, setDailyRewardsEnabled } from './mockClient';
 import { ApiError } from './errors';
 import type { Weekday } from './types';
 import { levelProgress, moveDate, todayInTimezone } from '../domain/rules';
@@ -815,7 +816,7 @@ describe('quest checklists (B-17)', () => {
   });
 });
 
-describe('clearDayRecords (demo helper)', () => {
+describe('clearDayRecords', () => {
   it('forgets one day\'s sets, completion and progress without touching other days, and gives the XP back', async () => {
     freezeAt(D0);
     const day = await mockClient.getDashboard(D0);
@@ -825,13 +826,13 @@ describe('clearDayRecords (demo helper)', () => {
     await mockClient.completeQuest(h, D0);
     const earlier = moveDate(D0, -1);
     const kept = (await mockClient.getQuests(earlier)).filter(q => q.status === 'COMPLETED').length;
-    const r = await clearDayRecords(D0);
+    const r = await clearDayRecords(mockClient, D0);
     expect(r.sets).toBe(1); expect(r.completed).toBeGreaterThanOrEqual(1);
     expect(await mockClient.getWorkoutSets(h, D0)).toEqual([]);
     const after = await mockClient.getDashboard(D0);
     expect(after.quests.every(q => q.status === 'PENDING')).toBe(true);
     expect(after.progress.totalXp).toBeLessThanOrEqual(before);
     expect((await mockClient.getQuests(earlier)).filter(q => q.status === 'COMPLETED').length).toBe(kept);
-    expect(await clearDayRecords(D0)).toEqual({ sets: 0, completed: 0, progress: 0 });
+    expect(await clearDayRecords(mockClient, D0)).toEqual({ sets: 0, completed: 0, progress: 0 });
   });
 });

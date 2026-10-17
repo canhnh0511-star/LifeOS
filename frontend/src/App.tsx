@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, Layers3, Menu, RotateCcw, Settings2, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { api, isDemo } from './api';
-import { clearDayRecords, exportDemoData, resetDemoData } from './api/mockClient';
+import { exportDemoData, resetDemoData } from './api/mockClient';
+import { clearDayRecords } from './api/dayRecords';
 import type { ObjectiveInput, ImportHabitPlanRequest, MetricDto, ItemDto, BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, PatchHabit, QuestDto, QuestObjectiveDto, RewardEffectDto } from './api/types';
 import { formatDate, todayInTimezone } from './domain/rules';
 import { Celebration, hasCelebration, type CelebrationData } from './components/Celebration';
@@ -130,7 +131,16 @@ export default function App() {
   const loadStats = useMemo(() => (days: number) => api.getWorkoutStats(days), []);
   const loadDay = useMemo(() => (date: string) => api.getDashboard(date), []);
   const setLog = useMemo<SetLogApi>(() => ({ list: api.getWorkoutSets, record: api.recordWorkoutSet, remove: api.removeWorkoutSet, last: api.getLastWorkoutSets }), []);
-  const importPlan = async (v: ImportHabitPlanRequest) => { try { const r = await api.importHabitPlan(v); setModal(null); setNotice(`Đã nạp giáo án: ${r.habits.length} buổi tập.`); refresh(); } catch (e) { setNotice(failure(e, 'Không nạp được giáo án.')); } };
+  const importPlan = async (v: ImportHabitPlanRequest, replace: { goalIds: string[]; habitIds: string[] } = { goalIds: [], habitIds: [] }) => {
+    // The server refuses a plan whose goal is still active, so the old goal is archived first; if the import then fails, say so plainly.
+    let archived = 0;
+    try {
+      for (const id of replace.goalIds) { await api.updateGoal(id, { status: 'ARCHIVED' }); archived++; }
+      for (const id of replace.habitIds) { try { await api.updateHabit(id, { status: 'ARCHIVED' }); archived++; } catch { /* its goal is archived, so it stops showing anyway */ } }
+      const r = await api.importHabitPlan(v);
+      setModal(null); setNotice(`Đã nạp giáo án: ${r.habits.length} buổi tập.${archived ? ' Giáo án cũ đã được lưu trữ, biến mất từ ngày mai.' : ''}`); refresh();
+    } catch (e) { setNotice(failure(e, 'Không nạp được giáo án.') + (archived ? ' Giáo án cũ đã được lưu trữ; hãy nạp lại hoặc khôi phục trong Hành trình.' : '')); refresh(); }
+  };
   const saveHabit = async (v: CreateHabitRequest) => { try { await api.createHabit(v); setModal(null); setNotice('Đã tạo thói quen mới.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi xảy ra.')); } };
   const addToSession = async (habitId: string, objectives: ObjectiveInput[]) => { await api.updateHabit(habitId, { objectives }); refresh(); };
   const saveHabitEdit = async (patch: PatchHabit) => {
@@ -144,9 +154,8 @@ export default function App() {
   const toggleHabit = async (habit: HabitDto) => { try { await api.updateHabit(habit.id, { status: habit.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' }); setNotice('Đã cập nhật thói quen. Có hiệu lực từ ngày mai.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi.')); } };
   const goTo = (screen: Tab) => { setTab(screen); window.location.hash = screen; setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   const clearToday = async () => {
-    if (!isDemo) return;
     if (!window.confirm('Xoá mọi ghi nhận của hôm nay (set đã ghi, buổi đã hoàn thành, tiến độ)? Giáo án giữ nguyên.')) return;
-    try { const r = await clearDayRecords(today); setModal(null); setNotice(`Đã xoá ghi nhận hôm nay: ${r.sets} set, ${r.completed} nhiệm vụ hoàn thành, ${r.progress} dòng tiến độ.`); refresh(); } catch (e) { setNotice(failure(e, 'Không xoá được ghi nhận hôm nay.')); }
+    try { const r = await clearDayRecords(api, today); setModal(null); setNotice(`Đã xoá ghi nhận hôm nay: ${r.sets} set, ${r.completed} nhiệm vụ hoàn thành, ${r.progress} dòng tiến độ.`); refresh(); } catch (e) { setNotice(failure(e, 'Không xoá được ghi nhận hôm nay.')); }
   };
   const reset = () => { if (!isDemo) return; if (!window.confirm('Khôi phục dữ liệu mẫu? Các thay đổi trên máy này sẽ mất.')) return; resetDemoData(); setSelectedDate(todayInTimezone()); setModal(null); setNotice('Đã khôi phục dữ liệu mẫu.'); refresh(); };
   const logout = async () => { try { await api.logout(); } catch (e) { setNotice(failure(e, 'Không đăng xuất được.')); return; } window.location.reload(); };
@@ -185,7 +194,7 @@ export default function App() {
       {modal === 'goal' && <GoalForm onClose={() => setModal(null)} onSave={saveGoal}/>}
       {modal === 'habit' && <HabitForm goals={goals} onClose={() => setModal(null)} onSave={saveHabit}/>}
       {modal === 'editHabit' && editing && <EditHabitForm habit={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={saveHabitEdit}/>}
-      {modal === 'plan' && <PlanImportForm onClose={() => setModal(null)} onImport={importPlan}/>}
+      {modal === 'plan' && <PlanImportForm onClose={() => setModal(null)} onImport={importPlan} existingHabits={habits} existingGoals={goals}/>}
       {modal === 'settings' && <SettingsPanel isDemo={isDemo} onExport={exportData} onReset={reset} onClearToday={clearToday} onLogout={logout}/>}
     </Modal>}
     {celebration && <Celebration data={celebration} onClose={() => setCelebration(null)}/>}

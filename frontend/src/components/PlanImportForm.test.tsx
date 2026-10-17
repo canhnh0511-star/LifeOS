@@ -43,3 +43,28 @@ describe.each(PROGRAMS)('importing $name into the mock API', program => {
     await expect(mockClient.importHabitPlan(planRequest(program, start))).rejects.toMatchObject({ status: 409 });
   });
 });
+
+describe('PlanImportForm replacing an existing plan', () => {
+  type H = import('../api/types').HabitDto; type G = import('../api/types').GoalDto;
+  const habit = (id: string, title: string, goalId = 'g1', status = 'ACTIVE') => ({ id, goalId, title, targetMinutes: 45, xpReward: 40, weekdays: [1], startDate: '2026-10-12', endDate: null, status, objectives: [] }) as unknown as H;
+  const goal = (id: string, title: string, status = 'ACTIVE') => ({ id, title, status, category: 'HEALTH', description: '' }) as unknown as G;
+  const planGoal = 'Gym — Tuần 1 — quay lại tập (45 phút)';
+  it('archives the old goal and its sessions (on by default) and passes their ids with the import', async () => {
+    const onImport = vi.fn().mockResolvedValue(undefined);
+    render(<PlanImportForm onClose={() => {}} onImport={onImport} existingGoals={[goal('g1', planGoal), goal('g2', 'Đạm')]} existingHabits={[habit('a', 'Buổi A — Ngực ưu tiên / Toàn thân'), habit('x', 'Uống nước', 'g2'), habit('z', 'Buổi B — Chân, lưng, vai', 'g1', 'ARCHIVED')]}/>);
+    expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByText(/Đã có giáo án này \(1 buổi/)).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: /Nạp giáo án/ }));
+    expect(onImport.mock.calls[0][1]).toEqual({ goalIds: ['g1'], habitIds: ['a'] });
+  });
+  it('replaces nothing when unchecked, and shows nothing when there is no old plan', async () => {
+    const onImport = vi.fn().mockResolvedValue(undefined);
+    render(<PlanImportForm onClose={() => {}} onImport={onImport} existingGoals={[goal('g1', planGoal)]} existingHabits={[habit('a', 'Buổi A — Ngực ưu tiên / Toàn thân')]}/>);
+    await userEvent.click(screen.getByRole('checkbox'));
+    await userEvent.click(screen.getByRole('button', { name: /Nạp giáo án/ }));
+    expect(onImport.mock.calls[0][1]).toEqual({ goalIds: [], habitIds: [] });
+    cleanup();
+    render(<PlanImportForm onClose={() => {}} onImport={onImport} existingGoals={[goal('g2', 'Đạm')]} existingHabits={[habit('x', 'Uống nước', 'g2')]}/>);
+    expect(screen.queryByRole('checkbox')).toBeNull();
+  });
+});

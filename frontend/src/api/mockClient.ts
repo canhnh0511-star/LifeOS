@@ -697,17 +697,5 @@ export const mockClient:LifeOsApi={
   async getCurrentJourney(){await delay();return journey(load());}
 };
 export function resetDemoData(){localStorage.removeItem(DB_KEY);}
-/** Demo helper: forget what was recorded on one day (logged sets, completions, checklist progress) through the normal undo paths, so XP, chests and badges stay consistent. The plan itself is untouched. */
-export async function clearDayRecords(date:string):Promise<{sets:number;completed:number;progress:number}>{
-  let sets=0,completed=0,progress=0;
-  for(const q of await mockClient.getQuests(date)){
-    for(const s of await mockClient.getWorkoutSets(q.habitId,date)){await mockClient.removeWorkoutSet(q.habitId,date,s.exercise,s.setNo);sets++;}
-    if(q.status==='COMPLETED'){await mockClient.undoQuest(q.habitId,date);completed++;}
-  }
-  for(const q of await mockClient.getQuests(date)){
-    for(const o of q.objectives)if(o.value>0){await mockClient.setObjective(q.habitId,date,o.id,0);progress++;}
-  }
-  return {sets,completed,progress};
-}
 export function exportDemoData(){return JSON.stringify(load(),null,2);}
 export { categoryLabel };

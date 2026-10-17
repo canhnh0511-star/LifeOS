@@ -21,7 +21,7 @@ export function SettingsPanel({ isDemo, onExport, onReset, onLogout, onReload = 
         {faked && <button type="button" className="btn btn-quiet" onClick={() => setDemoDate(null)}>Dùng ngày thật</button>}</span></div>}
     <div className="settings-actions">
       <button className="btn btn-secondary" disabled={!isDemo} onClick={onExport}><Download size={16}/> Xuất dữ liệu JSON</button>
-      {isDemo && onClearToday && <button className="btn btn-secondary" onClick={onClearToday}><Eraser size={16}/> Xoá ghi nhận hôm nay</button>}
+      {onClearToday && <button className="btn btn-secondary" onClick={onClearToday}><Eraser size={16}/> Xoá ghi nhận hôm nay</button>}
       <button className="btn btn-danger" disabled={!isDemo} onClick={onReset}><RotateCcw size={16}/> Đặt lại dữ liệu mẫu</button>
     </div>
     {!isDemo && <div className="settings-actions"><button className="btn btn-secondary" onClick={onLogout}><LogOut size={16}/> Đăng xuất</button></div>}

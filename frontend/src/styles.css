@@ -390,3 +390,4 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]),select{min-height
 .top-settings{color:var(--text-muted)}
 @media(max-width:480px){.topbar .breadcrumb,.topbar .slash{display:none}.topbar-left strong{white-space:nowrap}.topbar-right{gap:6px}}
 @media(max-width:360px){.demo-pill{padding:0 8px;font-size:10px;letter-spacing:0}.topbar{padding-left:8px;padding-right:8px}.topbar-left{gap:4px}}
+.plan-replace{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.plan-replace input{margin-top:4px}

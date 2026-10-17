@@ -50,3 +50,12 @@ describe('demo date for trying future days', () => {
     expect(todayInTimezone()).toMatch(/^\d{4}-\d{2}-\d{2}$/); expect(demoToday()).toBeNull();
   });
 });
+
+describe('clear today button', () => {
+  it('is available with the real API too, and calls the handler', async () => {
+    const onClearToday = vi.fn();
+    render(<SettingsPanel isDemo={false} onExport={() => {}} onReset={() => {}} onLogout={() => {}} onClearToday={onClearToday}/>);
+    await userEvent.click(screen.getByRole('button', { name: /Xoá ghi nhận hôm nay/ }));
+    expect(onClearToday).toHaveBeenCalledTimes(1);
+  });
+});
