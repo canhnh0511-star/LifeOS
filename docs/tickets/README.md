@@ -39,9 +39,9 @@
 | B-34 | Nhật ký từng set/rep/mức tạ (backend + frontend) | Xong (ADR-037) |
 | B-35 | Hôm nay kiểu cửa sổ trạng thái (màn 1 của ảnh tham chiếu) | Xong; chỉ frontend, giữ màu xanh |
 | B-36 | Màn lịch tập tuần (màn 2) | Chưa làm, chờ owner duyệt |
-| B-37 | Chi tiết buổi tập dạng danh sách và chi tiết bài (màn 3, 4) | Chưa làm, chờ owner duyệt |
+| B-37 | Chi tiết buổi tập dạng danh sách và chi tiết bài (màn 3, 4) | Chi tiết bài xong (nhóm cơ chính/phụ, dụng cụ, độ khó, loại bài, kỹ thuật); danh sách buổi tập còn lại |
 | B-38 | Màn đang tập từng set (màn 5) | Xong; chỉ frontend, giữ màu xanh |
-| B-39 | Thư viện bài tập và lọc nhóm cơ (màn 6, 7) | Chưa làm, chờ owner duyệt |
+| B-39 | Thư viện bài tập và lọc nhóm cơ (màn 6, 7) | Xong (tìm, lọc nhóm cơ, mở chi tiết; vào từ Hành trình); thêm bài vào buổi tập chưa làm |
 | B-40 | Nhân vật và kho đồ theo ảnh tham chiếu (màn 8, 9; gộp B-29) | Chưa làm |
 | B-41 | Thống kê tập luyện (màn 10) | Chưa làm, chờ owner duyệt |
 

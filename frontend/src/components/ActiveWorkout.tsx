@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, Minus, Plus, Trash2 } from 'lucide-react';
+import { Check, ChevronLeft, Info, ChevronRight, Minus, Plus, Trash2 } from 'lucide-react';
 import type { QuestDto, WorkoutSetDto } from '../api/types';
 import type { Exercise } from '../domain/exerciseLibrary';
 import { muscleLabel } from '../domain/exerciseLibrary';
 import { clock } from '../ui/focusTimer';
 import { Modal } from './Modal';
+import { ExerciseDetail } from './ExerciseDetail';
 import { nextSetNo, type SetLogApi } from './SetLog';
 
 const WEIGHT_STEP = 2.5, REST_STEP = 15, REST_MIN = 15, REST_MAX = 600;
@@ -41,6 +42,7 @@ export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last,
   const [rest, setRest] = useState(() => savedRest(e));
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [showInfo, setShowInfo] = useState(false);
   const resting = restEndsAt !== null && restEndsAt > now;
   // Moving to another exercise resets the steppers to its plan and, for weights, to what was lifted last time.
   useEffect(() => {
@@ -67,11 +69,12 @@ export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last,
       <span className="aw-value" role="img" aria-label={`${label} hiện tại`}>{value}</span>
       <button type="button" className="aw-step" aria-label={`Tăng ${label}`} disabled={disInc} onClick={inc}><Plus size={18}/></button>
     </div>;
+  if (showInfo) return <ExerciseDetail exercise={e} onClose={() => setShowInfo(false)}/>;
   return <Modal title={`Đang tập · ${quest.title}`} onClose={onClose} sheet>
     <div className="aw">
       <div className="aw-nav">
         <button type="button" className="icon-btn" aria-label="Bài trước" disabled={index === 0} onClick={() => go(index - 1)}><ChevronLeft size={20}/></button>
-        <div><small>Bài {index + 1}/{exercises.length} · {muscleLabel[e.group]}</small><h3 className="aw-name">{e.name}</h3></div>
+        <div><small>Bài {index + 1}/{exercises.length} · {muscleLabel[e.group]}</small><h3 className="aw-name">{e.name}</h3><button type="button" className="btn btn-quiet aw-info" onClick={() => setShowInfo(true)}><Info size={15}/> Kỹ thuật</button></div>
         <button type="button" className="icon-btn" aria-label="Bài sau" disabled={index === exercises.length - 1} onClick={() => go(index + 1)}><ChevronRight size={20}/></button>
       </div>
       <div className="aw-dots" aria-label="Các set">{Array.from({ length: Math.max(e.sets, mine.length) }, (_, i) => {
