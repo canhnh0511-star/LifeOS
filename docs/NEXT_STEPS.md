@@ -9,6 +9,9 @@ Nguồn: `docs/LIFE_OS_SOLO_LEVELING_GYM_REFOCUS.md` §8–9; bằng chứng: `d
 4. ◐ (2026-10-17) Đủ chuẩn bị/cách tập/hít thở/lỗi cho 13 bài của giáo án tuần 1 (`domain/exerciseGuide.ts`, cần huấn luyện viên rà); 22 bài còn lại hiện "đang biên soạn"; chưa có ảnh động tác (nguồn có giấy phép hoặc minh hoạ tự vẽ). Chi tiết bài: chuẩn bị, 3–5 bước, hít thở, 2–3 lỗi thường gặp, ảnh hoặc "chưa có ảnh". *Kiểm:* test dữ liệu đủ trường cho mọi bài.
 5. ✅ (2026-10-17, mock + 330 test) Nav 4 mục Hôm nay · Bài tập · Tiến độ · Nhân vật (ẩn, không xoá Hành trình/Số đo).
 
+6. ✅ (2026-10-17, mock + 335 test) Màn tập: "Đã xong x/y bài", gợi ý động tác một dòng, "Lần trước", nhãn "Set N"/✓ cho từng set, nút "Tạm dừng" (set lưu ngay). **Chưa làm:** thời gian đã tập (cần mốc bắt đầu đáng tin), ảnh bài.
+7. Tổng kết buổi tập (số bài/set, thời lượng nếu đo được, XP, bước tiếp theo) — chưa làm.
+
 **Phase 2 — RPG (P1):** hoàn thành buổi thưởng XP đúng một lần (đã có), tổng kết buổi, huy hiệu, avatar. **Phase 3 — hoàn thiện (P2):** QA di động, offline/lỗi, truy cập.
 
 Chưa kiểm: bản deploy thật (cần tài khoản), iPhone thật/PWA, VoiceOver.

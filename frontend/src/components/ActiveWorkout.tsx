@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Check, ChevronLeft, Info, ChevronRight, Minus, Plus, Trash2 } from 'lucide-react';
-import type { QuestDto, WorkoutSetDto } from '../api/types';
+import type { LastWorkoutSetsDto, QuestDto, WorkoutSetDto } from '../api/types';
 import type { Exercise } from '../domain/exerciseLibrary';
 import { muscleLabel } from '../domain/exerciseLibrary';
+import { infoFor } from '../domain/exerciseInfo';
+import { guideFor } from '../domain/exerciseGuide';
 import { clock } from '../ui/focusTimer';
 import { Modal } from './Modal';
+import { ProgressBar } from './primitives';
 import { ExerciseDetail } from './ExerciseDetail';
 import { nextSetNo, type SetLogApi } from './SetLog';
 
@@ -16,6 +19,9 @@ function savedRest(e: Exercise): number {
   return e.restSeconds ?? 90;
 }
 const kg = (w: number) => String(w).replace('.', ',');
+const shortDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+/** "10 × 40 kg" for one set, "10 giây" for a hold. */
+const setText = (s: { reps: number; weightKg: number | null }, unit: string) => s.weightKg ? `${s.reps} × ${kg(s.weightKg)} kg` : `${s.reps} ${unit}`;
 const mineOf = (sets: readonly WorkoutSetDto[], e: Exercise) => sets.filter(s => s.exercise.toLowerCase() === e.name.toLowerCase());
 /** The first exercise that still has planned sets to do; the last one when everything is done. */
 export const firstOpenIndex = (exercises: readonly Exercise[], sets: readonly WorkoutSetDto[]) => {
@@ -55,13 +61,15 @@ export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last,
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [showInfo, setShowInfo] = useState(false);
+  const [previous, setPrevious] = useState<LastWorkoutSetsDto | null>(null);
+  const doneExercises = exercises.filter(x => mineOf(sets, x).length >= x.sets).length;
   const resting = restEndsAt !== null && restEndsAt > now;
   // Moving to another exercise resets the steppers to its plan and, for weights, to what was lifted last time.
   useEffect(() => {
-    setReps(e.reps); setRest(savedRest(e)); setWeight(0); let alive = true;
+    setReps(e.reps); setRest(savedRest(e)); setWeight(0); setPrevious(null); let alive = true;
     const own = mineOf(sets, e); const done = own[own.length - 1];
     if (done?.weightKg) setWeight(done.weightKg);
-    else last(e.name, date).then(r => { const w = r.sets.find(s => s.weightKg)?.weightKg; if (alive && w) setWeight(w); }).catch(() => { /* convenience only */ });
+    last(e.name, date).then(r => { if (!alive) return; setPrevious(r); const w = r.sets.find(s => s.weightKg)?.weightKg; if (w && !done?.weightKg) setWeight(w); }).catch(() => { /* convenience only */ });
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [e.id]);
@@ -84,14 +92,15 @@ export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last,
   if (showInfo) return <ExerciseDetail exercise={e} onClose={() => setShowInfo(false)}/>;
   return <Modal title={`Đang tập · ${quest.title}`} onClose={onClose} sheet>
     <div className="aw">
+      <div role="group" aria-label="Tiến độ buổi tập" className="aw-progress"><strong>Đã xong {doneExercises}/{exercises.length} bài</strong><ProgressBar value={Math.round(doneExercises / exercises.length * 100)} variant="green" size="slim"/></div>
       <div className="aw-nav">
         <button type="button" className="icon-btn" aria-label="Bài trước" disabled={index === 0} onClick={() => go(index - 1)}><ChevronLeft size={20}/></button>
-        <div><small>Bài {index + 1}/{exercises.length} · {muscleLabel[e.group]}</small><h3 className="aw-name">{e.nameVi ?? e.name}</h3><small className="aw-name-en" lang="en">{e.name}</small><button type="button" className="btn btn-quiet aw-info" onClick={() => setShowInfo(true)}><Info size={15}/> Kỹ thuật</button></div>
+        <div><small>Bài {index + 1}/{exercises.length} · {muscleLabel[e.group]}</small><h3 className="aw-name">{e.nameVi ?? e.name}</h3><small className="aw-name-en" lang="en">{e.name}</small><p className="aw-cue" aria-label="Gợi ý động tác">{guideFor(e.id)?.steps[0] ?? infoFor(e).cues[0]}</p>{previous && previous.date && previous.sets.length > 0 && <p className="aw-last">Lần trước ({shortDate(previous.date)}): {previous.sets.map(x => setText(x, unit)).join(' · ')}</p>}<button type="button" className="btn btn-quiet aw-info" onClick={() => setShowInfo(true)}><Info size={15}/> Kỹ thuật</button></div>
         <button type="button" className="icon-btn" aria-label="Bài sau" disabled={index === exercises.length - 1} onClick={() => go(index + 1)}><ChevronRight size={20}/></button>
       </div>
       <div className="aw-dots" aria-label="Các set">{Array.from({ length: Math.max(e.sets, mine.length) }, (_, i) => {
         const s = mine.find(m => m.setNo === i + 1);
-        return <span key={i} className={`aw-dot${s ? ' is-done' : i + 1 === setNo ? ' is-now' : ''}`}>{s ? `${s.reps}${s.weightKg ? ` × ${kg(s.weightKg)}` : ''}` : i + 1}</span>;
+        return <span key={i} aria-label={s ? `Set ${i + 1}: xong, ${s.reps} ${unit}${s.weightKg ? `, ${kg(s.weightKg)} kg` : ''}` : `Set ${i + 1}: ${i + 1 === setNo ? 'đang làm' : 'chưa làm'}`} className={`aw-dot${s ? ' is-done' : i + 1 === setNo ? ' is-now' : ''}`}>{s ? <><Check size={13} aria-hidden="true"/> {s.reps}{s.weightKg ? ` × ${kg(s.weightKg)}` : ''}</> : `Set ${i + 1}`}</span>;
       })}</div>
       {mine.length > 0 && <ul className="aw-sets">{mine.map(m => <li key={m.setNo}><span>Set {m.setNo}: {m.reps} {unit}{m.weightKg ? ` · ${kg(m.weightKg)} kg` : ''}</span>
         <button type="button" className="set-del" disabled={busy} aria-label={`Xoá set ${m.setNo} của ${e.nameVi ?? e.name}`} onClick={() => onRemove(e.name, m.setNo)}><Trash2 size={15}/></button></li>)}</ul>}
@@ -112,9 +121,9 @@ export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last,
       {sessionDone && onFinish && <button type="button" className="btn btn-primary aw-complete" disabled={busy} onClick={onFinish}><Check size={18}/> Kết thúc buổi tập{xp ? ` · +${xp} XP` : ''}</button>}
       <div className="sheet-actions">
         {allDone && index < exercises.length - 1 && <button type="button" className="btn btn-secondary" onClick={() => go(index + 1)}>Bài tiếp theo <ChevronRight size={16}/></button>}
-        <button type="button" className="btn btn-quiet" onClick={onClose}>Thoát</button>
+        <button type="button" className="btn btn-quiet" onClick={onClose}>Tạm dừng</button>
       </div>
-      <p className="form-note">Chỉ ghi lại set bạn đã làm, không cộng XP. Hoàn thành buổi vẫn bằng nút xác nhận trong chi tiết nhiệm vụ.</p>
+      <p className="form-note">Các set đã ghi được lưu ngay; bấm Tạm dừng để nghỉ và tiếp tục sau. Ghi set không cộng XP, XP chỉ có khi bạn xác nhận hoàn thành buổi.</p>
     </div>
   </Modal>;
 }

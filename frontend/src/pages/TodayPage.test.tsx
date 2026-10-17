@@ -197,7 +197,7 @@ describe('Main Quest start button for a gym session', () => {
     render(<TodayPage {...props} setLog={setLog} onToggleQuest={() => {}} dashboard={dashboard([gym])}/>);
     await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập|Mở danh sách việc|Xem chi tiết/ }));
     expect(await screen.findByRole('button', { name: 'Hoàn thành set' })).toBeTruthy();
-    await userEvent.click(screen.getByRole('button', { name: 'Thoát' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Tạm dừng' }));
     expect(screen.getByRole('button', { name: /Xác nhận hoàn thành/ })).toBeTruthy();
     cleanup();
     render(<TodayPage {...props} setLog={setLog} onToggleQuest={() => {}} dashboard={dashboard([quest('b', 'PENDING', 'Piano')])}/>);

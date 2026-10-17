@@ -28,6 +28,37 @@ const start = async (api: SetLogApi, onToggle = vi.fn()) => {
   return onToggle;
 };
 
+describe('active workout: battle mode (Phase 1)', () => {
+  it('shows how many exercises are finished out of the total, and updates when one is completed', async () => {
+    const api = fakeApi([{ exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 40 }, { exercise: 'Machine Chest Press', setNo: 2, reps: 10, weightKg: 40 }]);
+    await start(api);
+    expect(screen.getByRole('group', { name: 'Tiến độ buổi tập' }).textContent).toContain('Đã xong 1/2 bài');
+  });
+  it('shows 0/2 at the start', async () => {
+    await start(fakeApi());
+    expect(screen.getByRole('group', { name: 'Tiến độ buổi tập' }).textContent).toContain('Đã xong 0/2 bài');
+  });
+  it('shows last time on the exercise card, and a one-line instruction', async () => {
+    await start(fakeApi());
+    expect(await screen.findByText(/Lần trước/)).toBeTruthy();
+    expect(screen.getByText(/Lần trước.*10 × 40 kg/)).toBeTruthy();
+    expect(screen.getByLabelText('Gợi ý động tác').textContent!.length).toBeGreaterThan(10);
+  });
+  it('labels each set pill: "Set N" for to-do, a tick with reps for done', async () => {
+    await start(fakeApi([{ exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 40 }]));
+    const pills = screen.getByLabelText('Các set');
+    expect(pills.textContent).toContain('10 × 40');
+    expect(pills.textContent).toContain('Set 2');
+    expect(pills.querySelector('[aria-label="Set 1: xong, 10 rep, 40 kg"]')).toBeTruthy();
+  });
+  it('"Tạm dừng" leaves the screen and says the logged sets are kept', async () => {
+    await start(fakeApi());
+    expect(screen.getByText(/Các set đã ghi được lưu/)).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Tạm dừng' }));
+    expect(screen.queryByRole('button', { name: 'Hoàn thành set' })).toBeNull();
+  });
+});
+
 describe('active workout (B-38)', () => {
   it('picks the first exercise that still has sets to do', () => {
     const [a, b] = [exerciseByName('Machine Chest Press')!, exerciseByName('Plank')!];
@@ -73,7 +104,7 @@ describe('active workout (B-38)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Hoàn thành set' }));
     expect((await screen.findByRole('alert')).textContent).toContain('7 ngày');
     expect(screen.queryByRole('timer')).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: 'Thoát' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Tạm dừng' }));
     expect(screen.getByRole('button', { name: /Xác nhận hoàn thành/ })).toBeTruthy();
   });
   it('deletes a set from the screen and remembers the rest chosen for the exercise', async () => {
