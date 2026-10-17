@@ -11,7 +11,7 @@ describe('shadows: one per new personal record', () => {
       day('2026-10-07', s('Leg Press', 1, 10, 80), s('Machine Chest Press', 1, 10, 30)),
       day('2026-10-12', s('Leg Press', 1, 8, 90), s('Leg Press', 2, 8, 100), s('Plank', 1, 40, null)),
     ]);
-    expect(r).toEqual([{ exercise: 'Leg Press', date: '2026-10-12', weightKg: 100 }]);
+    expect(r).toEqual([{ exercise: 'Leg Press', date: '2026-10-12', weightKg: 100, reps: 8 }]);
   });
   it('is empty with no history', () => { expect(shadows([])).toEqual([]); });
 });

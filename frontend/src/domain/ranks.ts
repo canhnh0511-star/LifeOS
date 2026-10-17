@@ -21,3 +21,9 @@ export function rankForLevel(level: number): Rank {
   for (const band of BANDS) if (level >= band.from) rank = band.rank;
   return rank;
 }
+
+/** XP still needed to reach the next rank's first level, and that rank; null at the top rank. */
+export function xpToNextRank(level: number, totalXp: number): { rank: Rank; xp: number } | null {
+  const next = RANKS[RANKS.indexOf(rankForLevel(level)) + 1];
+  return next ? { rank: next, xp: Math.max(0, 100 * RANK_FROM[next] * RANK_FROM[next] - totalXp) /* same curve as rules.xpForLevel */ } : null;
+}

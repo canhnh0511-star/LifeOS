@@ -6,7 +6,7 @@ import type { DaySets } from './workoutStats';
  * Gym-only hunter stats, derived from logged sets (RFC-gym-stats). Nothing here is stored or touches XP.
  * Every relative stat is read against the user's own previous 4 weeks: matching them scores 70, +43% scores 100.
  */
-export interface Shadow { exercise: string; date: string; weightKg: number; }
+export interface Shadow { exercise: string; date: string; weightKg: number; /** reps of the heaviest set that day */ reps: number; }
 export interface BossProgress { done: number; planned: number; defeated: boolean; }
 export interface HunterStats { strength: number | null; endurance: number | null; volume: number | null; balance: number | null; will: number | null; }
 
@@ -19,11 +19,11 @@ const inRange = (d: DaySets, from: string, to: string) => d.date >= from && d.da
 export function shadows(days: readonly DaySets[]): Shadow[] {
   const best = new Map<string, number>(), out: Shadow[] = [];
   for (const d of [...days].sort((a, b) => a.date.localeCompare(b.date))) {
-    const dayBest = new Map<string, { exercise: string; weightKg: number }>();
-    for (const x of d.sets) if (x.weightKg) { const c = dayBest.get(key(x.exercise)); if (!c || x.weightKg > c.weightKg) dayBest.set(key(x.exercise), { exercise: x.exercise, weightKg: x.weightKg }); }
+    const dayBest = new Map<string, { exercise: string; weightKg: number; reps: number }>();
+    for (const x of d.sets) if (x.weightKg) { const c = dayBest.get(key(x.exercise)); if (!c || x.weightKg > c.weightKg) dayBest.set(key(x.exercise), { exercise: x.exercise, weightKg: x.weightKg, reps: x.reps }); }
     for (const [k, v] of dayBest) {
       const prior = best.get(k);
-      if (prior !== undefined && v.weightKg > prior) out.push({ exercise: v.exercise, date: d.date, weightKg: v.weightKg });
+      if (prior !== undefined && v.weightKg > prior) out.push({ exercise: v.exercise, date: d.date, weightKg: v.weightKg, reps: v.reps });
       if (prior === undefined || v.weightKg > prior) best.set(k, v.weightKg);
     }
   }

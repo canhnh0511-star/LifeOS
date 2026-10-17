@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rankForLevel } from './ranks';
+import { rankForLevel, xpToNextRank } from "./ranks";
 import { levelUps } from './levelUps';
 import type { ProgressDto } from '../api/types';
 
@@ -17,4 +17,12 @@ describe('ranks', () => {
     expect(levelUps(p(4), p(10)).rank).toBe('C'); // a jump over a rank reports the rank reached
     expect(levelUps(p(4), p(4)).rank).toBeUndefined();
   });
+});
+
+describe('xpToNextRank', () => {
+  it('counts the XP still missing to the first level of the next rank', () => {
+    expect(xpToNextRank(4, 2170)).toEqual({ rank: 'D', xp: 330 }); // level 5 starts at 2500 XP
+    expect(xpToNextRank(1, 0)).toEqual({ rank: 'D', xp: 2500 });
+  });
+  it('is null at rank S', () => { expect(xpToNextRank(30, 90000)).toBeNull(); });
 });

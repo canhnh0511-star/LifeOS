@@ -1,44 +1,82 @@
-import { useState } from 'react';
-import { ArrowUpRight, Flame, Images, Zap } from 'lucide-react';
-import type { BadgeDto, DailyDashboardDto, ItemDto } from '../api/types';
-import { titleForLevel } from '../domain/rules';
-import { RankBadge } from '../components/RankBadge';
-import { InventoryPanel } from '../components/InventoryPanel';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
+import type { BadgeDto, DailyDashboardDto, HabitDto, ItemDto } from '../api/types';
 import { BadgePanel } from '../components/BadgePanel';
-import { CharacterCard } from '../components/CharacterCard';
 import { InlinePanel } from '../components/InlinePanel';
+import { InventoryPanel } from '../components/InventoryPanel';
 import { RankGallery } from '../components/RankGallery';
 import { RankPortrait } from '../components/RankPortrait';
+import { StatRadar, type RadarStat } from '../components/StatRadar';
+import { SysPanel } from '../components/SysPanel';
 import { stageForLevel } from '../domain/characterStage';
+import { viName } from '../domain/exerciseLibrary';
+import { hunterStats, shadows, type HunterStats } from '../domain/hunterStats';
+import { xpToNextRank } from '../domain/ranks';
+import { moveDate } from '../domain/rules';
+import { SHADOW_LOOK, shadowArt, shadowKind } from '../domain/shadowArt';
+import { weekStart } from '../domain/week';
+import { plannedWeek } from '../domain/weekProgress';
+import type { DaySets } from '../domain/workoutStats';
 import { ProgressBar } from '../components/primitives';
-import { nextLevelReward } from '../domain/nextReward';
 import { number, pct } from '../ui/format';
 
-/** Who you are right now: level, per-area stats and the figure. Moved out of Today so Today can answer one question: what next? */
-export function CharacterPage({ dashboard, items, busyItemCode, onEquip, onUnequip, loadBadges }: { dashboard: DailyDashboardDto | null; items: ItemDto[]; busyItemCode: string | null; onEquip: (item: ItemDto) => void; onUnequip: (item: ItemDto) => void; loadBadges?: () => Promise<BadgeDto[]> }) {
+const STATS: { key: keyof HunterStats; label: string; short: string }[] = [
+  { key: 'strength', label: 'Sức mạnh', short: 'Sức mạnh' }, { key: 'endurance', label: 'Sức bền cơ', short: 'Bền cơ' }, { key: 'volume', label: 'Khối lượng', short: 'Khối lượng' },
+  { key: 'balance', label: 'Cân đối', short: 'Cân đối' }, { key: 'will', label: 'Ý chí', short: 'Ý chí' }
+];
+
+/** Who you are right now (designed "Cửa sổ trạng thái"): level and rank, the five gym stats and the shadows of your records. Never depends on the day picked on Today. */
+export function CharacterPage({ dashboard, items, busyItemCode, onEquip, onUnequip, loadBadges, habits, today, loadHistory }: {
+  dashboard: DailyDashboardDto | null; items: ItemDto[]; busyItemCode: string | null; onEquip: (item: ItemDto) => void; onUnequip: (item: ItemDto) => void;
+  loadBadges?: () => Promise<BadgeDto[]>; habits: readonly HabitDto[]; today: string; loadHistory: () => Promise<DaySets[]>;
+}) {
   const cur = dashboard?.progress;
   const [showRanks, setShowRanks] = useState(false);
-  const level = cur?.level || 1, stage = stageForLevel(level);
+  const [days, setDays] = useState<DaySets[] | null>(null);
+  useEffect(() => { let alive = true; setDays(null); loadHistory().then(r => { if (alive) setDays(r); }).catch(() => { if (alive) setDays([]); }); return () => { alive = false; }; }, [loadHistory]);
+  const level = cur?.level || 1, stage = stageForLevel(level), totalXp = cur?.totalXp ?? 0;
   const levelPct = cur ? pct(cur.totalXp - cur.levelStartXp, cur.nextLevelXp - cur.levelStartXp) : 0;
-  return <>
-    <div className="page-header"><div><div className="eyebrow"><span className="eyebrow-dash"/> NHÂN VẬT</div><h1>Bạn đang ở <span className="text-gradient">Level {cur?.level || 1}.</span></h1><p>XP của từng lĩnh vực quyết định chỉ số và level của bạn.</p></div></div>
-    <div className="character-page">
-      <article className="level-hero"><div className="hero-orb orb-one"/><div className="hero-orb orb-two"/><div className="hero-copy"><div className="hero-kicker"><Zap size={16} fill="currentColor"/> CẤP {String(cur?.level || 1).padStart(2,'0')} · {titleForLevel(cur?.level || 1).toUpperCase()}</div><h2>Cứ xuất hiện mỗi ngày.<br/><span>Phần còn lại sẽ đến.</span></h2><div className="level-progress-title"><span>Tiến độ level</span><strong>{number(cur?.totalXp || 0)} <small>/ {number(cur?.nextLevelXp || 400)} XP</small></strong></div><ProgressBar value={levelPct}/><p>{number((cur?.nextLevelXp || 400) - (cur?.totalXp || 0))} XP nữa để lên Level {(cur?.level || 1)+1}</p></div><div className="hero-emblem"><div className="hero-emblem-ring"><RankBadge level={cur?.level || 1} size="lg"/></div><span>CẤP {cur?.level || 1}</span></div></article>
-      <section className="panel hunter-portrait" aria-label="Diện mạo hiện tại">
-        <RankPortrait level={level} size={168}/>
-        <div className="hunter-portrait-body"><span className="section-eyebrow">DIỆN MẠO HIỆN TẠI</span><h3>Hạng {stage.rank} · {stage.name}</h3><p>Diện mạo đổi mỗi khi bạn lên hạng.</p>
-          <button type="button" className="btn btn-secondary" aria-expanded={showRanks} onClick={() => setShowRanks(v => !v)}><Images size={16}/> Diện mạo theo hạng</button></div>
-      </section>
-      {showRanks && <InlinePanel title="Diện mạo theo hạng" eyebrow="HẠNG E → S" onClose={() => setShowRanks(false)}><RankGallery level={level}/></InlinePanel>}
-      {cur && <article className="panel next-reward" aria-label="Phần thưởng cấp kế tiếp">{(() => { const r = nextLevelReward(cur.level, cur.totalXp, cur.nextLevelXp); return <>
-        <h3><ArrowUpRight size={17}/> Cấp kế tiếp · Cấp {r.level}</h3>
-        <p>Còn <strong>{number(r.xpToGo)} XP</strong> nữa.</p>
-        <ul>{r.rankUp && <li>Lên <strong>hạng {r.rankUp.rank} · {r.rankUp.name}</strong>: hình nhân vật đổi diện mạo.</li>}{r.newGearTier && <li>Mở trang bị bậc {r.newGearTier} cho hình nhân vật.</li>}{!r.rankUp && r.nextRank && <li>Hạng {r.nextRank.rank} · {r.nextRank.name} còn {r.levelsToNextRank} cấp nữa.</li>}{!r.rankUp && !r.newGearTier && !r.nextRank && <li>Bạn đã ở hạng cao nhất.</li>}</ul>
-      </>; })()}</article>}
-      <CharacterCard areas={cur?.areas ?? []} totalXp={cur?.totalXp ?? 0} level={cur?.level ?? 1}/>
-      {loadBadges && <BadgePanel loadBadges={loadBadges} refreshKey={cur?.totalXp}/>}
-      {items.length > 0 && <InventoryPanel items={items} busyCode={busyItemCode} onEquip={onEquip} onUnequip={onUnequip}/>}
-      <div className="metric-grid metric-grid-2"><div className="metric-card"><span className="metric-icon orange"><Flame size={21}/></span><span className="metric-label">Chuỗi hiện tại</span><strong>{cur?.currentStreak || 0} <small>phiên</small></strong><span className="metric-foot">Chuỗi dài nhất của một thói quen đang chạy</span></div><div className="metric-card"><span className="metric-icon purple"><Zap size={21}/></span><span className="metric-label">Chuỗi kỷ lục</span><strong>{cur?.longestStreak || 0} <small>phiên</small></strong><span className="metric-foot">Dài nhất từ trước đến nay</span></div></div>
-    </div>
-  </>;
+  const toNext = xpToNextRank(level, totalXp);
+  const ws = weekStart(today);
+  const stats = useMemo(() => days ? hunterStats(days, ws, plannedWeek(habits, ws).sessions) : null, [days, ws, habits]);
+  const radar: RadarStat[] = STATS.map(s => ({ key: s.key, label: s.label, short: s.short, value: stats?.[s.key] ?? null }));
+  const lowest = stats ? Math.min(...radar.flatMap(r => r.value === null ? [] : [r.value])) : null;
+  const records = useMemo(() => days ? shadows(days).reverse() : [], [days]);
+  const fresh = moveDate(today, -6);
+
+  return <div className="character-page">
+    <header className="sys-head"><span className="sys-eyebrow">NHÂN VẬT</span><h1>Cửa sổ trạng thái</h1></header>
+    <SysPanel label="TRẠNG THÁI" tone="cyan" className="char-status">
+      <div className="char-status-row">
+        <RankPortrait level={level} size={104}/>
+        <div className="char-status-body"><strong className="char-level">Cấp {level}</strong><span className="char-rank">HẠNG {stage.rank} · {stage.name.toUpperCase()}</span></div>
+      </div>
+      <ProgressBar value={levelPct}/>
+      <p className="char-xp">{number(totalXp)} / {number(cur?.nextLevelXp ?? 400)} XP</p>
+      <button type="button" className="char-ranks" aria-expanded={showRanks} onClick={() => setShowRanks(v => !v)}>
+        <span>{toNext ? <>Còn {number(toNext.xp)} XP lên Hạng {toNext.rank} · xem diện mạo các hạng</> : <>Bạn đang ở hạng cao nhất · xem diện mạo các hạng</>}</span><ChevronRight size={16} aria-hidden="true"/>
+      </button>
+    </SysPanel>
+    {showRanks && <InlinePanel title="Diện mạo theo hạng" eyebrow="HẠNG E → S" onClose={() => setShowRanks(false)}><RankGallery level={level}/></InlinePanel>}
+
+    <SysPanel label="CHỈ SỐ" tone="cyan">
+      <div className="char-stats">
+        <StatRadar stats={radar}/>
+        <ul aria-label="Chỉ số">{radar.map(r => <li key={r.key} className={r.value !== null && r.value === lowest ? 'is-low' : ''}><span>{r.label}</span><b>{r.value ?? '–'}</b></li>)}</ul>
+      </div>
+      <p className="char-note">So với 4 tuần gần nhất của chính bạn: bằng mức đó là 70. Dấu – là chưa đủ dữ liệu.</p>
+    </SysPanel>
+
+    <SysPanel label={`ĐỘI BÓNG · ${records.length} KỶ LỤC`} tone="purple">
+      {!days ? <p className="form-note" role="status">Đang tải…</p> : records.length === 0
+        ? <p className="form-note">Chưa có Bóng. Nâng mức tạ nặng nhất ở một bài để triệu hồi Bóng đầu tiên.</p>
+        : <ul className="shadow-team">{records.slice(0, 6).map(r => <li key={`${r.exercise}-${r.date}`}>
+          <img src={shadowArt(r.exercise)} alt={`${SHADOW_LOOK[shadowKind(r.exercise)]}, đại diện cho kỷ lục ${viName(r.exercise)}`} width="100" height="100" loading="lazy"/>
+          {r.date >= fresh && <em>MỚI</em>}
+          <strong>{viName(r.exercise)}</strong><span>{number(r.weightKg)} kg × {r.reps}</span></li>)}</ul>}
+    </SysPanel>
+
+    {loadBadges && <BadgePanel loadBadges={loadBadges} refreshKey={cur?.totalXp}/>}
+    {items.length > 0 && <InventoryPanel items={items} busyCode={busyItemCode} onEquip={onEquip} onUnequip={onUnequip}/>}
+  </div>;
 }
