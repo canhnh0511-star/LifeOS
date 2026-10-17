@@ -1,12 +1,14 @@
 import { Dumbbell, Gauge, Layers } from 'lucide-react';
 import { muscleLabel, type Exercise } from '../domain/exerciseLibrary';
 import { infoFor, kindLabel, levelLabel } from '../domain/exerciseInfo';
+import { guideFor } from '../domain/exerciseGuide';
 import { Modal } from './Modal';
 import { MuscleFigure } from './MuscleFigure';
 
 /** One exercise in detail (B-37): muscles, equipment, level, kind, the plan numbers and technique cues. Read-only. */
 export function ExerciseDetail({ exercise: e, onClose, action }: { exercise: Exercise; onClose: () => void; action?: React.ReactNode }) {
   const x = infoFor(e);
+  const guide = guideFor(e.id);
   const unit = e.unit === 'giây' ? 'giây' : 'rep';
   return <Modal title={e.nameVi ?? e.name} onClose={onClose} sheet>
     <div className="xd">
@@ -19,8 +21,16 @@ export function ExerciseDetail({ exercise: e, onClose, action }: { exercise: Exe
         </dl>
       </div>
       <p className="xd-chips"><span className="diff-chip"><Dumbbell size={13}/> {x.equipment}</span><span className="diff-chip"><Gauge size={13}/> Độ khó: {levelLabel[x.level]}</span><span className="diff-chip"><Layers size={13}/> {kindLabel[x.kind]}</span></p>
-      <section aria-label="Hướng dẫn kỹ thuật"><h3 className="sheet-h">Kỹ thuật</h3>
-        <ol className="xd-cues">{x.cues.map(c => <li key={c}>{c}</li>)}</ol></section>
+      <p className="xd-nopic" role="note">Chưa có ảnh động tác cho bài này (đang chuẩn bị). Hãy đọc kỹ các bước bên dưới hoặc nhờ huấn luyện viên chỉ.</p>
+      {guide ? <>
+        <section aria-label="Chuẩn bị"><h3 className="sheet-h">Chuẩn bị</h3><ul className="xd-list">{guide.setup.map(t => <li key={t}>{t}</li>)}</ul></section>
+        <section aria-label="Cách tập"><h3 className="sheet-h">Cách tập</h3><ol className="xd-cues">{guide.steps.map(t => <li key={t}>{t}</li>)}</ol></section>
+        <section aria-label="Hít thở"><h3 className="sheet-h">Hít thở</h3><p className="xd-text">{guide.breathing}</p></section>
+        <section aria-label="Lỗi thường gặp"><h3 className="sheet-h">Lỗi thường gặp</h3><ul className="xd-list">{guide.mistakes.map(t => <li key={t}>{t}</li>)}</ul></section>
+      </> : <section aria-label="Hướng dẫn kỹ thuật"><h3 className="sheet-h">Kỹ thuật</h3>
+        <ol className="xd-cues">{x.cues.map(c => <li key={c}>{c}</li>)}</ol>
+        <p className="form-note">Hướng dẫn chi tiết cho bài này đang được biên soạn.</p></section>}
+      <p className="form-note xd-safety">Đau nhói, tê hoặc chóng mặt: dừng bài và hỏi huấn luyện viên. Đây là hướng dẫn cho người mới, không thay thế tư vấn y tế.</p>
       {action}
     </div>
   </Modal>;

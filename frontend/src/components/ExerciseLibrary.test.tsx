@@ -44,7 +44,7 @@ describe('exercise library screen (B-39)', () => {
     render(<ExerciseLibrary onClose={() => {}}/>);
     await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Plank (giữ thân thẳng)' }));
     expect(screen.getByRole('dialog', { name: 'Plank (giữ thân thẳng)' })).toBeTruthy();
-    expect(screen.getByText('Nhóm cơ chính')).toBeTruthy(); expect(screen.getByText(/Khuỷu dưới vai/)).toBeTruthy();
+    expect(screen.getByText('Nhóm cơ chính')).toBeTruthy(); expect(screen.getByText(/khuỷu ngay dưới vai/i)).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
     expect(screen.getByRole('dialog', { name: 'Thư viện bài tập' })).toBeTruthy();
   });
