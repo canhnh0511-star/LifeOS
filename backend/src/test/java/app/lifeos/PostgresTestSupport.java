@@ -21,10 +21,11 @@ public final class PostgresTestSupport {
             String url, user, password;
             if (container == null && embedded == null) {
                 if (dockerAvailable()) {
-                    container = new PostgreSQLContainer("postgres:16-alpine");
+                    // Every cached Spring test context keeps its own connection pool; the default 100 connections run out in CI ("too many clients").
+                    container = new PostgreSQLContainer("postgres:16-alpine").withCommand("postgres", "-c", "max_connections=400");
                     container.start();
                 } else {
-                    embedded = EmbeddedPostgres.builder().start();
+                    embedded = EmbeddedPostgres.builder().setServerConfig("max_connections", "400").start();
                 }
             }
             if (container != null) {
