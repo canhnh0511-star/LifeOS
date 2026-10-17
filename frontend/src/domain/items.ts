@@ -18,3 +18,8 @@ export const RARITY_LABEL: Record<ItemRarity, string> = { UNCOMMON: 'Khá', RARE
 export const itemName = (code: string) => ITEM_CATALOG.find(i => i.code === code)?.name ?? code;
 /** Rarities a chest tier can drop: the bigger the chest, the rarer the pool. */
 export const POOL: Record<string, ItemRarity[]> = { WOOD: ['UNCOMMON', 'RARE'], SILVER: ['RARE', 'EPIC'], GOLD: ['EPIC', 'LEGENDARY'] };
+/** Which chests can drop an item of this rarity, as readable text for the locked state. */
+export const dropHint = (rarity: ItemRarity): string => {
+  const tiers = Object.entries(POOL).filter(([, r]) => r.includes(rarity)).map(([t]) => ({ WOOD: 'Gỗ', SILVER: 'Bạc', GOLD: 'Vàng' } as Record<string, string>)[t]);
+  return `Có thể rơi từ rương ${tiers.join(' hoặc ')}. Hoàn thành nhiệm vụ trong ngày để mở rương.`;
+};

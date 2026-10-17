@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { Lock } from 'lucide-react';
 import type { ItemDto, ItemSlot } from '../api/types';
-import { RARITY_LABEL, SLOT_LABEL } from '../domain/items';
+import { RARITY_LABEL, SLOT_LABEL, dropHint } from '../domain/items';
 import { categoryLabel } from '../domain/rules';
 import { ItemArt } from './ItemArt';
 
+type Filter = 'ALL' | 'OWNED' | 'WORN' | 'LOCKED';
+const FILTERS: { id: Filter; label: string; test: (i: ItemDto) => boolean }[] = [
+  { id: 'ALL', label: 'Tất cả', test: () => true }, { id: 'OWNED', label: 'Đã có', test: i => i.owned }, { id: 'WORN', label: 'Đang đeo', test: i => i.equipped }, { id: 'LOCKED', label: 'Chưa có', test: i => !i.owned }
+];
 const SLOTS: ItemSlot[] = ['WEAPON', 'HEAD', 'CLOAK', 'FEET', 'RELIC'];
 
 interface Props { items: ItemDto[]; busyCode: string | null; onEquip: (item: ItemDto) => void; onUnequip: (item: ItemDto) => void; }
@@ -13,6 +17,8 @@ interface Props { items: ItemDto[]; busyCode: string | null; onEquip: (item: Ite
 export function InventoryPanel({ items, busyCode, onEquip, onUnequip }: Props) {
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const selected = items.find(i => i.code === selectedCode) ?? null;
+  const [filter, setFilter] = useState<Filter>('ALL');
+  const shown = items.filter(FILTERS.find(f => f.id === filter)!.test);
   const ownedCount = items.filter(i => i.owned).length;
   return <section className="panel inventory" aria-label="Kho đồ">
     <div className="panel-head"><h3>Trang bị &amp; kho đồ</h3><span className="subtle-text">Sưu tập {ownedCount}/{items.length} · mở rương để nhận đồ</span></div>
@@ -23,7 +29,9 @@ export function InventoryPanel({ items, busyCode, onEquip, onUnequip }: Props) {
         <small>{SLOT_LABEL[slot]}</small>
       </li>;
     })}</ul>
-    <ul className="item-grid" aria-label="Bộ sưu tập vật phẩm">{items.map(item => <li key={item.code}>
+    <div className="xl-groups" role="group" aria-label="Lọc vật phẩm">{FILTERS.map(f => <button type="button" key={f.id} className={`xl-chip${filter === f.id ? ' is-on' : ''}`} aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>{f.label} <b>{items.filter(f.test).length}</b></button>)}</div>
+    {shown.length === 0 && <p className="xl-empty">Chưa có vật phẩm nào ở mục này.</p>}
+    <ul className="item-grid" aria-label="Bộ sưu tập vật phẩm">{shown.map(item => <li key={item.code}>
       <button className={`item-card rarity-${item.rarity.toLowerCase()} ${item.owned ? '' : 'is-locked'} ${selectedCode === item.code ? 'is-selected' : ''}`}
         aria-label={item.owned ? `${item.name}, ${RARITY_LABEL[item.rarity]}${item.equipped ? ', đang đeo' : ''}` : `Chưa sở hữu: ${item.name}`} aria-pressed={selectedCode === item.code} onClick={() => setSelectedCode(item.code)}>
         <ItemArt artKey={item.artKey} name={item.name}/>
@@ -42,7 +50,7 @@ export function InventoryPanel({ items, busyCode, onEquip, onUnequip }: Props) {
               {selected.equipped
                 ? <button className="btn btn-quiet" disabled={busyCode === selected.code} onClick={() => onUnequip(selected)}>Tháo ra</button>
                 : <button className="btn btn-primary" disabled={busyCode === selected.code} onClick={() => onEquip(selected)}>Đeo vào</button>}</>
-          : <small>Chưa sở hữu. Món này có thể rơi từ rương hằng ngày.</small>}
+          : <small>Chưa sở hữu. {dropHint(selected.rarity)}</small>}
       </div>
     </article>}
   </section>;

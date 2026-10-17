@@ -48,3 +48,16 @@ describe('ChestOpening with an item', () => {
     expect(screen.queryByLabelText(/Vật phẩm mới/)).toBeNull();
   });
 });
+
+describe('InventoryPanel filters and unlock hints (B-29/B-40)', () => {
+  it('filters owned, worn and locked items with counts, and tells how a locked item can be found', async () => {
+    render(<InventoryPanel items={views(['WOLF_FANG_SWORD', 'LATE_WIND_TREADS'], ['WOLF_FANG_SWORD'])} busyCode={null} onEquip={() => {}} onUnequip={() => {}}/>);
+    expect(screen.getByRole('button', { name: /^Đã có/ }).textContent).toContain('2');
+    await userEvent.click(screen.getByRole('button', { name: /^Đang đeo/ }));
+    expect(screen.getAllByRole('button', { name: /Kiếm Nanh Sói/ }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /Giày Bước Gió Muộn/ })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: /^Chưa có/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Chưa sở hữu: Gương Vua Vô Danh' }));
+    expect(screen.getByText(/Có thể rơi từ rương Vàng\./)).toBeTruthy();
+  });
+});
