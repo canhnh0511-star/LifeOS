@@ -39,7 +39,7 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
   const nextLine = quest.objectives.find(o => o.value < o.target);
   const suggested = nextLine ? exerciseByName(nextLine.title) : undefined;
   const suggestedRest = suggested?.restSeconds;
-  if (training && setLog) return <ActiveWorkout quest={quest} date={date} exercises={loggable} sets={log.sets} busy={log.busy} error={log.error} last={setLog.last} onRecord={log.record} onClose={() => setTraining(false)}/>;
+  if (training && setLog) return <ActiveWorkout quest={quest} date={date} exercises={loggable} sets={log.sets} busy={log.busy} error={log.error} last={setLog.last} onRecord={log.record} onRemove={log.remove} onClose={() => setTraining(false)}/>;
   return <Modal title={quest.title} onClose={onClose} sheet>
     <div className="sheet">
       <p className="sheet-meta"><Clock3 size={14}/> {quest.targetMinutes} phút · {categoryLabel(quest.category)} · <Zap size={14}/> {done ? 'Đã nhận' : '+'}{quest.xpReward} XP <span className={`diff-chip diff-${d.toLowerCase()}`}>{difficultyLabel[d]}</span></p>

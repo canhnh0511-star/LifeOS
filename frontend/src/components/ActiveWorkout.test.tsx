@@ -76,4 +76,15 @@ describe('active workout (B-38)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Thoát' }));
     expect(screen.getByRole('button', { name: /Xác nhận hoàn thành/ })).toBeTruthy();
   });
+  it('deletes a set from the screen and remembers the rest chosen for the exercise', async () => {
+    const api = fakeApi([{ exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 40 }]);
+    api.remove.mockImplementation(async () => []);
+    await start(api);
+    await userEvent.click(screen.getByRole('button', { name: 'Tăng thời gian nghỉ' }));
+    await userEvent.click(screen.getAllByRole('button', { name: 'Xoá set 1 của Machine Chest Press' }).at(-1)!);
+    expect(api.remove).toHaveBeenCalledWith('h', '2026-10-19', 'Machine Chest Press', 1);
+    cleanup();
+    await start(fakeApi());
+    expect(screen.getByLabelText('thời gian nghỉ hiện tại').textContent).toBe('105 giây');
+  });
 });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Minus, Plus, Trash2 } from 'lucide-react';
 import type { QuestDto, WorkoutSetDto } from '../api/types';
 import type { Exercise } from '../domain/exerciseLibrary';
 import { muscleLabel } from '../domain/exerciseLibrary';
@@ -8,6 +8,12 @@ import { Modal } from './Modal';
 import { nextSetNo, type SetLogApi } from './SetLog';
 
 const WEIGHT_STEP = 2.5, REST_STEP = 15, REST_MIN = 15, REST_MAX = 600;
+const restKey = (id: string) => `lifeos.rest.${id}`;
+/** Rest chosen for an exercise last time (a local preference); the plan's rest when none or unreadable. */
+function savedRest(e: Exercise): number {
+  try { const n = Number(localStorage.getItem(restKey(e.id))); if (Number.isInteger(n) && n >= 15 && n <= 600) return n; } catch { /* no storage */ }
+  return e.restSeconds ?? 90;
+}
 const kg = (w: number) => String(w).replace('.', ',');
 const mineOf = (sets: readonly WorkoutSetDto[], e: Exercise) => sets.filter(s => s.exercise.toLowerCase() === e.name.toLowerCase());
 /** The first exercise that still has planned sets to do; the last one when everything is done. */
@@ -18,27 +24,27 @@ export const firstOpenIndex = (exercises: readonly Exercise[], sets: readonly Wo
 
 interface Props {
   quest: QuestDto; date: string; exercises: Exercise[]; sets: WorkoutSetDto[]; busy: boolean; error: string;
-  last: SetLogApi['last']; onRecord: (input: { exercise: string; setNo: number; reps: number; weightKg: number | null }) => Promise<boolean>; onClose: () => void;
+  last: SetLogApi['last']; onRemove: (exercise: string, setNo: number) => Promise<boolean>; onRecord: (input: { exercise: string; setNo: number; reps: number; weightKg: number | null }) => Promise<boolean>; onClose: () => void;
 }
 
 /**
  * Step-by-step workout (B-38): one exercise and one set at a time, with − / + for reps, weight and rest.
  * "Hoàn thành set" records the set through the set log and starts the rest countdown. No XP and no quest completion here.
  */
-export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last, onRecord, onClose }: Props) {
+export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last, onRecord, onRemove, onClose }: Props) {
   const [index, setIndex] = useState(() => firstOpenIndex(exercises, sets));
   const e = exercises[index]!;
   const mine = mineOf(sets, e), seconds = e.unit === 'giây';
   const setNo = nextSetNo(mine), allDone = mine.length >= e.sets;
   const [reps, setReps] = useState(e.reps);
   const [weight, setWeight] = useState(0);
-  const [rest, setRest] = useState(e.restSeconds ?? 90);
+  const [rest, setRest] = useState(() => savedRest(e));
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const resting = restEndsAt !== null && restEndsAt > now;
   // Moving to another exercise resets the steppers to its plan and, for weights, to what was lifted last time.
   useEffect(() => {
-    setReps(e.reps); setRest(e.restSeconds ?? 90); setWeight(0); let alive = true;
+    setReps(e.reps); setRest(savedRest(e)); setWeight(0); let alive = true;
     const own = mineOf(sets, e); const done = own[own.length - 1];
     if (done?.weightKg) setWeight(done.weightKg);
     else last(e.name, date).then(r => { const w = r.sets.find(s => s.weightKg)?.weightKg; if (alive && w) setWeight(w); }).catch(() => { /* convenience only */ });
@@ -52,6 +58,7 @@ export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last,
     const ok = await onRecord({ exercise: e.name, setNo, reps, weightKg: seconds || weight === 0 ? null : weight });
     if (ok && mine.length + 1 < e.sets) { const t = Date.now(); setNow(t); setRestEndsAt(t + rest * 1000); }
   };
+  const changeRest = (n: number) => { setRest(n); try { localStorage.setItem(restKey(e.id), String(n)); } catch { /* not saved */ } };
   const go = (to: number) => { setIndex(to); setRestEndsAt(null); };
   const unit = seconds ? 'giây' : 'rep';
   const stepper = (label: string, value: string, dec: () => void, inc: () => void, disDec: boolean, disInc: boolean) =>
@@ -71,6 +78,8 @@ export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last,
         const s = mine.find(m => m.setNo === i + 1);
         return <span key={i} className={`aw-dot${s ? ' is-done' : i + 1 === setNo ? ' is-now' : ''}`}>{s ? `${s.reps}${s.weightKg ? ` × ${kg(s.weightKg)}` : ''}` : i + 1}</span>;
       })}</div>
+      {mine.length > 0 && <ul className="aw-sets">{mine.map(m => <li key={m.setNo}><span>Set {m.setNo}: {m.reps} {unit}{m.weightKg ? ` · ${kg(m.weightKg)} kg` : ''}</span>
+        <button type="button" className="set-del" disabled={busy} aria-label={`Xoá set ${m.setNo} của ${e.name}`} onClick={() => onRemove(e.name, m.setNo)}><Trash2 size={15}/></button></li>)}</ul>}
       {allDone
         ? <p role="status" className="aw-done"><Check size={16}/> Đã xong {mine.length}/{e.sets} set bài này.</p>
         : <>
@@ -82,7 +91,7 @@ export function ActiveWorkout({ quest, date, exercises, sets, busy, error, last,
       <section aria-label="Nghỉ giữa set" className="sheet-timer">
         {resting ? <><div className="sheet-clock" role="timer" aria-live="off">{clock(restLeft)}</div><button type="button" className="btn btn-quiet" onClick={() => setRestEndsAt(null)}>Bỏ qua nghỉ</button></>
           : <>{restOver && <p role="status">Hết giờ nghỉ, vào set tiếp theo.</p>}
-            <div className="aw-rest"><span>Nghỉ</span>{stepper('thời gian nghỉ', `${rest} giây`, () => setRest(r => Math.max(REST_MIN, r - REST_STEP)), () => setRest(r => Math.min(REST_MAX, r + REST_STEP)), rest <= REST_MIN, rest >= REST_MAX)}</div></>}
+            <div className="aw-rest"><span>Nghỉ</span>{stepper('thời gian nghỉ', `${rest} giây`, () => changeRest(Math.max(REST_MIN, rest - REST_STEP)), () => changeRest(Math.min(REST_MAX, rest + REST_STEP)), rest <= REST_MIN, rest >= REST_MAX)}</div></>}
       </section>
       {error && <p role="alert" className="set-error">{error}</p>}
       <div className="sheet-actions">
