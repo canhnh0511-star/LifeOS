@@ -1,91 +1,33 @@
-# Life OS — Personal Growth RPG
+# Life OS — app tập gym kiểu RPG
 
-Frontend PWA + mock API; **chưa có backend production**. Dự án được thiết kế để duyệt trải nghiệm trước, sau đó xây Java/Spring Boot theo vertical slices.
+v1 là ứng dụng tập gym cho người mới hoặc quay lại tập, có vòng tiến triển lấy cảm hứng Solo Leveling: xem buổi tập hôm nay, hiểu bài tập, ghi từng set, hoàn thành nhận XP, xem tiến độ. Chi tiết: [`docs/PRODUCT_V1.md`](docs/PRODUCT_V1.md).
 
-## Xem bản preview ngay (không cần npm)
+## Chạy và kiểm thử
 
-Thư mục `preview/` là một **PWA tương tác độc lập** dùng lại mock engine TypeScript đã biên dịch từ `frontend/src/api/mockClient.ts` và `domain/rules.ts`. Đây là bản xem thử bổ trợ; code React chính nằm ở `frontend/`.
-
-```bash
-# Mở terminal tại thư mục gốc của repo
-python -m http.server 4173
-# Truy cập http://localhost:4173/preview/
-```
-
-Trên Windows có thể mở `start-preview.bat`. Xem Today/Journey/Insights, tạo goal/habit, hoàn thành/hoàn tác quest, xuất/reset dữ liệu. Preview lưu localStorage và không có tài khoản hoặc đồng bộ đa thiết bị.
-
-## Chạy frontend
-
-Yêu cầu Node.js LTS, npm. Trong terminal:
+Frontend (Node LTS), mặc định dùng mock localStorage, không cần backend:
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env        # Windows: copy .env.example .env
-npm run dev
-```
-
-Truy cập URL Vite in ra ở terminal (thường `http://localhost:5173`). Demo sử dụng `localStorage`, không cần PostgreSQL/Spring Boot.
-
-```bash
-npm run test
+npm run dev        # http://localhost:5173
+npm test
 npm run build
-npm run preview
 ```
 
-PWA: build + preview hoặc HTTPS hosting để kiểm tra service worker/install. Trên iPhone mở bằng Safari rồi **Share → Add to Home Screen**; giao diện ở chế độ standalone sau khi thêm.
+Dùng backend thật: đặt `VITE_API_MODE=real` và `VITE_API_BASE_URL=/api/v1` trong `frontend/.env` (xem `frontend/.env.example`). Backend Java 21 + Spring Boot + PostgreSQL: xem [`backend/README.md`](backend/README.md) (`docker-compose.yml` để chạy cục bộ).
 
-> Không lưu dữ liệu nhạy cảm vào mock demo. Trạng thái demo không đồng bộ giữa thiết bị, tab hoặc trình duyệt. Xóa site data sẽ làm mất tiến độ; có thể xuất dữ liệu JSON trong Settings.
+## Triển khai
 
-## Tính năng có thể thử
+Railway: [`docs/DEPLOY_RAILWAY.md`](docs/DEPLOY_RAILWAY.md). Không deploy hoặc chạy SQL phá huỷ khi chưa được owner duyệt.
 
-1. **Today:** bật/tắt completion (PUT/DELETE mock idempotent), chuyển ngày và nhận XP, xem Level/Streak.
-2. **Journey:** tạo mục tiêu, tạo thói quen, tạm dừng/kích hoạt, xem tiến độ thử thách 66 ngày.
-3. **Insights:** biểu đồ 7/30 ngày, tỷ lệ hoàn thành theo category.
-4. **Settings:** export JSON, reset sample.
-5. **PWA:** manifest, install icon, precache assets (online lần đầu); offline writes chưa hỗ trợ.
+## Tài liệu hiện hành
 
-## Chuyển sang backend thật
-
-Đổi `frontend/.env` thành:
-
-```env
-VITE_API_MODE=real
-VITE_API_BASE_URL=/api/v1
-```
-
-`src/api/index.ts` chọn adapter `mockClient` hoặc `httpClient`, cả hai implement `LifeOsApi`. Không sửa logic components; backend phải đáp ứng DTO và endpoints trong `docs/API_CONTRACT.md`. Để phát triển đa origin, cấu hình proxy Vite hoặc reverse proxy phục vụ chung origin. Real mode hiện **chưa** có UI login/token flow; phải làm theo ticket B-01 trước khi sử dụng trên môi trường ngoài localhost.
-
-## Hồ sơ triển khai cho coding agent
-
-- [`CLAUDE.md`](CLAUDE.md): quy trình và ranh giới agent
-- [`docs/PRD.md`](docs/PRD.md): mục tiêu, phạm vi và yêu cầu
-- [`docs/UI_SPEC.md`](docs/UI_SPEC.md): thiết kế màn hình, tương tác
-- [`docs/DOMAIN_RULES.md`](docs/DOMAIN_RULES.md): nghiệp vụ XP/Streak/Journey
-- [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md) và [`docs/openapi.yaml`](docs/openapi.yaml): REST contract, payload, OpenAPI 3.1
-- [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md): PostgreSQL schema đề xuất
-- [`docs/agent/WORKFLOW.md`](docs/agent/WORKFLOW.md): workflow thực thi ticket
-- [`docs/tickets/`](docs/tickets/): thứ tự vertical slices backend
-- [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md): checklist/test cases
-- [`docs/QA_STATUS.md`](docs/QA_STATUS.md): xác minh đã thực hiện và giới hạn kiểm thử
-
-## Ghi chú kiến trúc
-
-- Frontend: React + TypeScript + Vite + lucide-react, custom CSS; vite-plugin-pwa (Workbox).
-- Data: `localStorage` mock source of truth; async adapter simulate HTTP, includes seeded demo.
-- Backend target: Java 21 + Spring Boot, PostgreSQL, Flyway. **Chưa scaffold backend** theo yêu cầu duyệt frontend trước.
-- Timezone: `Asia/Ho_Chi_Minh`; local dates `YYYY-MM-DD`, UTC timestamp `ISO 8601`.
-- Streak tính số **phiên theo lịch**, không mặc định số ngày calendar liên tục.
-- Demo có cấu trúc xác định nhưng được sinh theo ngày hiện tại, nên ảnh chụp màn hình và số liệu sẽ thay đổi theo thời gian.
-
-## Giới hạn bản giao
-
-- Demo localStorage có thể bị sửa thủ công; không phải nguồn dữ liệu an toàn.
-- Các mutation concurrent nhiều tab chưa được bảo vệ transaction như PostgreSQL.
-- Pause/unpause trong mock làm thay đổi cách tổng hợp một phần lịch sử; cần `schedule_versions` và immutable `quest_instances` ở backend.
-- Chưa có Push notification, AI Coach, biometric, OAuth, multi-user auth, sync hoặc offline mutation queue.
-
-## Tình trạng kiểm chứng
-
-Đã kiểm tra parse cú pháp nguồn TypeScript/TSX, cấu trúc PWA, JSON và kiểm thử logic mock bằng Node (complete → duplicate → undo → duplicate undo → re-complete, XP balance). Môi trường tạo tài liệu không truy cập được npm registry và trình duyệt tự động bị chặn, nên **chưa thể xác nhận `npm run build` hoặc QA trực quan frontend React**. Ticket `00_FRONTEND_REVIEW.md` bắt buộc thực hiện hai bước đó trước khi chốt giao diện.
-
+- [`docs/PRODUCT_V1.md`](docs/PRODUCT_V1.md) — mục tiêu, ranh giới, vòng chính
+- [`docs/NEXT_STEPS.md`](docs/NEXT_STEPS.md) — việc kế tiếp, có cách kiểm
+- [`docs/audit/PHASE0_AUDIT.md`](docs/audit/PHASE0_AUDIT.md) — audit giao diện và ảnh chụp
+- [`docs/DOMAIN_RULES.md`](docs/DOMAIN_RULES.md) — XP, streak, timezone
+- [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md), [`docs/openapi.yaml`](docs/openapi.yaml), [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md)
+- [`docs/agent/DECISIONS.md`](docs/agent/DECISIONS.md) — quyết định kiến trúc (ADR)
+- [`docs/tickets/`](docs/tickets/) — ticket gym/RPG B-25 → B-41 và vận hành B-11 → B-13
+- [`docs/LifeOS_Gym_Week1_2026-10-19.md`](docs/LifeOS_Gym_Week1_2026-10-19.md) — giáo án tuần 1
+- [`docs/archive/`](docs/archive/SUPERSEDED.md) — đã hết hiệu lực, chỉ để tra cứu
