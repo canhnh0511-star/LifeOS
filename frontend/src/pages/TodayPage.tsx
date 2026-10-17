@@ -11,7 +11,7 @@ import { difficultyForXp, difficultyLabel } from '../domain/difficulty';
 import { categoryLabel, formatDate, moveDate } from '../domain/rules';
 import { loadPin, pendingFirst, pickMain, savePin } from '../ui/mainQuest';
 import { isRunning, loadTimer } from '../ui/focusTimer';
-import { exerciseByName, muscleLabel } from '../domain/exerciseLibrary';
+import { exerciseByName, isLibraryLine, muscleLabel } from '../domain/exerciseLibrary';
 import { hasGymHabit, nextGymSession } from '../domain/gymSession';
 import { WeekPlan } from '../components/WeekPlan';
 import { QuestSheet } from '../components/QuestSheet';
@@ -63,7 +63,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   const unopened = rewards.some(r => r.state === 'EARNED' && !isOpened(opened, selectedDate, r.tier));
   const rewardHint = !rewards.length ? '' : (unopened ? 'Chạm vào rương để mở' + (nextChest ? ' · ' : '') : '') + (nextChest ? `Còn ${Math.max(1, nextChest.threshold - done)} nhiệm vụ để mở ${tierName(nextChest.tier)}` : unopened ? '' : 'Đã mở hết rương');
   // Gym nudge: no plan yet -> offer to load one; plan loaded but nothing to train today -> say when the next session is.
-  const gymToday = (dashboard?.quests ?? []).some(q => q.objectives.some(o => !!exerciseByName(o.title)));
+  const gymToday = (dashboard?.quests ?? []).some(q => q.objectives.some(isLibraryLine));
   const upcoming = habits && isToday && !gymToday ? nextGymSession(habits, today) : null;
   const gymNudge = !habits || !isToday || gymToday ? null
     : !hasGymHabit(habits) ? (onImportPlan ? <article className="panel gym-nudge" aria-label="Giáo án gym"><div><h3><Dumbbell size={17}/> Chưa có giáo án gym</h3><p>Nạp một giáo án để Hôm nay có buổi tập, ghi từng set và xem thống kê.</p></div><button className="btn btn-primary" onClick={onImportPlan}>Nạp giáo án gym</button></article> : null)

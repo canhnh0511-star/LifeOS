@@ -1,7 +1,14 @@
 import type { HabitDto, Weekday } from '../api/types';
 export const TIMEZONE = 'Asia/Ho_Chi_Minh';
 export const pad = (n: number) => String(n).padStart(2, '0');
+/** Demo only: a date the owner picked in Settings to try future days (e.g. a Monday gym session) without waiting. Never used with the real API. */
+export const DEMO_DATE_KEY = 'lifeos.demo.today';
+export function demoToday(): string | null {
+  if (import.meta.env.VITE_API_MODE === 'real') return null;
+  try { const v = localStorage.getItem(DEMO_DATE_KEY); return v && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`)) ? v : null; } catch { return null; }
+}
 export function todayInTimezone(timezone = TIMEZONE): string {
+  const fake = demoToday(); if (fake) return fake;
   return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 }
 export function moveDate(date: string, days: number): string {

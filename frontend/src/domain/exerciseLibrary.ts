@@ -85,4 +85,6 @@ export function withExercise(habit: { objectives: { title: string; target: numbe
   return [...habit.objectives.map(o => ({ title: o.title, target: o.target, unit: o.unit, step: o.step })), objectiveFor(e)];
 }
 /** A habit is a gym session when at least one checklist line is a library exercise. */
-export const isGymHabit = (habit: { status?: string; objectives: { title: string }[] }) => habit.status !== 'ARCHIVED' && habit.objectives.some(o => !!exerciseByName(o.title));
+/** A checklist line is a library exercise when its name and its unit (rep or giây) both match, so a line like "Plank 3 phút" in a hand-made habit is not mistaken for one. */
+export const isLibraryLine = (o: { title: string; unit?: string }) => { const e = exerciseByName(o.title); return !!e && (o.unit === undefined || o.unit === e.unit); };
+export const isGymHabit = (habit: { status?: string; objectives: { title: string; unit?: string }[] }) => habit.status !== 'ARCHIVED' && habit.objectives.some(isLibraryLine);
