@@ -27,3 +27,17 @@ describe('CampaignMap gates and sigils', () => {
     expect(screen.getByText('Cửa ải 2')).toBeTruthy();
   });
 });
+
+describe('chapter day counter (B-30)', () => {
+  it('says which day of the current chapter it is, and nothing for past chapters', () => {
+    vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date('2026-10-04T05:00:00Z'));
+    try {
+      render(<CampaignMap chapters={[chapter(1, 1, false)]} busyBossId={null} onDefeat={() => {}} onUndo={() => {}}/>);
+      expect(screen.getByText(/đang diễn ra, ngày 4\/7/)).toBeTruthy();
+      cleanup();
+      vi.setSystemTime(new Date('2026-10-20T05:00:00Z'));
+      render(<CampaignMap chapters={[chapter(1, 1, false)]} busyBossId={null} onDefeat={() => {}} onUndo={() => {}}/>);
+      expect(screen.queryByText(/đang diễn ra/)).toBeNull();
+    } finally { vi.useRealTimers(); }
+  });
+});

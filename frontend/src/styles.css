@@ -374,3 +374,4 @@ button.chest{font:inherit;cursor:pointer;width:100%}button.chest:hover{filter:br
 @media(max-width:480px){.ws-tiles{grid-template-columns:repeat(2,1fr)}}
 .workout-stats .activity-bar-space{height:96px}
 .next-reward{display:grid;gap:6px}.next-reward h3{margin:0;display:flex;align-items:center;gap:6px}.next-reward p{margin:0}.next-reward ul{margin:0;padding-left:18px;color:var(--text-muted)}
+.journey-count{display:block;color:var(--text-muted);font-size:12px}

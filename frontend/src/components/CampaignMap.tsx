@@ -4,7 +4,7 @@ import type { BossDto, ChapterDto } from '../api/types';
 import { Sigil } from './Sigil';
 import { RankBadge } from './RankBadge';
 import { gateRank } from '../domain/ranks';
-import { categoryLabel, formatDate, todayInTimezone } from '../domain/rules';
+import { categoryLabel, diffDays, formatDate, todayInTimezone } from '../domain/rules';
 
 const TIER_NAMES = ['', 'Minion', 'Elite', 'Champion', 'Legend', 'Mythic'];
 
@@ -28,7 +28,7 @@ export function CampaignMap({ chapters, busyBossId, onDefeat, onUndo }: Props) {
     const phase = today > chapter.endDate ? 'past' : today >= chapter.startDate ? 'current' : 'future';
     const busy = busyBossId === boss.id;
     return <li key={chapter.index} className={`chapter chapter-${phase}`}>
-      <div className="chapter-head"><span className="chapter-index">Cửa ải {chapter.index}</span><span className="gate-rank"><RankBadge level={gateRank(boss.tier)} size="sm"/><span className="sr-only">độ khó</span></span><h3>{chapter.title}</h3><span className={`chapter-badge ${badge.earned ? 'is-earned' : ''}`} title={badge.earned ? 'Đã nhận huy hiệu' : 'Hạ boss để nhận huy hiệu'}><Sigil index={chapter.index} earned={badge.earned} size={20}/> {badge.name}<span className="sr-only">{badge.earned ? ' (đã nhận)' : ' (chưa nhận)'}</span></span><small>{formatDate(chapter.startDate, { day: 'numeric', month: 'short' })} – {formatDate(chapter.endDate, { day: 'numeric', month: 'short' })}{phase === 'current' && ' · đang diễn ra'}</small></div>
+      <div className="chapter-head"><span className="chapter-index">Cửa ải {chapter.index}</span><span className="gate-rank"><RankBadge level={gateRank(boss.tier)} size="sm"/><span className="sr-only">độ khó</span></span><h3>{chapter.title}</h3><span className={`chapter-badge ${badge.earned ? 'is-earned' : ''}`} title={badge.earned ? 'Đã nhận huy hiệu' : 'Hạ boss để nhận huy hiệu'}><Sigil index={chapter.index} earned={badge.earned} size={20}/> {badge.name}<span className="sr-only">{badge.earned ? ' (đã nhận)' : ' (chưa nhận)'}</span></span><small>{formatDate(chapter.startDate, { day: 'numeric', month: 'short' })} – {formatDate(chapter.endDate, { day: 'numeric', month: 'short' })}{phase === 'current' && ` · đang diễn ra, ngày ${diffDays(chapter.startDate, today) + 1}/${diffDays(chapter.startDate, chapter.endDate) + 1}`}</small></div>
       <article className={`boss-card status-${boss.status.toLowerCase()}`} aria-label={`Boss ${boss.name}`}>
         <BossArt boss={boss}/>
         <div className="boss-body">
