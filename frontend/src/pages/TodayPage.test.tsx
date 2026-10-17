@@ -207,12 +207,32 @@ describe('Main Quest start button for a gym session', () => {
   });
 });
 
+describe('Phase 1: the first screen is about training', () => {
+  const gym = { ...quest('g', 'PENDING', 'Buổi A'), objectives: [{ id: 'o', title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10, value: 0 }] } as QuestDto;
+  const logWith = (n: number) => ({ list: async () => Array.from({ length: n }, (_, i) => ({ exercise: 'Machine Chest Press', setNo: i + 1, reps: 10, weightKg: null })), record: async () => [], remove: async () => [], last: async () => ({ date: null, sets: [] }) });
+  it('puts "Tạo lịch tập mẫu" above the other quests when there is no gym plan', () => {
+    render(<TodayPage {...props} onImportPlan={() => {}} habits={[]} onToggleQuest={() => {}} dashboard={dashboard([quest('w', 'PENDING', 'Uống nước')])}/>);
+    const cta = screen.getByRole('button', { name: 'Tạo lịch tập mẫu' });
+    const quests = screen.getByLabelText('Việc tiếp theo');
+    expect(cta.compareDocumentPosition(quests) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+  it('offers to continue a session that already has logged sets', async () => {
+    render(<TodayPage {...props} setLog={logWith(2)} onToggleQuest={() => {}} dashboard={dashboard([gym])}/>);
+    expect(await screen.findByRole('button', { name: 'Tiếp tục buổi tập · đã ghi 2 set' })).toBeTruthy();
+  });
+  it('keeps "Bắt đầu buổi tập" while nothing has been logged', async () => {
+    render(<TodayPage {...props} setLog={logWith(0)} onToggleQuest={() => {}} dashboard={dashboard([gym])}/>);
+    expect(await screen.findByRole('button', { name: 'Bắt đầu buổi tập' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Tiếp tục buổi tập/ })).toBeNull();
+  });
+});
+
 describe('gym nudge on Today', () => {
   const habit = (over: Partial<import('../api/types').HabitDto> = {}) => ({ id: 'a', goalId: 'g', title: 'Buổi A', targetMinutes: 45, xpReward: 40, weekdays: [1], startDate: '2026-10-12', endDate: null, status: 'ACTIVE', objectives: [{ id: 'o', title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10 }], ...over }) as import('../api/types').HabitDto;
   it('offers to load a gym plan when there is none', async () => {
     const onImportPlan = vi.fn();
     render(<TodayPage {...props} onImportPlan={onImportPlan} habits={[]} onToggleQuest={() => {}} dashboard={dashboard([quest('w', 'PENDING', 'Uống nước')])}/>);
-    await userEvent.click(within(screen.getByLabelText('Giáo án gym')).getByRole('button', { name: 'Nạp giáo án gym' }));
+    await userEvent.click(within(screen.getByLabelText('Giáo án gym')).getByRole('button', { name: 'Tạo lịch tập mẫu' }));
     expect(onImportPlan).toHaveBeenCalled();
   });
   it('says when the next session is when today has none (2026-10-16 is a Friday, the session is on Monday)', () => {

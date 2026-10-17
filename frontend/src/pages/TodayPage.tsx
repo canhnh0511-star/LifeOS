@@ -68,8 +68,18 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   const gymToday = (dashboard?.quests ?? []).some(q => q.objectives.some(isLibraryLine));
   const upcoming = habits && isToday && !gymToday ? nextGymSession(habits, today) : null;
   const gymNudge = !habits || !isToday || gymToday ? null
-    : !hasGymHabit(habits) ? (onImportPlan ? <article className="panel gym-nudge" aria-label="Giáo án gym"><div><h3><Dumbbell size={17}/> Chưa có giáo án gym</h3><p>Nạp một giáo án để Hôm nay có buổi tập, ghi từng set và xem thống kê.</p></div><button className="btn btn-primary" onClick={onImportPlan}>Nạp giáo án gym</button></article> : null)
+    : !hasGymHabit(habits) ? (onImportPlan ? <article className="panel gym-nudge" aria-label="Giáo án gym"><div><h3><Dumbbell size={17}/> Chưa có lịch tập</h3><p>Chọn một lịch tập mẫu cho người mới để Hôm nay có buổi tập, ghi từng set và xem tiến độ.</p></div><button className="btn btn-primary" onClick={onImportPlan}>Tạo lịch tập mẫu</button></article> : null)
     : upcoming ? <article className="panel gym-nudge" aria-label="Buổi tập kế tiếp"><div><h3><Dumbbell size={17}/> Hôm nay không có buổi tập</h3><p>Buổi kế tiếp: <strong>{upcoming.habit.title}</strong> · {formatDate(upcoming.date, { weekday: 'long', day: 'numeric', month: 'numeric' })}{(() => { const g = [...new Set(upcoming.habit.objectives.map(o => exerciseByName(o.title)?.group).filter(Boolean))].map(x => muscleLabel[x!]); return g.length ? ` · ${g.join(', ')}` : ''; })()}</p></div>{loadDay && <button className="btn btn-quiet" onClick={() => setShowWeek(true)}>Xem lịch tuần</button>}</article> : null;
+  const noPlan = !!habits && isToday && !gymToday && !hasGymHabit(habits);
+  // A session with sets already on the server is "in progress": the main button resumes it instead of starting over.
+  const nextIsGym = !!next && next.status !== 'COMPLETED' && next.objectives.some(isLibraryLine);
+  const [loggedSets, setLoggedSets] = useState(0);
+  useEffect(() => {
+    if (!setLog || !nextIsGym || !next) { setLoggedSets(0); return; }
+    let live = true;
+    setLog.list(next.habitId, selectedDate).then(sets => { if (live) setLoggedSets(sets.length); }, () => { if (live) setLoggedSets(0); });
+    return () => { live = false; };
+  }, [setLog, nextIsGym, next?.habitId, selectedDate, detailId]); // eslint-disable-line react-hooks/exhaustive-deps
   const NextIcon = next ? categoryIcons[next.category] : null;
   return <>
     {showLibrary && <ExerciseLibrary onClose={() => setShowLibrary(false)} habits={habits} onAddToHabit={onAddToHabit}/>}
@@ -92,17 +102,18 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
         <button type="button" className="btn btn-secondary" onClick={() => setShowLibrary(true)}><BookOpen size={16}/> Thư viện</button>
         {onImportPlan && <button type="button" className="btn btn-secondary" onClick={onImportPlan}><Dumbbell size={16}/> Giáo án</button>}
       </div>
+      {noPlan && gymNudge}
       {next && NextIcon && <article className="next-up" aria-label="Việc tiếp theo">
         <div className="next-up-label">VIỆC CHÍNH HÔM NAY <Difficulty xp={next.xpReward}/></div>
         <div className="next-up-main"><IconBubble icon={NextIcon} tone={categoryColors[next.category]}/><div><h2>{next.title}</h2><small><Clock3 size={13}/> {next.targetMinutes} phút · {categoryLabel(next.category)}{next.objectives.length > 0 && ` · ${metCount(next.objectives)}/${next.objectives.length} việc`}</small></div><span className="next-up-xp"><Zap size={13}/> +{next.xpReward} XP</span></div>
         {next.objectives.length > 0 && <ProgressBar value={pct(metCount(next.objectives), next.objectives.length)} variant="green" size="slim"/>}
         {isRunning(loadTimer(next.habitId, selectedDate)) && <small className="timer-running" role="status"><Timer size={13}/> Đồng hồ buổi tập đang chạy</small>}
         <div className="next-up-actions">
-          <button className="btn btn-primary next-up-start" onClick={() => { setAutoTrain(true); setDetailId(next.habitId); }}><ClipboardList size={17}/> {next.objectives.some(isLibraryLine) ? 'Bắt đầu buổi tập' : next.objectives.length > 0 ? 'Mở danh sách việc' : 'Xem chi tiết'}</button>
+          <button className="btn btn-primary next-up-start" onClick={() => { setAutoTrain(true); setDetailId(next.habitId); }}><ClipboardList size={17}/> {next.objectives.some(isLibraryLine) ? (loggedSets > 0 ? `Tiếp tục buổi tập · đã ghi ${loggedSets} set` : 'Bắt đầu buổi tập') : next.objectives.length > 0 ? 'Mở danh sách việc' : 'Xem chi tiết'}</button>
           {next.objectives.length === 0 && <button className="btn btn-quiet next-up-quick" disabled={busyId === next.habitId} onClick={() => onToggleQuest(next)}><Check size={16}/> Hoàn thành</button>}
         </div>
       </article>}
-      {gymNudge}
+      {!noPlan && gymNudge}
       {allDone && <article className="next-up next-up-done" aria-label="Đã xong hôm nay">
         <div className="next-up-main"><PartyPopper size={28}/><div><h2>Bạn đã hoàn thành hết hôm nay.</h2><small>Nghỉ ngơi, hoặc xem nhân vật của bạn tiến bộ thế nào.</small></div></div>
         <button className="btn btn-secondary" onClick={() => goTo('character')}>Xem nhân vật</button>

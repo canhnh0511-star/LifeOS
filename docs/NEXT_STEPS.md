@@ -3,8 +3,8 @@
 Nguồn: `docs/LIFE_OS_SOLO_LEVELING_GYM_REFOCUS.md` §8–9; bằng chứng: `docs/audit/PHASE0_AUDIT.md`. Ticket cũ còn hiệu lực: `docs/tickets/` (B-25 → B-41, B-11 → B-13).
 
 **Phase 1 — dùng được (P0)**, mỗi mục có test:
-1. Hôm nay chưa có giáo án: nút "Tạo lịch tập mẫu" là hành động chính; việc không phải gym thu gọn. *Kiểm:* test TodayPage + ảnh 390px.
-2. Hôm nay có buổi dở: "Tiếp tục buổi tập · x/y set". *Kiểm:* ghi 1 set, tải lại, thấy nút tiếp tục.
+1. ✅ (2026-10-17, mock + test) Hôm nay chưa có giáo án: nút "Tạo lịch tập mẫu" là hành động chính; việc không phải gym thu gọn. *Kiểm:* test TodayPage + ảnh 390px.
+2. ✅ (2026-10-17, mock + test) Hôm nay có buổi dở: "Tiếp tục buổi tập · x/y set". *Kiểm:* ghi 1 set, tải lại, thấy nút tiếp tục.
 3. Tên bài tập tiếng Việt trước, Anh phụ (`nameVi`/`nameEn`), khoá lưu set không đổi. *Kiểm:* test tìm có/không dấu bằng tên Việt và Anh.
 4. Chi tiết bài: chuẩn bị, 3–5 bước, hít thở, 2–3 lỗi thường gặp, ảnh hoặc "chưa có ảnh". *Kiểm:* test dữ liệu đủ trường cho mọi bài.
 5. Nav 4 mục Hôm nay · Bài tập · Tiến độ · Nhân vật (ẩn, không xoá Hành trình/Số đo).
