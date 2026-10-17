@@ -1,0 +1,2 @@
+# Ghi chú sử dụng hình ảnh
+`quest-screen-concept.png` là một concept hình ảnh được tạo nguyên bản cho màn hình quest của Life OS. Nó mô tả bảng nhiệm vụ RPG tối trên mobile. Ngày tháng, số lượng, tổng XP, toàn bộ chức năng UI game và chân dung người dùng đều mang tính **minh họa**. Chỉ dùng để truyền đạt layout/định hướng nghệ thuật. Không suy ra yêu cầu chức năng hay khẳng định hành vi app hiện có từ các điểm ảnh. Không sao chép tranh nhân vật chính thức hay nhãn hiệu của Solo Leveling.

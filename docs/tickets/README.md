@@ -27,3 +27,13 @@
 | B-22 | Vật phẩm rơi từ rương (thực hiện B-16) | Xong (mở rương, 6 vật phẩm có truyện, kho đồ, đeo/tháo; ADR-034) |
 | B-23 | Quái ngẫu nhiên và sự kiện | Ý tưởng; lát 4 |
 | B-24 | Số đo cơ thể (cân nặng, vòng eo, mỡ %, chỉ số riêng) | Xong (ADR-035) |
+| B-25 | Nền tảng giao diện RPG: biến CSS, giảm chuyển động (RPG-01) | Xong; chỉ frontend |
+| B-26 | Main Quest, ghim, chip độ khó (RPG-02) | Xong; chỉ frontend |
+| B-27 | Chi tiết nhiệm vụ, đồng hồ, nghỉ giữa set (RPG-03) | Xong; chỉ frontend |
+| B-28 | Tiến hoá nhân vật theo level/rank (RPG-04) | Xong; chỉ frontend |
+| B-29 | Cải tiến kho đồ/phần thưởng cho gym (RPG-05, cải tiến B-22) | Chưa làm |
+| B-30 | Cải tiến chương/cửa ải cho gym (RPG-06, cải tiến B-21) | Chưa làm |
+| B-31 | QA liên màn hình và sign-off RPG (RPG-07) | Chưa làm; gom nợ kiểm hình ảnh B-25..27 |
+| B-32 | Nội dung gym: giáo án mẫu, thư viện bài tập, nạp giáo án | Xong; chỉ frontend |
+| B-33 | RFC backend cho lớp RPG (RPG-08) | Hoãn, chỉ tài liệu |
+| B-34 | Nhật ký từng set/rep/mức tạ (backend + frontend) | Xong (ADR-037) |

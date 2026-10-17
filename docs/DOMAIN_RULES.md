@@ -90,3 +90,10 @@ Cấp một lần mỗi campaign, có thưởng XP (10–30), ghi ledger `ACHIEV
 - Trục = 5 lĩnh vực; giá trị = `completed / scheduled` của lĩnh vực trong kỳ (7d hoặc 30d), gồm cả boss.
 - Lĩnh vực có `scheduled = 0` trong kỳ là "chưa có dữ liệu" (khác 0%).
 - `AnalyticsDto.previous` chứa cùng số liệu của kỳ liền trước (cùng độ dài) để phủ so sánh.
+
+## Lớp RPG phía giao diện (B-25 → B-27, ADR-036)
+- **Main Quest** là ưu tiên hiển thị của MỘT nhiệm vụ có lịch trong ngày (ghim thủ công hoặc nhiệm vụ chưa xong đầu tiên). Không phải quest mới, không nhân đôi, không thưởng thêm; ghim không còn hiệu lực khi nhiệm vụ xong.
+- **Độ khó** chỉ để hiển thị, suy từ `xpReward`: Dễ 0–20, Vừa 21–40, Khó 41+. Không đổi phần thưởng.
+- **Đồng hồ buổi tập và đếm ngược nghỉ** là công cụ cục bộ, không phải bằng chứng hoàn thành: bắt đầu/tạm dừng/hết giờ không hoàn thành nhiệm vụ và không có XP. Chỉ mutation hoàn thành (PUT/DELETE completion, objective) mới đổi XP.
+- Tuỳ chọn giảm chuyển động, ghim và đồng hồ lưu trong localStorage của thiết bị, không đồng bộ và không có bí mật.
+- **Nhật ký set (B-34)** chỉ ghi lại bài đã tập (bài, số set, rep hoặc giây, mức tạ kg). Không cộng XP, không có sự kiện ledger, không đổi streak/rương/thành tựu và không tự hoàn thành nhiệm vụ: hoàn thành vẫn chỉ qua nút xác nhận hoặc checklist (B-17).

@@ -174,6 +174,49 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
         '422': {$ref: '#/components/responses/ValidationError'}
+  /quests/{habitId}/dates/{date}/sets:
+    parameters:
+      - {name: habitId, in: path, required: true, schema: {type: string}}
+      - {name: date, in: path, required: true, schema: {$ref: '#/components/schemas/LocalDate'}}
+    get:
+      tags: [Quests]
+      operationId: getWorkoutSets
+      description: The sets logged for this quest, ordered by exercise then set number. Readable for any day, including past ones.
+      responses:
+        '200': {description: Logged sets, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/WorkoutSet'}}}}}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+    put:
+      tags: [Quests]
+      operationId: recordWorkoutSet
+      description: Records one set (idempotent by exercise ignoring case + setNo; a repeat replaces reps and weight). Only for a day the habit was scheduled, from today back 7 days. Gives no XP, creates no ledger event and never completes the quest. Returns all sets of the quest.
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/WorkoutSetInput'}}}}
+      responses:
+        '200': {description: Logged sets after the change, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/WorkoutSet'}}}}}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+    delete:
+      tags: [Quests]
+      operationId: removeWorkoutSet
+      description: Removes one set; removing a set that is not there is harmless. Same day rules as PUT.
+      parameters:
+        - {name: exercise, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 100}}
+        - {name: setNo, in: query, required: true, schema: {type: integer, minimum: 1, maximum: 50}}
+      responses:
+        '200': {description: Logged sets after the change, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/WorkoutSet'}}}}}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /workout-sets/last:
+    get:
+      tags: [Quests]
+      operationId: getLastWorkoutSets
+      description: The sets of one exercise on the latest day before `before` on which the user logged it (on any quest). `date` is null and `sets` empty when there is none. Used to show "last time".
+      parameters:
+        - {name: exercise, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 100}}
+        - {name: before, in: query, required: true, schema: {$ref: '#/components/schemas/LocalDate'}}
+      responses:
+        '200': {description: Last logged sets, content: {application/json: {schema: {$ref: '#/components/schemas/LastWorkoutSets'}}}}
+        '422': {$ref: '#/components/responses/ValidationError'}
   /progress:
     get:
       tags: [Progress]
@@ -562,6 +605,28 @@ components:
         threshold: {type: integer, minimum: 1}
         xp: {type: integer, enum: [10, 20, 40]}
         state: {type: string, enum: [LOCKED, EARNED]}
+    WorkoutSet:
+      type: object
+      required: [exercise, setNo, reps, weightKg]
+      properties:
+        exercise: {type: string, maxLength: 100}
+        setNo: {type: integer, minimum: 1, maximum: 50}
+        reps: {type: integer, minimum: 1, maximum: 1000, description: 'Repetitions, or seconds for a hold such as a plank.'}
+        weightKg: {type: [number, 'null'], minimum: 0, maximum: 1000, description: 'Two decimals; null for body weight or when not noted.'}
+    WorkoutSetInput:
+      type: object
+      required: [exercise, setNo, reps]
+      properties:
+        exercise: {type: string, minLength: 1, maxLength: 100}
+        setNo: {type: integer, minimum: 1, maximum: 50}
+        reps: {type: integer, minimum: 1, maximum: 1000}
+        weightKg: {type: [number, 'null'], minimum: 0, maximum: 1000}
+    LastWorkoutSets:
+      type: object
+      required: [date, sets]
+      properties:
+        date: {type: [string, 'null'], format: date}
+        sets: {type: array, items: {$ref: '#/components/schemas/WorkoutSet'}}
     Metric:
       type: object
       required: [id, name, unit, builtin, entries]
