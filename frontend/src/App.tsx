@@ -126,6 +126,7 @@ export default function App() {
   };
   const saveGoal = async (v: CreateGoalRequest) => { try { await api.createGoal(v); setModal(null); setNotice('Đã tạo mục tiêu mới.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi xảy ra.')); } };
   // Stable object so the sheet does not reload its sets on every render. Errors reach the sheet as messages, not toasts.
+  const loadDay = useMemo(() => (date: string) => api.getDashboard(date), []);
   const setLog = useMemo<SetLogApi>(() => ({ list: api.getWorkoutSets, record: api.recordWorkoutSet, remove: api.removeWorkoutSet, last: api.getLastWorkoutSets }), []);
   const importPlan = async (v: ImportHabitPlanRequest) => { try { const r = await api.importHabitPlan(v); setModal(null); setNotice(`Đã nạp giáo án: ${r.habits.length} buổi tập.`); refresh(); } catch (e) { setNotice(failure(e, 'Không nạp được giáo án.')); } };
   const saveHabit = async (v: CreateHabitRequest) => { try { await api.createHabit(v); setModal(null); setNotice('Đã tạo thói quen mới.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi xảy ra.')); } };
@@ -162,7 +163,7 @@ export default function App() {
       <main className="page-content" data-dialog-fallback tabIndex={-1}>
         {error && <div role="alert" className="error-banner">{error}<button onClick={refresh}>Thử lại <RotateCcw size={14}/></button></div>}
         {loading && !dashboard ? <div className="loading-shell"><div className="loader"/><p>Đang chuẩn bị hành trình của bạn...</p></div> : <>
-          {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')} setLog={setLog} weekly={weekly} goTo={goTo}/>}
+          {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')} setLog={setLog} loadDay={loadDay} weekly={weekly} goTo={goTo}/>}
           {tab === 'journey' && <JourneyPage journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')}/>}
           {tab === 'character' && <CharacterPage dashboard={dashboard} items={items} busyItemCode={busyItemCode} onEquip={item => wear(item, true)} onUnequip={item => wear(item, false)}/>}
           {tab === 'body' && <BodyPage metrics={metrics} failed={metricsFailed} onRetry={() => { void reloadMetrics(); }} today={today} busy={bodyBusy} onRecord={recordMeasure} onRemoveEntry={removeMeasure} onCreate={createMetric} onDelete={deleteMetric}/>}

@@ -11,6 +11,7 @@ import { difficultyForXp, difficultyLabel } from '../domain/difficulty';
 import { categoryLabel, formatDate, moveDate } from '../domain/rules';
 import { loadPin, pendingFirst, pickMain, savePin } from '../ui/mainQuest';
 import { isRunning, loadTimer } from '../ui/focusTimer';
+import { WeekPlan } from '../components/WeekPlan';
 import { QuestSheet } from '../components/QuestSheet';
 import type { SetLogApi } from '../components/SetLog';
 import { metCount } from '../components/ObjectiveList';
@@ -23,7 +24,7 @@ interface Props {
   dashboard: DailyDashboardDto | null;
   selectedDate: string; today: string; busyId: string | null;
   onSelectDate: (update: (date: string) => string) => void;
-  onToggleQuest: (quest: QuestDto) => void; onSetObjective: (quest: QuestDto, objective: QuestObjectiveDto, value: number) => void; onNewHabit: () => void; onImportPlan?: () => void; setLog?: SetLogApi; weekly?: AnalyticsDto | null; goTo: (tab: Tab) => void;
+  onToggleQuest: (quest: QuestDto) => void; onSetObjective: (quest: QuestDto, objective: QuestObjectiveDto, value: number) => void; onNewHabit: () => void; onImportPlan?: () => void; setLog?: SetLogApi; loadDay?: (date: string) => Promise<DailyDashboardDto>; weekly?: AnalyticsDto | null; goTo: (tab: Tab) => void;
 }
 
 const Difficulty = ({ xp }: { xp: number }) => { const d = difficultyForXp(xp); return <span className={`diff-chip diff-${d.toLowerCase()}`} title="Độ khó chỉ để hiển thị, suy từ XP">{difficultyLabel[d]}</span>; };
@@ -32,7 +33,8 @@ const Difficulty = ({ xp }: { xp: number }) => { const d = difficultyForXp(xp); 
  * Today answers one question: what do I do next? A one-line summary, the next quest with a single button, then the full list.
  * Level, stats, balance and the campaign live in their own tabs.
  */
-export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate, onToggleQuest, onSetObjective, onNewHabit, onImportPlan, setLog, weekly, goTo }: Props) {
+export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate, onToggleQuest, onSetObjective, onNewHabit, onImportPlan, setLog, loadDay, weekly, goTo }: Props) {
+  const [showWeek, setShowWeek] = useState(false);
   const [opening, setOpening] = useState<DailyRewardDto | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const detail = detailId ? dashboard?.quests.find(q => q.habitId === detailId) : undefined; // read from the live dashboard so the sheet never shows stale numbers
@@ -59,6 +61,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   const rewardHint = !rewards.length ? '' : (unopened ? 'Chạm vào rương để mở' + (nextChest ? ' · ' : '') : '') + (nextChest ? `Còn ${Math.max(1, nextChest.threshold - done)} nhiệm vụ để mở ${tierName(nextChest.tier)}` : unopened ? '' : 'Đã mở hết rương');
   const NextIcon = next ? categoryIcons[next.category] : null;
   return <>
+    {showWeek && loadDay && <WeekPlan today={today} selectedDate={selectedDate} loadDay={loadDay} onPick={d => { onSelectDate(() => d); setShowWeek(false); }} onClose={() => setShowWeek(false)}/>}
     <section className="today-hero" aria-label="Trạng thái nhân vật">
       <div className="hero-top"><div><h1>{isToday ? <>Hôm <span className="text-gradient">nay</span></> : <span className="text-gradient">Ngày đã chọn</span>}</h1><p>{dateText(selectedDate)} · {total === 0 ? 'chưa có nhiệm vụ nào' : `${done}/${total} nhiệm vụ đã xong`}</p></div><button className="btn btn-outlined hero-new" onClick={onNewHabit} aria-label="Thói quen mới"><Plus size={17}/><span>Thói quen mới</span></button></div>
       <div className="hunter-status">
@@ -112,6 +115,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
 
       <article className="panel quests-panel">
         <div className="quests-header"><div><h2>Tất cả nhiệm vụ <span className="count-pill">{total}</span></h2></div>
+          {loadDay && <button className="btn btn-quiet" onClick={() => setShowWeek(true)}><CalendarDays size={16}/> Lịch tuần</button>}
           <div className="date-controls"><button aria-label="Ngày trước" onClick={() => onSelectDate(d => moveDate(d, -1))}><ChevronLeft size={17}/></button><span>{isToday ? 'Hôm nay' : formatDate(selectedDate, { day: 'numeric', month: 'short' })}</span><button disabled={selectedDate >= today} aria-label="Ngày tiếp theo" onClick={() => onSelectDate(d => moveDate(d, 1))}><ChevronRight size={17}/></button></div></div>
         <div className="quest-list">{!dashboard?.quests.length
           ? <EmptyState icon={CalendarDays} title="Không có nhiệm vụ trong ngày này" details="Tạo một thói quen mới hoặc chọn ngày khác." action={<><button className="btn btn-secondary" onClick={onNewHabit}><Plus size={16}/> Tạo thói quen</button>{onImportPlan && <button className="btn btn-quiet" onClick={onImportPlan}><Dumbbell size={16}/> Nạp giáo án gym</button>}</>}/>

@@ -365,3 +365,7 @@ button.chest{font:inherit;cursor:pointer;width:100%}button.chest:hover{filter:br
 .aw-info{min-height:44px}
 .modal-heading .icon-btn{width:44px;height:44px}
 .objective-info{min-width:44px;min-height:44px;display:grid;place-items:center;background:transparent;border:0;color:var(--text-muted)}
+.wk{display:grid;gap:12px}.wk-nav{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;text-align:center;gap:6px}.wk-nav small{display:block;color:var(--text-muted)}.wk-days{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.wk-day{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:56px}.wk-day.is-today{border-color:var(--accent);box-shadow:0 0 14px color-mix(in srgb,var(--accent) 30%,transparent)}.wk-day.is-future{opacity:.85}
+.wk-date{display:grid}.wk-date small,.wk-note{color:var(--text-muted)}.wk-note{display:inline-flex;align-items:center;gap:4px}.wk-quests{list-style:none;margin:0;padding:0;display:grid;gap:4px}.wk-quests li{display:flex;align-items:center;gap:6px}.wk-quests li span{flex:1;min-width:0}.wk-quests li.is-done span{color:var(--text-muted)}.wk-main{margin-left:6px;font-size:11px;color:var(--accent);display:inline-flex;align-items:center;gap:2px}.wk-open{min-height:44px;min-width:44px}
+.wk-nav .icon-btn{width:44px;height:44px}.wk-quests li small{white-space:nowrap;color:var(--text-muted)}.wk-day{grid-template-columns:48px 1fr auto}
