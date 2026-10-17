@@ -375,3 +375,10 @@ button.chest{font:inherit;cursor:pointer;width:100%}button.chest:hover{filter:br
 .workout-stats .activity-bar-space{height:96px}
 .next-reward{display:grid;gap:6px}.next-reward h3{margin:0;display:flex;align-items:center;gap:6px}.next-reward p{margin:0}.next-reward ul{margin:0;padding-left:18px;color:var(--text-muted)}
 .journey-count{display:block;color:var(--text-muted);font-size:12px}
+/* B-31 QA: every tap target is at least 44px, and the Today header wraps instead of scrolling sideways at 320px. */
+.icon-btn,.topbar button,.date-controls button,.goal-habit button,.goal-pause,.period-switch button{min-width:44px!important;min-height:44px!important}
+.btn,.bottom-nav button{min-height:44px}.bottom-nav button{min-height:48px}
+input:not([type=checkbox]):not([type=radio]):not([type=range]),select{min-height:44px}
+.quests-header{flex-wrap:wrap;gap:8px}.quests-header .date-controls{flex-wrap:nowrap;margin-left:auto}
+.goal-habit{flex-wrap:wrap}
+.page-header button,header button,.section-header button,.section-actions button,.hero-new{min-width:44px!important;min-height:44px!important}

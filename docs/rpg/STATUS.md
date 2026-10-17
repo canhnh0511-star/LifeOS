@@ -37,3 +37,11 @@ Một ticket mỗi lần, báo cáo file đổi + lệnh test + known gaps, ch�
 
 ## Việc kế tiếp đề xuất
 B-29 → B-30 → B-31. Các thay đổi B-25..B-28, B-32 và tài liệu này chưa được commit; `docs/seed/` và việc xoá `start-preview.sh` là thay đổi có sẵn từ trước.
+
+
+## QA liên màn hình (B-31, chạy 2026-10-17, Chrome headless qua puppeteer-core, mock API)
+- 5 tab × 320/390/768/1440px: không cuộn ngang, không lỗi console, mọi nút có tên truy cập.
+- Vùng chạm: đo `getBoundingClientRect` mọi button/input/select hiển thị; đã sửa hàng loạt chỗ dưới 44px (menu, Cài đặt, điều hướng ngày, nút Sửa/Pause, bộ chọn 7/30 ngày, ô nhập số đo, nav dưới) và lỗi cuộn ngang ở 320px (đầu danh sách nhiệm vụ). Khối CSS cuối `styles.css` ("B-31 QA").
+- Tương phản: chữ nhạt `#aab6c7` trên `#0b1018`/`#151e2a` đạt 9,3:1 và 8,2:1; chữ chính 14,4:1 (AA).
+- Luồng thật đã chạy: nạp giáo án → Tập từng set → ghi set → Thống kê; Lịch tuần; Thư viện bài tập → chi tiết; Nhân vật/Kho đồ.
+- **Chưa làm được:** iPhone thật/safe-area/nút Back/PWA cài đặt, bản Railway, test backend, màn hình đọc (VoiceOver). Backend cho vật phẩm/huy hiệu gym (B-29) chưa làm.

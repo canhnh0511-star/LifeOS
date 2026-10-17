@@ -33,7 +33,7 @@
 | B-28 | Tiến hoá nhân vật theo level/rank (RPG-04) | Xong; chỉ frontend |
 | B-29 | Cải tiến kho đồ/phần thưởng cho gym (RPG-05, cải tiến B-22) | Chưa làm |
 | B-30 | Cải tiến chương/cửa ải cho gym (RPG-06, cải tiến B-21) | Xong: nhãn "ngày đã qua" tách khỏi "nhiệm vụ có lịch đã xong" (kèm số đếm), ngày hiện tại trong chương |
-| B-31 | QA liên màn hình và sign-off RPG (RPG-07) | Chưa làm; gom nợ kiểm hình ảnh B-25..27 |
+| B-31 | QA liên màn hình và sign-off RPG (RPG-07) | Phần QA tự động xong (2026-10-17): xem docs/rpg/STATUS.md; còn kiểm trên iPhone thật/PWA/Railway |
 | B-32 | Nội dung gym: giáo án mẫu, thư viện bài tập, nạp giáo án | Xong; chỉ frontend |
 | B-33 | RFC backend cho lớp RPG (RPG-08) | Hoãn, chỉ tài liệu |
 | B-34 | Nhật ký từng set/rep/mức tạ (backend + frontend) | Xong (ADR-037) |
