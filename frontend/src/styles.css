@@ -336,3 +336,16 @@ button.chest{font:inherit;cursor:pointer;width:100%}button.chest:hover{filter:br
 .quest-row-wrap{gap:8px;align-items:stretch;margin-bottom:8px}
 .quest-row-wrap .quest-detail-btn{align-self:center}
 .quest-row{padding:12px 12px;border:1px solid var(--line);border-left-width:3px;border-radius:12px}
+
+/* B-35c: compact Main Quest (no inline checklist) and avatar kept to the right of the text */
+.next-up{padding:14px 16px;gap:10px}
+.next-up-label{font-size:10px;letter-spacing:1.2px}
+.next-up-main{flex:0 0 100%;gap:12px}.next-up-main>div{flex:1;min-width:0}
+.next-up-main h2{font-size:17px;margin:0 0 2px}
+.next-up-main .next-up-xp{margin-left:0;flex:0 0 auto;white-space:nowrap}
+.next-up>.progress-track{flex:0 0 100%;width:100%}
+.next-up-actions{flex:0 0 100%;display:flex;gap:8px}.next-up-actions .btn{width:auto;flex:1}.next-up-actions .next-up-quick{flex:0 0 auto}
+.today-hero{background:linear-gradient(90deg,#0b1018 0%,rgba(11,16,24,.92) 34%,rgba(11,16,24,0) 64%),linear-gradient(180deg,rgba(11,16,24,.35) 0%,rgba(11,16,24,0) 35%,rgba(11,16,24,.7) 100%),url('/art/avatar.jpg') right -6px top 0/auto 128% no-repeat,#0b1018}
+.today-hero .hunter-status{max-width:56%}
+@media(max-width:560px){.today-hero{background-position:right -6px top 0}.today-hero p{max-width:60%}}
+.today-hero{margin-bottom:14px}

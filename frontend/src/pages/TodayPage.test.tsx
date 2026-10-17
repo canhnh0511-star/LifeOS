@@ -22,7 +22,7 @@ describe('TodayPage', () => {
     const next = screen.getByLabelText('Việc tiếp theo');
     expect(next.textContent).toContain('Việc kế tiếp');
     expect(next.textContent).not.toContain('Việc sau');
-    await userEvent.click(next.querySelector('button')!);
+    await userEvent.click(within(next).getByRole('button', { name: /^Hoàn thành$/ }));
     expect(onToggleQuest).toHaveBeenCalledWith(expect.objectContaining({ habitId: 'b' }));
   });
   it('says everything is done, and offers the character tab', async () => {
@@ -91,20 +91,23 @@ describe('TodayPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /Level 2, hạng E, Tân binh, xem nhân vật/ }));
     expect(goTo).toHaveBeenCalledWith('character');
   });
-  it('shows a quest that has a checklist as a card with its lines, and offers a quick "all done" instead of a plain button', async () => {
+  it('keeps a checklist out of Today: the Main Quest shows only progress, and the lines live in the detail sheet', async () => {
     const onSetObjective = vi.fn(); const onToggleQuest = vi.fn();
     const withList: QuestDto = { ...quest('gym', 'PENDING', 'Tập chân'), objectives: [
       { id: 'o1', title: 'Squat', target: 40, unit: 'rep', step: 5, value: 10 }, { id: 'o2', title: 'Ghi lại', target: 1, unit: '', step: 1, value: 0 }] };
     render(<TodayPage {...props} onSetObjective={onSetObjective} onToggleQuest={onToggleQuest} dashboard={dashboard([withList])}/>);
     const next = screen.getByLabelText('Việc tiếp theo');
     expect(next.textContent).toContain('0/2 việc');
-    expect(next.querySelectorAll('.objective')).toHaveLength(2);
-    await userEvent.click(next.querySelector('button[aria-label^="Tăng Squat"]')!);
-    expect(onSetObjective).toHaveBeenCalledWith(expect.objectContaining({ habitId: 'gym' }), expect.objectContaining({ id: 'o1' }), 15);
-    await userEvent.click(screen.getByRole('button', { name: /Đánh dấu xong tất cả/ }));
-    expect(onToggleQuest).toHaveBeenCalledWith(expect.objectContaining({ habitId: 'gym' }));
+    expect(document.querySelectorAll('.objective')).toHaveLength(0);
+    expect(screen.queryByRole('button', { name: /Đánh dấu xong tất cả/ })).toBeNull();
     expect(document.querySelector('.quests-panel .quest-card')).not.toBeNull();
     expect(document.querySelector('.quests-panel button.quest-row')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập/ }));
+    const sheet = screen.getByRole('dialog');
+    expect(sheet.querySelectorAll('.objective')).toHaveLength(2);
+    await userEvent.click(sheet.querySelector('button[aria-label^="Tăng Squat"]')!);
+    expect(onSetObjective).toHaveBeenCalledWith(expect.objectContaining({ habitId: 'gym' }), expect.objectContaining({ id: 'o1' }), 15);
+    expect(onToggleQuest).not.toHaveBeenCalled();
   });
   it('names the first unfinished quest as the one Main Quest, shows difficulty from XP, and lists the quest once with a tag', () => {
     const hard = { ...quest('b', 'PENDING', 'Ngực + Tay sau'), xpReward: 50 };

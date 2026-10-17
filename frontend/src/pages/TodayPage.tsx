@@ -13,7 +13,7 @@ import { loadPin, pendingFirst, pickMain, savePin } from '../ui/mainQuest';
 import { isRunning, loadTimer } from '../ui/focusTimer';
 import { QuestSheet } from '../components/QuestSheet';
 import type { SetLogApi } from '../components/SetLog';
-import { ObjectiveList, metCount } from '../components/ObjectiveList';
+import { metCount } from '../components/ObjectiveList';
 import { EmptyState, IconBubble, ProgressBar } from '../components/primitives';
 import { categoryColors, categoryIcons } from '../ui/categories';
 import { dateText, number, pct } from '../ui/format';
@@ -73,16 +73,14 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
     </section>
     <div className="today-simple">
       {next && NextIcon && <article className="next-up" aria-label="Việc tiếp theo">
-        <div className="next-up-label">NHIỆM VỤ HÔM NAY · MAIN QUEST <Difficulty xp={next.xpReward}/><span className="next-up-xp"><Zap size={13}/> +{next.xpReward} XP</span></div>
-        <div className="next-up-main"><IconBubble icon={NextIcon} tone={categoryColors[next.category]}/><div><h2>{next.title}</h2><small><Clock3 size={13}/> {next.targetMinutes} phút · {categoryLabel(next.category)} · +{next.xpReward} XP{next.objectives.length > 0 && ` · ${metCount(next.objectives)}/${next.objectives.length} việc`}</small></div></div>
+        <div className="next-up-label">NHIỆM VỤ HÔM NAY · MAIN QUEST <Difficulty xp={next.xpReward}/></div>
+        <div className="next-up-main"><IconBubble icon={NextIcon} tone={categoryColors[next.category]}/><div><h2>{next.title}</h2><small><Clock3 size={13}/> {next.targetMinutes} phút · {categoryLabel(next.category)}{next.objectives.length > 0 && ` · ${metCount(next.objectives)}/${next.objectives.length} việc`}</small></div><span className="next-up-xp"><Zap size={13}/> +{next.xpReward} XP</span></div>
+        {next.objectives.length > 0 && <ProgressBar value={pct(metCount(next.objectives), next.objectives.length)} variant="green" size="slim"/>}
         {isRunning(loadTimer(next.habitId, selectedDate)) && <small className="timer-running" role="status"><Timer size={13}/> Đồng hồ buổi tập đang chạy</small>}
-        {next.objectives.length > 0
-          ? <>
-              <ObjectiveList quest={next} onSet={(o, v) => onSetObjective(next, o, v)}/>
-              <button className="btn btn-quiet next-up-quick" disabled={busyId === next.habitId} onClick={() => onToggleQuest(next)}><Check size={16}/> Đánh dấu xong tất cả</button>
-            </>
-          : <button className="btn btn-primary" disabled={busyId === next.habitId} onClick={() => onToggleQuest(next)}><Check size={17}/> Hoàn thành</button>}
-        <button className="btn btn-primary next-up-start" onClick={() => setDetailId(next.habitId)}><ClipboardList size={17}/> Bắt đầu buổi tập</button>
+        <div className="next-up-actions">
+          <button className="btn btn-primary next-up-start" onClick={() => setDetailId(next.habitId)}><ClipboardList size={17}/> Bắt đầu buổi tập</button>
+          {next.objectives.length === 0 && <button className="btn btn-quiet next-up-quick" disabled={busyId === next.habitId} onClick={() => onToggleQuest(next)}><Check size={16}/> Hoàn thành</button>}
+        </div>
       </article>}
       <div className="today-tiles" aria-label="Tóm tắt hôm nay">
         <div className="today-tile" title="Số ngày liên tiếp hoàn thành ít nhất một nửa nhiệm vụ trong ngày"><Flame size={22}/><span><small>Chuỗi ngày</small><strong>{dashboard?.dayStreak || 0} ngày</strong></span></div>
@@ -123,7 +121,6 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
               // A quest with a checklist is a card, not one big button: its lines are the controls.
               return <div key={q.habitId} data-status={completed ? 'done' : metCount(q.objectives) > 0 ? 'doing' : 'todo'} className={`quest-card ${completed ? 'is-done' : ''} ${next?.habitId === q.habitId ? 'is-next' : ''}`}>
                 <div className="quest-card-head"><IconBubble icon={Icon} tone={categoryColors[q.category]}/><span className="quest-body"><strong>{q.title}</strong><small><Clock3 size={13}/> {q.targetMinutes} phút <i/> {categoryLabel(q.category)} <i/> {metCount(q.objectives)}/{q.objectives.length} việc <Difficulty xp={q.xpReward}/>{next?.habitId === q.habitId && <b className="main-tag">Trọng tâm</b>}</small></span><span className={`xp-tag ${completed ? 'earned' : ''}`}>{completed ? <Check size={13}/> : <Zap size={13}/>} {completed ? 'Xong' : `+${q.xpReward} XP`}</span><button type="button" className="quest-detail-btn" aria-label={`Chi tiết ${q.title}`} onClick={() => setDetailId(q.habitId)}><ClipboardList size={17}/></button></div>
-                {next?.habitId !== q.habitId && <ObjectiveList quest={q} onSet={(o, v) => onSetObjective(q, o, v)}/>}
               </div>;
             }
             return <div key={q.habitId} className="quest-row-wrap"><button className={`quest-row ${completed ? 'is-done' : ''} ${next?.habitId === q.habitId ? 'is-next' : ''}`} aria-label={`${completed ? 'Hoàn tác' : 'Hoàn thành'} nhiệm vụ ${q.title}, ${q.xpReward} XP`} aria-pressed={completed} disabled={busyId === q.habitId} onClick={() => onToggleQuest(q)}>
