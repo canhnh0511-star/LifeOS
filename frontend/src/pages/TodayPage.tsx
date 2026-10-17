@@ -1,7 +1,9 @@
 import { Fragment, useEffect, useState } from 'react';
 import { BookOpen, CalendarDays, Check, ChevronLeft, ChevronRight, Circle, ClipboardList, Dumbbell, Clock3, Timer, Flame, Lock, PartyPopper, Plus, Zap } from 'lucide-react';
-import type { AnalyticsDto, HabitDto, DailyDashboardDto, DailyRewardDto, QuestDto, QuestObjectiveDto } from '../api/types';
+import type { AnalyticsDto, WorkoutSetDto, HabitDto, DailyDashboardDto, DailyRewardDto, QuestDto, QuestObjectiveDto } from '../api/types';
 import { stageForLevel } from '../domain/characterStage';
+import { xpToNextRank } from '../domain/ranks';
+import { DungeonFloors, TodayMission } from '../components/TodayMission';
 import { RankPortrait } from '../components/RankPortrait';
 import { ChestArt } from '../components/ChestArt';
 import { ChestOpening } from '../components/ChestOpening';
@@ -46,6 +48,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   const total = dashboard?.scheduledCount || 0, done = dashboard?.completedCount || 0;
   const levelPct = cur ? pct(cur.totalXp - cur.levelStartXp, cur.nextLevelXp - cur.levelStartXp) : 0;
   const level = cur?.level || 1, stage = stageForLevel(level), rank = stage.rank;
+  const toNextRank = xpToNextRank(level, cur?.totalXp ?? 0);
   const weeklyDone = weekly?.completedCount ?? 0, weeklyTotal = weekly?.scheduledCount ?? 0;
   const isToday = selectedDate === today;
   const [pinnedId, setPinnedId] = useState<string | null>(() => loadPin(selectedDate));
@@ -60,6 +63,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
     if (stale.length) setOpened(prev => stale.reduce((acc, r) => withOpened(acc, selectedDate, r.tier, false), prev));
   }, [rewards, opened, selectedDate]);
   const nextChest = rewards.find(r => r.state === 'LOCKED');
+  const rewardLabel = nextChest ? `Phần thưởng: ${tierName(nextChest.tier)}` : rewards.length ? 'Đã nhận hết rương hôm nay' : '';
   const unopened = rewards.some(r => r.state === 'EARNED' && !isOpened(opened, selectedDate, r.tier));
   const rewardHint = !rewards.length ? '' : (unopened ? 'Chạm vào rương để mở' + (nextChest ? ' · ' : '') : '') + (nextChest ? `Còn ${Math.max(1, nextChest.threshold - done)} nhiệm vụ để mở ${tierName(nextChest.tier)}` : unopened ? '' : 'Đã mở hết rương');
   // Gym nudge: no plan yet -> offer to load one; plan loaded but nothing to train today -> say when the next session is.
@@ -71,30 +75,29 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   const noPlan = !!habits && isToday && !gymToday && !hasGymHabit(habits);
   // A session with sets already on the server is "in progress": the main button resumes it instead of starting over.
   const nextIsGym = !!next && next.status !== 'COMPLETED' && next.objectives.some(isLibraryLine);
-  const [loggedSets, setLoggedSets] = useState(0);
+  const [daySets, setDaySets] = useState<WorkoutSetDto[]>([]);
+  const loggedSets = daySets.length;
   useEffect(() => {
-    if (!setLog || !nextIsGym || !next) { setLoggedSets(0); return; }
+    if (!setLog || !nextIsGym || !next) { setDaySets([]); return; }
     let live = true;
-    setLog.list(next.habitId, selectedDate).then(sets => { if (live) setLoggedSets(sets.length); }, () => { if (live) setLoggedSets(0); });
+    setLog.list(next.habitId, selectedDate).then(sets => { if (live) setDaySets(sets); }, () => { if (live) setDaySets([]); });
     return () => { live = false; };
   }, [setLog, nextIsGym, next?.habitId, selectedDate, detailId]); // eslint-disable-line react-hooks/exhaustive-deps
   const panel = detail ? <QuestSheet key={`${detail.habitId}:${autoTrain}`} autoTrain={autoTrain} setLog={setLog} quest={detail} date={selectedDate} busy={busyId === detail.habitId} onClose={() => { setDetailId(null); setAutoTrain(false); }} onToggle={onToggleQuest} onSetObjective={onSetObjective} main={next?.habitId === detail.habitId} pinned={pinnedId === detail.habitId} canPin={isToday} onPin={pin}/> : null;
+  const listed = (dashboard?.quests ?? []).filter(q => !(nextIsGym && q.habitId === next?.habitId)); // the mission card already shows the main gym session
   const NextIcon = next ? categoryIcons[next.category] : null;
   return <>
     {showWeek && loadDay && <WeekPlan today={today} selectedDate={selectedDate} loadDay={loadDay} onPick={d => { onSelectDate(() => d); setShowWeek(false); }} onClose={() => setShowWeek(false)}/>}
-    <section className="today-hero is-compact" aria-label="Trạng thái nhân vật">
-      <div className="hero-top"><div><h1>{isToday ? <>Hôm <span className="text-gradient">nay</span></> : <span className="text-gradient">Ngày đã chọn</span>}</h1><p>{dateText(selectedDate)} · {total === 0 ? 'chưa có nhiệm vụ nào' : `${done}/${total} nhiệm vụ đã xong`}</p></div><button className="btn btn-outlined hero-new" onClick={onNewHabit} aria-label="Thói quen mới"><Plus size={17}/><span>Thói quen mới</span></button></div>
-      <div className="hunter-status">
-        <span className="hunter-rank"><RankPortrait level={level} size={56}/></span>
-        <button className="hunter-main" onClick={() => goTo('character')} aria-label={`Cấp ${level}, hạng ${rank}, ${stage.name}, xem nhân vật`}>
-          <span className="hunter-level">Cấp {level}</span>
-          <span className="hunter-title">Hạng {rank} · {stage.name}</span>
-          <ProgressBar value={levelPct} variant="green" size="slim"/>
-          <small>{number(cur?.totalXp || 0)} / {number(cur?.nextLevelXp || 0)} XP</small>
-        </button>
-        
-      </div>
-    </section>
+    <header className="today-head"><div><span className="sys-eyebrow">{dateText(selectedDate).toUpperCase()}</span><h1>{isToday ? 'Cổng hôm nay' : 'Ngày đã chọn'}</h1></div>
+      <span className="streak-chip" title="Số ngày liên tiếp hoàn thành ít nhất một nửa nhiệm vụ trong ngày"><Flame size={16} aria-hidden="true"/><span aria-label={`Chuỗi ${dashboard?.dayStreak || 0} ngày`}>{dashboard?.dayStreak || 0}</span></span></header>
+    <button type="button" className="hunter-card" onClick={() => goTo('character')} aria-label={`Cấp ${level}, hạng ${rank}, ${stage.name}, xem nhân vật`}>
+      <RankPortrait level={level} size={56}/>
+      <span className="hunter-main">
+        <b>Cấp {level} <em>· HẠNG {rank} · {stage.name.toUpperCase()}</em></b>
+        <ProgressBar value={levelPct} variant="green" size="slim"/>
+        <span className="hunter-row"><span>{number(cur?.totalXp || 0)} / {number(cur?.nextLevelXp || 0)} XP</span>{toNextRank && <span>Còn {number(toNextRank.xp)} XP lên Hạng {toNextRank.rank}</span>}</span>
+      </span>
+    </button>
     <div className="today-simple">
       <div className="today-actions" role="group" aria-label="Lối tắt">
         {loadDay && <button type="button" className="btn btn-secondary" onClick={() => setShowWeek(true)}><CalendarDays size={16}/> Lịch tuần</button>}
@@ -102,7 +105,8 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
         {onImportPlan && <button type="button" className="btn btn-secondary" onClick={onImportPlan}><Dumbbell size={16}/> Giáo án</button>}
       </div>
       {noPlan && gymNudge}
-      {next && NextIcon && <article className="next-up" aria-label="Việc tiếp theo">
+      {next && nextIsGym && <><TodayMission quest={next} sets={daySets} reward={rewardLabel} running={isRunning(loadTimer(next.habitId, selectedDate))} startLabel={loggedSets > 0 ? `Tiếp tục buổi tập · đã ghi ${loggedSets} set` : 'Bắt đầu buổi tập'} onStart={() => { setAutoTrain(true); setDetailId(next.habitId); }}/><DungeonFloors quest={next} sets={daySets} onOpen={() => { setAutoTrain(true); setDetailId(next.habitId); }}/></>}
+      {next && NextIcon && !nextIsGym && <article className="next-up" aria-label="Việc tiếp theo">
         <div className="next-up-label">VIỆC CHÍNH HÔM NAY <Difficulty xp={next.xpReward}/></div>
         <div className="next-up-main"><IconBubble icon={NextIcon} tone={categoryColors[next.category]}/><div><h2>{next.title}</h2><small><Clock3 size={13}/> {next.targetMinutes} phút · {categoryLabel(next.category)}{next.objectives.length > 0 && ` · ${metCount(next.objectives)}/${next.objectives.length} việc`}</small></div><span className="next-up-xp"><Zap size={13}/> +{next.xpReward} XP</span></div>
         {next.objectives.length > 0 && <ProgressBar value={pct(metCount(next.objectives), next.objectives.length)} variant="green" size="slim"/>}
@@ -119,12 +123,12 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
         <button className="btn btn-secondary" onClick={() => goTo('character')}>Xem nhân vật</button>
       </article>}
 
-      <article className="panel quests-panel">
-        <div className="quests-header"><div><h2>Việc hôm nay <span className="count-pill">{total}</span></h2></div>
+      {!(nextIsGym && listed.length === 0) && <article className="panel quests-panel">
+        <div className="quests-header"><div><h2>{nextIsGym ? 'Việc khác' : 'Việc hôm nay'} <span className="count-pill">{listed.length}</span></h2></div>
           <div className="date-controls"><button aria-label="Ngày trước" onClick={() => onSelectDate(d => moveDate(d, -1))}><ChevronLeft size={17}/></button><span>{isToday ? 'Hôm nay' : formatDate(selectedDate, { day: 'numeric', month: 'short' })}</span><button disabled={selectedDate >= today} aria-label="Ngày tiếp theo" onClick={() => onSelectDate(d => moveDate(d, 1))}><ChevronRight size={17}/></button></div></div>
-        <div className="quest-list">{!dashboard?.quests.length
+        <div className="quest-list">{!listed.length
           ? <EmptyState icon={CalendarDays} title="Không có nhiệm vụ trong ngày này" details="Tạo một thói quen mới hoặc chọn ngày khác." action={<><button className="btn btn-secondary" onClick={onNewHabit}><Plus size={16}/> Tạo thói quen</button>{onImportPlan && <button className="btn btn-quiet" onClick={onImportPlan}><Dumbbell size={16}/> Nạp giáo án gym</button>}</>}/>
-          : pendingFirst(dashboard.quests).map(q => { const renderQuest = () => {
+          : pendingFirst(listed).map(q => { const renderQuest = () => {
             const Icon = categoryIcons[q.category]; const completed = q.status === 'COMPLETED';
             if (q.objectives.length > 0) {
               // A quest with a checklist is a card, not one big button: its lines are the controls.
@@ -139,7 +143,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
               <span className={`xp-tag ${completed ? 'earned' : ''}`}>{completed ? <Check size={13}/> : <Zap size={13}/>} {completed ? 'Xong' : `+${q.xpReward} XP`}</span>
             </button><button type="button" className="quest-detail-btn" aria-label={`Chi tiết ${q.title}`} onClick={() => setDetailId(q.habitId)}><ClipboardList size={17}/></button></div>;
           }; return <Fragment key={q.habitId}>{renderQuest()}{detail?.habitId === q.habitId && next?.habitId !== q.habitId && panel}</Fragment>; })}</div>
-      </article>
+      </article>}
       <details className="panel today-more" open={unopened || undefined}>
         <summary>Tổng quan và phần thưởng</summary>
       <div className="today-tiles" aria-label="Tóm tắt hôm nay">
@@ -148,10 +152,6 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
           <div className="today-tile" title="Nhiệm vụ đã xong trên số có lịch trong 7 ngày qua"><CalendarDays size={22}/><span><small>7 ngày qua</small><strong>{weeklyDone}/{weeklyTotal}</strong></span></div>
           <div className="today-tile"><Check size={22}/><span><small>Hôm nay</small><strong>{done}/{total}</strong></span></div>
         </div>
-        {(cur?.areas?.length ?? 0) > 0 && <section className="quick-stats" aria-label="Chỉ số nhanh">
-          <h2 className="quick-stats-title">Chỉ số nhanh</h2>
-          <ul>{cur!.areas.map(a => { const Icon = categoryIcons[a.category]; return <li key={a.category}><Icon size={20} aria-hidden="true"/><strong>{a.level}</strong><small>{categoryLabel(a.category)}</small></li>; })}</ul>
-        </section>}
 
         {rewards.length > 0 && <section className="daily-rewards" aria-label={`Phần thưởng ${isToday ? 'hôm nay' : 'ngày này'}`}>
           <div className="daily-rewards-head"><strong>Phần thưởng {isToday ? 'hôm nay' : 'ngày này'}</strong><span>{rewardHint}</span></div>

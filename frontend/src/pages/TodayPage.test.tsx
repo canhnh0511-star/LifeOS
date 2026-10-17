@@ -168,17 +168,16 @@ describe('TodayPage', () => {
 
 
 describe('Today as a status window (B-35)', () => {
-  it('shows level, rank stage and XP in the level, the day tiles and one quick stat per area', () => {
+  it('shows level, rank stage, XP and the XP to the next rank in the hunter card, and the day tiles; no life-area stats', () => {
     const d = dashboard([quest('a', 'PENDING')]);
     d.progress = { ...d.progress, level: 12, totalXp: 1250, levelStartXp: 1000, nextLevelXp: 2000, areas: [
       { category: 'HEALTH', xp: 500, level: 6, levelStartXp: 0, nextLevelXp: 700 }, { category: 'CAREER', xp: 100, level: 2, levelStartXp: 0, nextLevelXp: 400 }] };
     render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={d} weekly={{ completedCount: 9, scheduledCount: 12 } as never}/>);
-    const status = screen.getByLabelText('Trạng thái nhân vật');
-    expect(status.textContent).toContain('Cấp 12'); expect(status.textContent).toContain('Hạng C · Chiến binh'); expect(status.textContent).toContain('1.250 / 2.000 XP');
+    const status = screen.getByRole('button', { name: /xem nhân vật/ });
+    expect(status.textContent).toContain('Cấp 12'); expect(status.textContent).toContain('HẠNG C · CHIẾN BINH'); expect(status.textContent).toContain('1.250 / 2.000 XP'); expect(status.textContent).toContain('Còn 21.250 XP lên Hạng B');
     expect(within(status).getByRole('img', { name: /Hạng C:/ }).getAttribute('src')).toBe('/art/ranks/rank-c.jpg'); // the portrait follows the rank
     expect(screen.getByLabelText('Tóm tắt hôm nay').textContent).toContain('9/12');
-    const stats = screen.getByLabelText('Chỉ số nhanh');
-    expect(stats.querySelectorAll('li')).toHaveLength(2); expect(stats.textContent).toContain('6');
+    expect(screen.queryByLabelText('Chỉ số nhanh')).toBeNull(); // the life-area stats are gone
   });
   it('the main quest card carries its XP and a Start button that opens the detail, not a completion', async () => {
     const onToggleQuest = vi.fn();
@@ -216,11 +215,11 @@ describe('quest detail and workout open in place (no popup)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Bắt đầu buổi tập' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     const panel = await screen.findByRole('region', { name: 'Đang tập · Buổi A' });
-    expect(screen.getByLabelText('Việc tiếp theo').compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByLabelText('NHIỆM VỤ HÀNG NGÀY').compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Hoàn thành set' })).toBeTruthy();
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('region', { name: /Đang tập/ })).toBeNull();
-    expect(screen.getByLabelText('Việc tiếp theo')).toBeTruthy(); // Today is still there
+    expect(screen.getByLabelText('NHIỆM VỤ HÀNG NGÀY')).toBeTruthy(); // Today is still there
   });
   it('opens a non-main quest right below its own row', async () => {
     render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={dashboard([quest('a', 'PENDING', 'Vai'), quest('b', 'PENDING', 'Lưng')])}/>);
@@ -274,5 +273,35 @@ describe('gym nudge on Today', () => {
     expect(screen.queryByLabelText('Giáo án gym')).toBeNull();
     rerender(<TodayPage {...props} onImportPlan={() => {}} onToggleQuest={() => {}} dashboard={dashboard([quest('w', 'PENDING')])}/>);
     expect(screen.queryByLabelText('Giáo án gym')).toBeNull();
+  });
+});
+
+describe('Today as the daily gate (designed screen)', () => {
+  const gym = { ...quest('g', 'PENDING', 'Buổi A — Đẩy'), xpReward: 50, objectives: [
+    { id: 'o1', title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10, value: 0 }, { id: 'o2', title: 'Plank', target: 90, unit: 'giây', step: 45, value: 0 }] } as QuestDto;
+  const sets = [{ exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 20 }, { exercise: 'Machine Chest Press', setNo: 2, reps: 10, weightKg: 20 }];
+  const log = { list: async () => sets, record: async () => [], remove: async () => [], last: async () => ({ date: null, sets: [] }) };
+  it('shows the mission with its floors done, the XP and the next floor in the dungeon', async () => {
+    render(<TodayPage {...props} setLog={log} onToggleQuest={() => {}} dashboard={dashboard([gym])}/>);
+    const mission = screen.getByLabelText('NHIỆM VỤ HÀNG NGÀY');
+    expect(mission.textContent).toContain('Buổi A — Đẩy'); expect(mission.textContent).toContain('2 bài · khoảng'); expect(mission.textContent).toContain('+50 XP');
+    expect(await within(mission).findByText('Đã xong 1/2 bài')).toBeTruthy();   // chest press has both of its sets
+    const dungeon = screen.getByLabelText('Hầm ngục hôm nay');
+    expect(dungeon.textContent).toContain('2 tầng');
+    expect(within(dungeon).getByRole('button', { name: /Tầng 1: .*đã xong/ })).toBeTruthy();
+    const next = within(dungeon).getByRole('button', { name: /^Tầng 2: / }).closest('li')!;
+    expect(next.textContent).toContain('Tiếp theo'); expect(next.textContent).toContain('2 set · 45 giây');
+  });
+  it('opens the workout from a floor, and keeps the gym session out of the "other" list', async () => {
+    render(<TodayPage {...props} setLog={log} onToggleQuest={() => {}} dashboard={dashboard([gym, quest('w', 'PENDING', 'Uống nước')])}/>);
+    expect(screen.getByText('Việc khác').closest('article')!.textContent).not.toContain('Buổi A');
+    await userEvent.click(screen.getByRole('button', { name: /^Tầng 2: / }));
+    expect(await screen.findByRole('region', { name: 'Đang tập · Buổi A — Đẩy' })).toBeTruthy();
+  });
+  it('has no "other" list when the gym session is the only quest, and shows the streak in the header', () => {
+    render(<TodayPage {...props} setLog={log} onToggleQuest={() => {}} dashboard={{ ...dashboard([gym]), dayStreak: 6 }}/>);
+    expect(screen.queryByText('Việc khác')).toBeNull();
+    expect(screen.getByLabelText('Chuỗi 6 ngày')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Cổng hôm nay');
   });
 });
