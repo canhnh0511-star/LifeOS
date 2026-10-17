@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, Layers3, Menu, RotateCcw, Settings2, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { api, isDemo } from './api';
-import { exportDemoData, resetDemoData } from './api/mockClient';
+import { clearDayRecords, exportDemoData, resetDemoData } from './api/mockClient';
 import type { ObjectiveInput, ImportHabitPlanRequest, MetricDto, ItemDto, BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, PatchHabit, QuestDto, QuestObjectiveDto, RewardEffectDto } from './api/types';
 import { formatDate, todayInTimezone } from './domain/rules';
 import { Celebration, hasCelebration, type CelebrationData } from './components/Celebration';
@@ -143,6 +143,11 @@ export default function App() {
   const toggleGoal = async (goal: GoalDto) => { try { await api.updateGoal(goal.id, { status: goal.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' }); setNotice('Đã cập nhật mục tiêu. Có hiệu lực từ ngày mai.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi.')); } };
   const toggleHabit = async (habit: HabitDto) => { try { await api.updateHabit(habit.id, { status: habit.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' }); setNotice('Đã cập nhật thói quen. Có hiệu lực từ ngày mai.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi.')); } };
   const goTo = (screen: Tab) => { setTab(screen); window.location.hash = screen; setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const clearToday = async () => {
+    if (!isDemo) return;
+    if (!window.confirm('Xoá mọi ghi nhận của hôm nay (set đã ghi, buổi đã hoàn thành, tiến độ)? Giáo án giữ nguyên.')) return;
+    try { const r = await clearDayRecords(today); setModal(null); setNotice(`Đã xoá ghi nhận hôm nay: ${r.sets} set, ${r.completed} nhiệm vụ hoàn thành, ${r.progress} dòng tiến độ.`); refresh(); } catch (e) { setNotice(failure(e, 'Không xoá được ghi nhận hôm nay.')); }
+  };
   const reset = () => { if (!isDemo) return; if (!window.confirm('Khôi phục dữ liệu mẫu? Các thay đổi trên máy này sẽ mất.')) return; resetDemoData(); setSelectedDate(todayInTimezone()); setModal(null); setNotice('Đã khôi phục dữ liệu mẫu.'); refresh(); };
   const logout = async () => { try { await api.logout(); } catch (e) { setNotice(failure(e, 'Không đăng xuất được.')); return; } window.location.reload(); };
   const exportData = () => { if (!isDemo) return; const blob = new Blob([exportDemoData()], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `life-os-demo-${today}.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); };
@@ -181,7 +186,7 @@ export default function App() {
       {modal === 'habit' && <HabitForm goals={goals} onClose={() => setModal(null)} onSave={saveHabit}/>}
       {modal === 'editHabit' && editing && <EditHabitForm habit={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={saveHabitEdit}/>}
       {modal === 'plan' && <PlanImportForm onClose={() => setModal(null)} onImport={importPlan}/>}
-      {modal === 'settings' && <SettingsPanel isDemo={isDemo} onExport={exportData} onReset={reset} onLogout={logout}/>}
+      {modal === 'settings' && <SettingsPanel isDemo={isDemo} onExport={exportData} onReset={reset} onClearToday={clearToday} onLogout={logout}/>}
     </Modal>}
     {celebration && <Celebration data={celebration} onClose={() => setCelebration(null)}/>}
     {notice && <div role={notice.startsWith(ERROR_MARK) ? 'alert' : 'status'} className={`toast ${notice.startsWith(ERROR_MARK) ? 'toast-error' : ''}`}><Sparkles size={18}/><span className="toast-text"><b className="toast-tag">{notice.startsWith(ERROR_MARK) ? 'LỖI' : 'HỆ THỐNG'}</b>{notice.replace(ERROR_MARK, '')}</span><button aria-label="Đóng thông báo" onClick={() => setNotice('')}><X size={15}/></button></div>}

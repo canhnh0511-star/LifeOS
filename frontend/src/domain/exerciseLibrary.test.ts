@@ -49,10 +49,10 @@ describe.each(PROGRAMS)('program $name', program => {
 describe('week 1 return program (docs/LifeOS_Gym_Week1_2026-10-19.md)', () => {
   const week1 = PROGRAMS.find(p => p.id === 'week1-return')!;
   const request = planRequest(week1, '2026-10-19');
-  it('has the three strength sessions on Mon, Wed, Fri worth 40 XP and 45 minutes, and no habit for recovery or rest days', () => {
-    expect(request.goals[0].habits.map(h => h.weekdays)).toEqual([[1], [3], [5]]);
+  it('has the three original sessions (Mon, Wed, Fri) plus the Saturday and Sunday sessions the owner asked for, each worth 40 XP and 45 minutes, and no habit for Tue/Thu rest days', () => {
+    expect(request.goals[0].habits.map(h => h.weekdays)).toEqual([[1], [3], [5], [6], [7]]);
     for (const h of request.goals[0].habits) { expect(h.xpReward).toBe(40); expect(h.targetMinutes).toBe(45); expect(h.objectives).toHaveLength(5); }
-    expect(week1.days.flatMap(d => d.weekdays).some(w => w === 2 || w === 4 || w === 6 || w === 7)).toBe(false);
+    expect(week1.days.flatMap(d => d.weekdays).some(w => w === 2 || w === 4)).toBe(false);
     expect(request.goals[0].description).toContain('không XP');
   });
   it('prescribes two sets per exercise with the planned order', () => {

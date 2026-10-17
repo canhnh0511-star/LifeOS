@@ -37,15 +37,19 @@ export interface Program { id: string; name: string; description: string; /** go
 export function prescribed(day: ProgramDay, id: string): Exercise { const e = exerciseById(id); const o = day.overrides?.[id]; return o ? { ...e, ...o } : e; }
 
 export const PROGRAMS: readonly Program[] = [
-  { id: 'week1-return', name: 'Tuần 1 — quay lại tập (45 phút)', description: 'Thứ 2, 4, 6, cường độ nhẹ cho người quay lại sau thời gian nghỉ. Mỗi buổi 5 bài, 2 set.',
-    goalNote: 'Tuần 1 quay lại tập: 3 buổi toàn thân (thứ 2, 4, 6), tạ nhẹ còn 3–4 lần lặp dự trữ. Thứ 3, 5, 7 đi bộ nhẹ 20–30 phút hoặc giãn cơ (không XP, không tính là bỏ lỡ); chủ nhật nghỉ hẳn. Đau nhói hoặc chóng mặt thì dừng.',
+  { id: 'week1-return', name: 'Tuần 1 — quay lại tập (45 phút)', description: 'Thứ 2, 4, 6, 7 và chủ nhật, cường độ nhẹ cho người quay lại sau thời gian nghỉ. Mỗi buổi 5 bài, 2 set.',
+    goalNote: 'Tuần 1 quay lại tập: 5 buổi nhẹ (thứ 2, 4, 6, 7 và chủ nhật), tạ nhẹ còn 3–4 lần lặp dự trữ. Thứ 3 và thứ 5 nghỉ hoặc đi bộ nhẹ 20–30 phút, giãn cơ (không XP, không tính là bỏ lỡ). Cuối tuần là hai buổi ngắn: nếu mệt, bỏ qua buổi chủ nhật.',
     sessionMinutes: 45, sessionXp: 40, days: [
     { title: 'Buổi A — Ngực ưu tiên / Toàn thân', weekdays: [1], groups: ['CHEST', 'BACK', 'LEGS', 'CORE'], exerciseIds: ['machine-chest-press', 'incline-db-press', 'seated-row', 'leg-press', 'dead-bug'],
       overrides: { 'incline-db-press': { sets: 2, reps: 10 }, 'seated-row': { sets: 2, reps: 10 }, 'leg-press': { sets: 2, reps: 10 } } },
     { title: 'Buổi B — Chân, lưng, vai', weekdays: [3], groups: ['LEGS', 'BACK', 'SHOULDERS', 'CORE'], exerciseIds: ['goblet-squat', 'lat-pulldown', 'db-romanian-deadlift', 'machine-shoulder-press', 'plank'],
       overrides: { 'lat-pulldown': { sets: 2, reps: 10 }, plank: { sets: 2, reps: 20 } } },
     { title: 'Buổi C — Ngực, lưng, chân', weekdays: [5], groups: ['CHEST', 'BACK', 'LEGS', 'SHOULDERS'], exerciseIds: ['machine-chest-press', 'seated-row', 'seated-leg-curl', 'leg-extension', 'db-lateral-raise'],
-      overrides: { 'seated-row': { sets: 2, reps: 10 } } }
+      overrides: { 'seated-row': { sets: 2, reps: 10 } } },
+    { title: 'Buổi D — Toàn thân nhẹ (thứ 7)', weekdays: [6], groups: ['LEGS', 'CHEST', 'BACK', 'SHOULDERS', 'CORE'], exerciseIds: ['goblet-squat', 'machine-chest-press', 'seated-row', 'machine-shoulder-press', 'dead-bug'],
+      overrides: { 'seated-row': { sets: 2, reps: 10 } } },
+    { title: 'Buổi E — Chân và core nhẹ (chủ nhật)', weekdays: [7], groups: ['LEGS', 'CORE'], exerciseIds: ['leg-press', 'seated-leg-curl', 'leg-extension', 'plank', 'dead-bug'],
+      overrides: { 'leg-press': { sets: 2, reps: 12 }, plank: { sets: 2, reps: 20 } } }
   ] },
   { id: 'push-pull-legs', name: 'Đẩy / Kéo / Chân — 3 buổi', description: 'Thứ 2, 4, 6. Hợp người mới hoặc ít thời gian: mỗi nhóm cơ được tập một lần mỗi tuần.', days: [
     { title: 'Đẩy: Ngực + Vai + Tay sau', weekdays: [1], groups: ['CHEST', 'SHOULDERS', 'ARMS'], exerciseIds: ['bench-press', 'incline-db-press', 'overhead-press', 'lateral-raise', 'triceps-pushdown'] },

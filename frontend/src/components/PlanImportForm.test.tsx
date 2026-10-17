@@ -15,7 +15,7 @@ describe('PlanImportForm (B-32)', () => {
     const preview = screen.getByLabelText('Xem trước giáo án');
     expect(preview.textContent).toContain('Machine Chest Press · 2×10');
     expect(preview.textContent).toContain('Dead Bug · 2×8 mỗi bên');
-    expect(preview.textContent).toContain('3 thói quen');
+    expect(preview.textContent).toContain('5 thói quen');
     await userEvent.click(screen.getByRole('radio', { name: /Chia nhóm cơ — 5 buổi/ }));
     expect(preview.textContent).toContain('5 thói quen');
     expect(preview.textContent).toContain('Plank · 3×45 giây');

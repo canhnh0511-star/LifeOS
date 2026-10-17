@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Download, LogOut, RotateCcw } from 'lucide-react';
+import { Download, Eraser, LogOut, RotateCcw } from 'lucide-react';
 import { CalendarClock } from 'lucide-react';
 import { DEMO_DATE_KEY, demoToday, todayInTimezone } from '../domain/rules';
 import { reduceMotionPref, setReduceMotionPref } from '../ui/motion';
 
-interface Props { isDemo: boolean; onExport: () => void; onReset: () => void; onLogout: () => void; /** reloads the page after the demo date changes; replaceable in tests */ onReload?: () => void; }
+interface Props { isDemo: boolean; onExport: () => void; onReset: () => void; onLogout: () => void; /** reloads the page after the demo date changes; replaceable in tests */ onReload?: () => void; /** demo: forget today's logged sets, completions and checklist progress */ onClearToday?: () => void; }
 
-export function SettingsPanel({ isDemo, onExport, onReset, onLogout, onReload = () => window.location.reload() }: Props) {
+export function SettingsPanel({ isDemo, onExport, onReset, onLogout, onReload = () => window.location.reload(), onClearToday }: Props) {
   const faked = isDemo ? demoToday() : null;
   const [fakeDate, setFakeDate] = useState(faked ?? todayInTimezone());
   const setDemoDate = (date: string | null) => { try { if (date) localStorage.setItem(DEMO_DATE_KEY, date); else localStorage.removeItem(DEMO_DATE_KEY); } catch { /* storage unavailable */ } onReload(); };
@@ -21,6 +21,7 @@ export function SettingsPanel({ isDemo, onExport, onReset, onLogout, onReload = 
         {faked && <button type="button" className="btn btn-quiet" onClick={() => setDemoDate(null)}>Dùng ngày thật</button>}</span></div>}
     <div className="settings-actions">
       <button className="btn btn-secondary" disabled={!isDemo} onClick={onExport}><Download size={16}/> Xuất dữ liệu JSON</button>
+      {isDemo && onClearToday && <button className="btn btn-secondary" onClick={onClearToday}><Eraser size={16}/> Xoá ghi nhận hôm nay</button>}
       <button className="btn btn-danger" disabled={!isDemo} onClick={onReset}><RotateCcw size={16}/> Đặt lại dữ liệu mẫu</button>
     </div>
     {!isDemo && <div className="settings-actions"><button className="btn btn-secondary" onClick={onLogout}><LogOut size={16}/> Đăng xuất</button></div>}
