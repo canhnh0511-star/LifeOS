@@ -3,23 +3,25 @@ import type { AreaStatDto, GoalCategory } from '../api/types';
 import { categoryLabel } from '../domain/rules';
 import { ANCHORS, MODEL, project } from '../domain/characterModel';
 import { categoryColors, categoryIcons } from '../ui/categories';
+import { stageForLevel } from '../domain/characterStage';
+import { prefersReducedMotion } from '../ui/motion';
 
 const RGB: Record<GoalCategory, string> = {
   CAREER: '90,162,255', CREATIVITY: '167,139,250', HEALTH: '255,162,77', KNOWLEDGE: '110,231,160', MINDFULNESS: '255,122,200'
 };
-const BASE = '198,250,85';
 const CHIP_W = 96, CHIP_H = 46;
 const SLOTS: Record<GoalCategory, { side: 'left' | 'right'; top: number }> = {
   KNOWLEDGE: { side: 'left', top: 0.07 }, CAREER: { side: 'left', top: 0.3 }, HEALTH: { side: 'left', top: 0.76 },
   MINDFULNESS: { side: 'right', top: 0.3 }, CREATIVITY: { side: 'right', top: 0.55 }
 };
 const SPIN_PER_MS = 0.00042;
-const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+const reducedMotion = prefersReducedMotion;
 
-interface Props { areas: AreaStatDto[]; active: GoalCategory | null; onActive: (category: GoalCategory | null) => void; }
+interface Props { areas: AreaStatDto[]; active: GoalCategory | null; onActive: (category: GoalCategory | null) => void; /** Overall level; picks the wireframe colour and the number of ground rings. */ level?: number; }
 
 /** Rotating wireframe figure. Hover or focus a stat chip to light its body part and draw a leader line into it. */
-export function CharacterModel({ areas, active, onActive }: Props) {
+export function CharacterModel({ areas, active, onActive, level = 1 }: Props) {
+  const stage_ = stageForLevel(level); const stageRef = useRef(stage_); stageRef.current = stage_;
   const stage = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const activeRef = useRef(active);
@@ -49,7 +51,8 @@ export function CharacterModel({ areas, active, onActive }: Props) {
       const scan = ((time / 2600) % 1) * 1.9;
       // Ground rings
       ctx!.save(); ctx!.lineWidth = 1; ctx!.setLineDash([4, 7]); ctx!.lineDashOffset = -time / 60;
-      for (const r of [0.42, 0.62]) {
+      const BASE = stageRef.current.rgb;
+      for (const r of stageRef.current.rings) {
         ctx!.beginPath();
         for (let i = 0; i <= 48; i++) { const a = (i / 48) * Math.PI * 2; const p = toScreen(project([Math.cos(a) * r, 0, Math.sin(a) * r], angle)); i ? ctx!.lineTo(p.x, p.y) : ctx!.moveTo(p.x, p.y); }
         ctx!.strokeStyle = `rgba(${BASE},${r < 0.5 ? 0.35 : 0.18})`; ctx!.stroke();
@@ -114,7 +117,7 @@ export function CharacterModel({ areas, active, onActive }: Props) {
     return () => { cancelAnimationFrame(frame); observer?.disconnect(); if (redraw) el.removeEventListener('redraw', redraw); };
   }, []);
 
-  useEffect(() => { canvas.current?.dispatchEvent(new Event('redraw')); }, [active]);
+  useEffect(() => { canvas.current?.dispatchEvent(new Event('redraw')); }, [active, stage_.rank]);
 
   return <div ref={stage} className="character-stage" onMouseLeave={() => onActive(null)}>
     <canvas ref={canvas} aria-hidden="true"/>

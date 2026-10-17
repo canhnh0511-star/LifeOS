@@ -4,18 +4,21 @@ import { categoryLabel } from '../domain/rules';
 import { categoryColors, categoryIcons } from '../ui/categories';
 import { number, pct } from '../ui/format';
 import { RankBadge } from './RankBadge';
+import { stageForLevel } from '../domain/characterStage';
 import { CharacterModel } from './CharacterModel';
 import { IconBubble, ProgressBar } from './primitives';
 
 /** "Chỉ số nhân vật": the rotating wireframe figure plus the full per-area stat list. Hover either to link them. */
 
-export function CharacterCard({ areas, totalXp }: { areas: AreaStatDto[]; totalXp: number }) {
+export function CharacterCard({ areas, totalXp, level = 1 }: { areas: AreaStatDto[]; totalXp: number; level?: number }) {
+  const stage = stageForLevel(level);
   const [active, setActive] = useState<GoalCategory | null>(null);
   return <section className="panel character-card" aria-label="Chỉ số nhân vật">
     <div className="panel-head"><h3>Chỉ số nhân vật</h3><span className="subtle-text">Tổng {number(totalXp)} XP</span></div>
     <div className="character-layout">
       <div className="character-left">
-        <CharacterModel areas={areas} active={active} onActive={setActive}/>
+        <CharacterModel areas={areas} active={active} onActive={setActive} level={level}/>
+        <p className="stage-caption"><RankBadge level={level} size="sm" decorative/> Hạng {stage.rank} · {stage.name}</p>
       </div>
       <ul className="stat-list">{areas.map(a => {
         const Icon = categoryIcons[a.category];

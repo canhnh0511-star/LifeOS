@@ -52,3 +52,15 @@ describe('CharacterCard', () => {
     expect(screen.getByText(/Tổng 1\.500 XP/)).toBeTruthy();
   });
 });
+
+describe('CharacterCard stage caption (B-28)', () => {
+  it.each([[1, 'Hạng E · Tân binh'], [4, 'Hạng E · Tân binh'], [5, 'Hạng D · Thức tỉnh'], [15, 'Hạng B · Chiến tướng'], [30, 'Hạng S · Huyền thoại']])('at level %i says "%s" in words, not only colour', (level, text) => {
+    render(<CharacterCard areas={areas} totalXp={1500} level={level}/>);
+    expect(screen.getByText(text)).toBeTruthy();
+  });
+  it('defaults to the first stage when no level is given', () => {
+    render(<CharacterCard areas={areas} totalXp={0}/>);
+    expect(screen.getByText('Hạng E · Tân binh')).toBeTruthy();
+  });
+});
+

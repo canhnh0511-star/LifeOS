@@ -53,3 +53,8 @@ export interface CreateHabitRequest { title: string; goalId: string; targetMinut
 export interface ImportHabitPlanRequest { startDate: string; goals: Array<{ title: string; category: GoalCategory; description: string; habits: Array<{ title: string; targetMinutes: number; xpReward: number; weekdays: Weekday[]; objectives?: ObjectiveInput[] }> }>; }
 export interface ImportedHabitPlanDto { goals: GoalDto[]; habits: HabitDto[]; }
 export interface ApiErrorDto { requestId?: string; code: string; message: string; fields?: Record<string, string>; }
+/** One set that was done for an exercise of a quest. `weightKg` is null for body weight or when not noted. Gives no XP. */
+export interface WorkoutSetDto { exercise: string; setNo: number; reps: number; weightKg: number | null; }
+export interface WorkoutSetInput { exercise: string; setNo: number; reps: number; weightKg?: number | null; }
+/** The sets of one exercise on its latest earlier day; `date` is null and `sets` empty when it was never logged. */
+export interface LastWorkoutSetsDto { date: string | null; sets: WorkoutSetDto[]; }

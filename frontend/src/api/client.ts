@@ -1,4 +1,4 @@
-import type { MetricDto, ItemDto, AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, AchievementDto, BossMutationDto, PatchHabit, QuestMutationDto, UserDto, RegisterRequest, LoginRequest } from './types';
+import type { LastWorkoutSetsDto, WorkoutSetDto, WorkoutSetInput, MetricDto, ItemDto, AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, AchievementDto, BossMutationDto, PatchHabit, QuestMutationDto, UserDto, RegisterRequest, LoginRequest } from './types';
 export interface LifeOsApi {
   getMe(): Promise<UserDto>;
   /** Real mode only; the mock has no accounts and always acts as the demo user. */
@@ -27,6 +27,10 @@ export interface LifeOsApi {
   getMetrics(): Promise<MetricDto[]>;
   createMetric(input: { name: string; unit: string }): Promise<MetricDto>;
   /** One value per metric per day; recording the same day again replaces it. Returns the metric with its entries. */
+  getWorkoutSets(habitId: string, date: string): Promise<WorkoutSetDto[]>;
+  recordWorkoutSet(habitId: string, date: string, input: WorkoutSetInput): Promise<WorkoutSetDto[]>;
+  removeWorkoutSet(habitId: string, date: string, exercise: string, setNo: number): Promise<WorkoutSetDto[]>;
+  getLastWorkoutSets(exercise: string, before: string): Promise<LastWorkoutSetsDto>;
   recordMeasurement(metricId: string, date: string, value: number): Promise<MetricDto>;
   removeMeasurement(metricId: string, date: string): Promise<MetricDto>;
   deleteMetric(metricId: string): Promise<void>;

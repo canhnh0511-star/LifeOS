@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { prefersReducedMotion } from '../ui/motion';
 import type { DailyRewardDto } from '../api/types';
 import { useDialog } from '../hooks/useDialog';
 import { tierName } from '../domain/dailyRewards';
@@ -9,7 +10,7 @@ import { ItemArt } from './ItemArt';
 import { ChestArt } from './ChestArt';
 
 const SHAKE_MS = 650;
-const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+const reducedMotion = prefersReducedMotion;
 const PARTICLES = Array.from({ length: 14 }, (_, i) => i);
 
 /** Tap-to-open reward moment for an earned chest. The XP is already in the ledger; this reveals what the chest paid, per area. */

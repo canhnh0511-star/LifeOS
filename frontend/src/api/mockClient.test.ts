@@ -682,6 +682,74 @@ describe('quest checklists (B-17)', () => {
     });
   });
 
+  describe('workout set log (B-34)', () => {
+    const quest0 = async (date = D0) => (await mockClient.getDashboard(date)).quests[0].habitId;
+    it('records one row per exercise and set (ignoring case), replaces on repeat, lists by exercise then set', async () => {
+      freezeAt(D0);
+      const h = await quest0();
+      await mockClient.recordWorkoutSet(h, D0, { exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 40.5 });
+      const again = await mockClient.recordWorkoutSet(h, D0, { exercise: 'machine chest press', setNo: 1, reps: 12, weightKg: 42 });
+      expect(again).toEqual([{ exercise: 'Machine Chest Press', setNo: 1, reps: 12, weightKg: 42 }]);
+      await mockClient.recordWorkoutSet(h, D0, { exercise: 'Machine Chest Press', setNo: 2, reps: 9 });
+      const all = await mockClient.recordWorkoutSet(h, D0, { exercise: 'Dead Bug', setNo: 1, reps: 8, weightKg: null });
+      expect(all.map(s => `${s.exercise}#${s.setNo}`)).toEqual(['Dead Bug#1', 'Machine Chest Press#1', 'Machine Chest Press#2']);
+      expect(all[2].weightKg).toBeNull();
+      expect(await mockClient.getWorkoutSets(h, D0)).toEqual(all);
+    });
+    it('never touches XP, the ledger or the quest', async () => {
+      freezeAt(D0);
+      const h = await quest0();
+      const before = await mockClient.getDashboard(D0);
+      const ledgerBefore = ledger().length;
+      for (let i = 1; i <= 4; i++) await mockClient.recordWorkoutSet(h, D0, { exercise: 'Leg Press', setNo: i, reps: 10, weightKg: 100 });
+      await mockClient.removeWorkoutSet(h, D0, 'leg press', 4);
+      const after = await mockClient.getDashboard(D0);
+      expect(after.progress.totalXp).toBe(before.progress.totalXp);
+      expect(after.completedCount).toBe(before.completedCount);
+      expect(ledger().length).toBe(ledgerBefore);
+    });
+    it('removes a set, and removing a missing one is harmless', async () => {
+      freezeAt(D0);
+      const h = await quest0();
+      await mockClient.recordWorkoutSet(h, D0, { exercise: 'Plank', setNo: 1, reps: 20 });
+      expect(await mockClient.removeWorkoutSet(h, D0, 'PLANK', 1)).toEqual([]);
+      expect(await mockClient.removeWorkoutSet(h, D0, 'Plank', 1)).toEqual([]);
+    });
+    it('rejects bad values with field errors and stores nothing', async () => {
+      freezeAt(D0);
+      const h = await quest0();
+      const bad: [string, Record<string, unknown>][] = [
+        ['reps', { reps: 0 }], ['reps', { reps: 1001 }], ['reps', { reps: 1.5 }], ['reps', { reps: 'x' }], ['setNo', { setNo: 0 }], ['setNo', { setNo: 51 }],
+        ['weightKg', { weightKg: -1 }], ['weightKg', { weightKg: 1001 }], ['weightKg', { weightKg: 'heavy' }], ['exercise', { exercise: '   ' }], ['exercise', { exercise: 'x'.repeat(101) }]];
+      for (const [field, patch] of bad) {
+        const err = await rejection(mockClient.recordWorkoutSet(h, D0, { exercise: 'Squat', setNo: 1, reps: 10, ...patch } as never));
+        expect(err.status).toBe(422); expect(err.fields).toHaveProperty(field);
+      }
+      expect(await mockClient.getWorkoutSets(h, D0)).toEqual([]);
+    });
+    it('only accepts scheduled days from today back 7 days, and reading stays open', async () => {
+      freezeAt(D0);
+      const h = await quest0();
+      expect((await rejection(mockClient.recordWorkoutSet(h, moveDate(D0, 1), { exercise: 'Squat', setNo: 1, reps: 5 }))).code).toBe('QUEST_IN_FUTURE');
+      expect((await rejection(mockClient.recordWorkoutSet(h, moveDate(D0, -8), { exercise: 'Squat', setNo: 1, reps: 5 }))).code).toBe('QUEST_TOO_OLD');
+      expect((await rejection(mockClient.recordWorkoutSet('nope', D0, { exercise: 'Squat', setNo: 1, reps: 5 }))).status).toBe(404);
+      expect(await mockClient.getWorkoutSets(h, moveDate(D0, -30))).toEqual([]);
+    });
+    it('shows the latest earlier day of an exercise across quests as "last time"', async () => {
+      freezeAt(D0);
+      const d1 = moveDate(D0, -1), d2 = moveDate(D0, -2);
+      const h1 = await quest0(d1), h2 = await quest0(d2);
+      await mockClient.recordWorkoutSet(h2, d2, { exercise: 'Seated Cable Row', setNo: 1, reps: 10, weightKg: 30 });
+      await mockClient.recordWorkoutSet(h1, d1, { exercise: 'Seated Cable Row', setNo: 1, reps: 12, weightKg: 35 });
+      await mockClient.recordWorkoutSet(h1, d1, { exercise: 'Seated Cable Row', setNo: 2, reps: 11, weightKg: 35 });
+      expect(await mockClient.getLastWorkoutSets('seated cable row', D0)).toEqual({ date: d1, sets: [
+        { exercise: 'Seated Cable Row', setNo: 1, reps: 12, weightKg: 35 }, { exercise: 'Seated Cable Row', setNo: 2, reps: 11, weightKg: 35 }] });
+      expect((await mockClient.getLastWorkoutSets('Seated Cable Row', d1)).date).toBe(d2);
+      expect(await mockClient.getLastWorkoutSets('Seated Cable Row', d2)).toEqual({ date: null, sets: [] });
+      expect((await rejection(mockClient.getLastWorkoutSets('  ', D0))).fields).toHaveProperty('exercise');
+    });
+  });
+
   describe('body measurements (B-24)', () => {
     it('creates the three defaults once and records one value per day, replacing on repeat', async () => {
       freezeAt(D0);

@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, Layers3, Menu, RotateCcw, Settings2, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { api, isDemo } from './api';
 import { exportDemoData, resetDemoData } from './api/mockClient';
-import type { MetricDto, ItemDto, BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, PatchHabit, QuestDto, QuestObjectiveDto, RewardEffectDto } from './api/types';
+import type { ImportHabitPlanRequest, MetricDto, ItemDto, BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, PatchHabit, QuestDto, QuestObjectiveDto, RewardEffectDto } from './api/types';
 import { formatDate, todayInTimezone } from './domain/rules';
 import { Celebration, hasCelebration, type CelebrationData } from './components/Celebration';
 import { levelUps } from './domain/levelUps';
 import { EditHabitForm, GoalForm, HabitForm } from './components/forms';
 import { Modal } from './components/Modal';
+import { PlanImportForm } from './components/PlanImportForm';
+import type { SetLogApi } from './components/SetLog';
 import { Logo } from './components/primitives';
 import { SettingsPanel } from './components/SettingsPanel';
 import { useLifeOsData } from './hooks/useLifeOsData';
@@ -20,8 +22,8 @@ import { withEffects } from './ui/messages';
 import { primaryNav, tabFromHash, type Tab } from './ui/nav';
 import './styles.css';
 
-type ModalKind = 'goal' | 'habit' | 'editHabit' | 'settings' | null;
-const MODAL_TITLES = { goal: 'Mục tiêu mới', habit: 'Thói quen mới', editHabit: 'Sửa thói quen', settings: 'Cài đặt hệ thống' } as const;
+type ModalKind = 'goal' | 'habit' | 'editHabit' | 'settings' | 'plan' | null;
+const MODAL_TITLES = { goal: 'Mục tiêu mới', habit: 'Thói quen mới', editHabit: 'Sửa thói quen', settings: 'Cài đặt hệ thống', plan: 'Nạp giáo án gym' } as const;
 /** Error notices start with this mark so the toast can tell them from system messages. */
 const ERROR_MARK = '⚠ ';
 const failure = (e: unknown, fallback: string) => ERROR_MARK + (e instanceof Error ? e.message : fallback);
@@ -123,6 +125,9 @@ export default function App() {
     finally { setBusyBossId(null); }
   };
   const saveGoal = async (v: CreateGoalRequest) => { try { await api.createGoal(v); setModal(null); setNotice('Đã tạo mục tiêu mới.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi xảy ra.')); } };
+  // Stable object so the sheet does not reload its sets on every render. Errors reach the sheet as messages, not toasts.
+  const setLog = useMemo<SetLogApi>(() => ({ list: api.getWorkoutSets, record: api.recordWorkoutSet, remove: api.removeWorkoutSet, last: api.getLastWorkoutSets }), []);
+  const importPlan = async (v: ImportHabitPlanRequest) => { try { const r = await api.importHabitPlan(v); setModal(null); setNotice(`Đã nạp giáo án: ${r.habits.length} buổi tập.`); refresh(); } catch (e) { setNotice(failure(e, 'Không nạp được giáo án.')); } };
   const saveHabit = async (v: CreateHabitRequest) => { try { await api.createHabit(v); setModal(null); setNotice('Đã tạo thói quen mới.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi xảy ra.')); } };
   const saveHabitEdit = async (patch: PatchHabit) => {
     if (!editing) return;
@@ -157,8 +162,8 @@ export default function App() {
       <main className="page-content" data-dialog-fallback tabIndex={-1}>
         {error && <div role="alert" className="error-banner">{error}<button onClick={refresh}>Thử lại <RotateCcw size={14}/></button></div>}
         {loading && !dashboard ? <div className="loading-shell"><div className="loader"/><p>Đang chuẩn bị hành trình của bạn...</p></div> : <>
-          {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} goTo={goTo}/>}
-          {tab === 'journey' && <JourneyPage journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')}/>}
+          {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')} setLog={setLog} goTo={goTo}/>}
+          {tab === 'journey' && <JourneyPage journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')}/>}
           {tab === 'character' && <CharacterPage dashboard={dashboard} items={items} busyItemCode={busyItemCode} onEquip={item => wear(item, true)} onUnequip={item => wear(item, false)}/>}
           {tab === 'body' && <BodyPage metrics={metrics} failed={metricsFailed} onRetry={() => { void reloadMetrics(); }} today={today} busy={bodyBusy} onRecord={recordMeasure} onRemoveEntry={removeMeasure} onCreate={createMetric} onDelete={deleteMetric}/>}
           {tab === 'insights' && <InsightsPage analytics={analytics} period={period} onPeriod={setPeriod} currentStreak={dashboard?.progress.currentStreak || 0}/>}
@@ -171,6 +176,7 @@ export default function App() {
       {modal === 'goal' && <GoalForm onClose={() => setModal(null)} onSave={saveGoal}/>}
       {modal === 'habit' && <HabitForm goals={goals} onClose={() => setModal(null)} onSave={saveHabit}/>}
       {modal === 'editHabit' && editing && <EditHabitForm habit={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={saveHabitEdit}/>}
+      {modal === 'plan' && <PlanImportForm onClose={() => setModal(null)} onImport={importPlan}/>}
       {modal === 'settings' && <SettingsPanel isDemo={isDemo} onExport={exportData} onReset={reset} onLogout={logout}/>}
     </Modal>}
     {celebration && <Celebration data={celebration} onClose={() => setCelebration(null)}/>}

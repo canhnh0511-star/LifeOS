@@ -106,5 +106,60 @@ describe('TodayPage', () => {
     expect(document.querySelector('.quests-panel .quest-card')).not.toBeNull();
     expect(document.querySelector('.quests-panel button.quest-row')).toBeNull();
   });
+  it('names the first unfinished quest as the one Main Quest, shows difficulty from XP, and lists the quest once with a tag', () => {
+    const hard = { ...quest('b', 'PENDING', 'Ngực + Tay sau'), xpReward: 50 };
+    render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={dashboard([quest('a', 'COMPLETED'), hard, quest('c', 'PENDING')])}/>);
+    const main = screen.getByLabelText('Việc tiếp theo');
+    expect(main.textContent).toContain('MAIN QUEST');
+    expect(main.textContent).toContain('Khó');
+    expect(screen.getAllByText('Trọng tâm')).toHaveLength(1);
+    expect(screen.getAllByText('Ngực + Tay sau')).toHaveLength(2); // featured card + its single list row; XP is claimed through one action
+    expect(document.querySelectorAll('.quest-row .main-tag, .quest-card .main-tag')).toHaveLength(1);
+  });
+  it('keeps the level bar inside 0-100% at the level boundaries', () => {
+    const d = dashboard([quest('a', 'PENDING')]);
+    d.progress = { ...d.progress, totalXp: 1000, levelStartXp: 400, nextLevelXp: 900 };
+    render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={d}/>);
+    const widths = Array.from(document.querySelectorAll<HTMLElement>('.progress-fill')).map(f => parseFloat(f.style.width));
+    expect(widths.length).toBeGreaterThan(0);
+    expect(widths.every(w => w >= 0 && w <= 100)).toBe(true);
+  });
+  it('opens the quest detail from the Main Quest card and closes it without touching the quest', async () => {
+    const onToggleQuest = vi.fn();
+    render(<TodayPage {...props} onToggleQuest={onToggleQuest} dashboard={dashboard([quest('b', 'PENDING', 'Tập chân')])}/>);
+    await userEvent.click(screen.getByRole('button', { name: /Chi tiết buổi tập/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Tập chân' });
+    expect(within(dialog).getByRole('button', { name: 'Xác nhận hoàn thành' })).toBeTruthy();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Đóng' }));
+    expect(screen.queryByRole('dialog')).toBeNull(); expect(onToggleQuest).not.toHaveBeenCalled();
+  });
+  it('opens the detail from any quest row without completing it, and flags a timer that is still running', async () => {
+    const onToggleQuest = vi.fn();
+    localStorage.setItem('lifeos.timer.a:2026-10-16', JSON.stringify({ startedAt: Date.now() - 5000, accumulatedMs: 0 }));
+    render(<TodayPage {...props} onToggleQuest={onToggleQuest} dashboard={dashboard([quest('a', 'PENDING', 'Vai'), quest('b', 'PENDING', 'Lưng')])}/>);
+    expect(screen.getByRole('status').textContent).toContain('Đồng hồ buổi tập đang chạy');
+    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Lưng' }));
+    expect(screen.getByRole('dialog', { name: 'Lưng' })).toBeTruthy();
+    expect(onToggleQuest).not.toHaveBeenCalled();
+  });
+  it('pins another quest as Main from its detail, keeps it single, remembers it, and lists finished quests last', async () => {
+    const d = dashboard([quest('a', 'COMPLETED', 'Xong rồi'), quest('b', 'PENDING', 'Vai'), quest('c', 'PENDING', 'Lưng')]);
+    const { unmount } = render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={d}/>);
+    const titles = () => Array.from(document.querySelectorAll('.quests-panel .quest-body strong')).map(e => e.textContent);
+    expect(titles()).toEqual(['Vai', 'Lưng', 'Xong rồi']);
+    expect(screen.getByLabelText('Việc tiếp theo').textContent).toContain('Vai');
+    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Lưng' }));
+    await userEvent.click(screen.getByRole('button', { name: /Đặt làm nhiệm vụ trọng tâm/ }));
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Đóng' }));
+    expect(screen.getByLabelText('Việc tiếp theo').textContent).toContain('Lưng');
+    expect(screen.getAllByText('Trọng tâm')).toHaveLength(1);
+    unmount();
+    render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={d}/>); // a reload keeps the pin
+    expect(screen.getByLabelText('Việc tiếp theo').textContent).toContain('Lưng');
+    await userEvent.click(screen.getByRole('button', { name: 'Chi tiết Lưng' }));
+    await userEvent.click(screen.getByRole('button', { name: /Bỏ ghim/ }));
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Đóng' }));
+    expect(screen.getByLabelText('Việc tiếp theo').textContent).toContain('Vai');
+  });
 });
 

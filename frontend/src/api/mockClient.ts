@@ -1,5 +1,5 @@
 import type { LifeOsApi } from './client';
-import type { AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, DailyRewardDto, ItemDto, MetricDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday, HabitObjectiveDto, ObjectiveInput, QuestObjectiveDto } from './types';
+import type { WorkoutSetDto, WorkoutSetInput, AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, DailyRewardDto, ItemDto, MetricDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday, HabitObjectiveDto, ObjectiveInput, QuestObjectiveDto } from './types';
 import { ApiError, ErrorCode } from './errors';
 import { ALL_CATEGORIES } from '../domain/insights';
 import { DAILY_TIERS, hasChests, rewardThreshold } from '../domain/dailyRewards';
@@ -25,7 +25,7 @@ type BossState = { bossId: string; status: 'AVAILABLE' | 'DEFEATED'; cycle: numb
 type AchievementState = { code: AchievementCode; status: 'EARNED' | 'LOCKED'; cycle: number; earnedDate: string | null; earnedAt: string | null };
 type StoredJourney = Omit<JourneyDto, 'chapters'>;
 type Lifecycle = { goals: Record<string, LifecycleEvent[]>; habits: Record<string, LifecycleEvent[]> };
-type Db = { version: typeof DB_VERSION; goals: GoalDto[]; habits: HabitDto[]; lifecycle: Lifecycle; questStates: QuestState[]; xpTransactions: XpEvent[]; bossStates: BossState[]; achievementStates: AchievementState[]; journey: StoredJourney; scheduleHistory?: Record<string, { from: string; weekdays: Weekday[] }[]>; rewardSnapshots?: Record<string, number>; items?: { code: string; sourceKey: string; equipped: boolean }[]; metrics?: MetricDto[] };
+type Db = { version: typeof DB_VERSION; goals: GoalDto[]; habits: HabitDto[]; lifecycle: Lifecycle; questStates: QuestState[]; xpTransactions: XpEvent[]; bossStates: BossState[]; achievementStates: AchievementState[]; journey: StoredJourney; scheduleHistory?: Record<string, { from: string; weekdays: Weekday[] }[]>; rewardSnapshots?: Record<string, number>; items?: { code: string; sourceKey: string; equipped: boolean }[]; metrics?: MetricDto[]; workoutSets?: StoredSet[] };
 
 const id = () => typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `mock-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const now = () => new Date().toISOString();
@@ -225,6 +225,22 @@ function itemViews(db:Db):ItemDto[]{
   const owned=db.items??[];
   return ITEM_CATALOG.map(c=>{const o=owned.find(x=>x.code===c.code);return {...c,owned:!!o,equipped:!!o?.equipped,acquiredDate:o?o.sourceKey.slice(0,10):null};});
 }
+// ---------- workout set log (B-34: no XP, no ledger, never completes a quest) ----------
+type StoredSet = WorkoutSetDto & { habitId: string; date: string };
+const MAX_SETS_PER_QUEST = 300;
+const sameExercise = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+const setsOfQuest = (db: Db, habitId: string, date: string): WorkoutSetDto[] =>
+  (db.workoutSets ?? []).filter(s => s.habitId === habitId && s.date === date).sort((a, b) => a.exercise.localeCompare(b.exercise) || a.setNo - b.setNo).map(({ exercise, setNo, reps, weightKg }) => ({ exercise, setNo, reps, weightKg }));
+function requireSetDay(db: Db, habitId: string, date: string): HabitDto {
+  assertLocalDate(date);
+  const habit = requireHabit(db, habitId);
+  const today = todayInTimezone();
+  if (date > today) throw new ApiError(422, ErrorCode.questInFuture, 'Chưa thể ghi set cho ngày trong tương lai.');
+  if (diffDays(date, today) > MAX_BACKDATE_DAYS) throw new ApiError(422, ErrorCode.questTooOld, 'Chỉ có thể ghi set trong 7 ngày gần nhất.');
+  if (!scheduledOn(db, habit, date)) throw new ApiError(422, ErrorCode.questOutsideSchedule, 'Ngày này không thuộc lịch thực hiện của thói quen.');
+  return habit;
+}
+
 // ---------- body measurements (no XP, no ledger) ----------
 const METRIC_DEFAULTS:[string,string][]=[['Cân nặng','kg'],['Vòng eo','cm'],['Mỡ cơ thể','%']];
 function ensureMetrics(db:Db):MetricDto[]{
@@ -593,6 +609,41 @@ export const mockClient:LifeOsApi={
     if(Object.keys(fields).length)fail(fields);
     if(list.length>=20)throw new ApiError(422,'TOO_MANY_METRICS','Tối đa 20 chỉ số.');
     const metric:MetricDto={id:id(),name,unit,builtin:false,entries:[]};list.push(metric);save(db);return structuredClone(metric);
+  },
+  async getWorkoutSets(habitId:string,date:string){
+    await delay();assertLocalDate(date);const db=load();requireHabit(db,habitId);return setsOfQuest(db,habitId,date);
+  },
+  async recordWorkoutSet(habitId:string,date:string,input:WorkoutSetInput){
+    await delay();const db=load();requireSetDay(db,habitId,date);
+    const fields:Record<string,string>={};const exercise=typeof input?.exercise==='string'?input.exercise.trim():'';
+    if(!exercise||exercise.length>100)fields.exercise='Tên bài tập từ 1 đến 100 ký tự.';
+    if(!isInt(input?.setNo,1,50))fields.setNo='Số set phải là số nguyên từ 1 đến 50.';
+    if(!isInt(input?.reps,1,1000))fields.reps='Số rep phải là số nguyên từ 1 đến 1000.';
+    const w=input?.weightKg;let weight:number|null=null;
+    if(w!==undefined&&w!==null){if(typeof w!=='number'||!Number.isFinite(w))fields.weightKg='Mức tạ phải là một số.';else{weight=Math.round(w*100)/100;if(weight<0||weight>1000)fields.weightKg='Mức tạ từ 0 đến 1000 kg.';}}
+    if(Object.keys(fields).length)fail(fields);
+    const list=db.workoutSets??(db.workoutSets=[]);
+    const at=list.find(s=>s.habitId===habitId&&s.date===date&&sameExercise(s.exercise,exercise)&&s.setNo===input.setNo);
+    if(at){at.reps=input.reps;at.weightKg=weight;}
+    else{
+      if(list.filter(s=>s.habitId===habitId&&s.date===date).length>=MAX_SETS_PER_QUEST)throw new ApiError(422,'TOO_MANY_SETS',`Tối đa ${MAX_SETS_PER_QUEST} set cho một buổi tập.`);
+      list.push({habitId,date,exercise,setNo:input.setNo,reps:input.reps,weightKg:weight});
+    }
+    save(db);return setsOfQuest(db,habitId,date);
+  },
+  async removeWorkoutSet(habitId:string,date:string,exercise:string,setNo:number){
+    await delay();const db=load();requireSetDay(db,habitId,date);
+    db.workoutSets=(db.workoutSets??[]).filter(s=>!(s.habitId===habitId&&s.date===date&&sameExercise(s.exercise,exercise)&&s.setNo===setNo));
+    save(db);return setsOfQuest(db,habitId,date);
+  },
+  async getLastWorkoutSets(exercise:string,before:string){
+    await delay();assertLocalDate(before);const name=(exercise??'').trim();
+    if(!name||name.length>100)fail({exercise:'Tên bài tập từ 1 đến 100 ký tự.'});
+    const db=load();const days=(db.workoutSets??[]).filter(s=>sameExercise(s.exercise,name)&&s.date<before).map(s=>s.date);
+    if(!days.length)return {date:null,sets:[]};
+    const date=days.sort().at(-1)!;
+    const sets=(db.workoutSets??[]).filter(s=>sameExercise(s.exercise,name)&&s.date===date).sort((a,b)=>a.habitId.localeCompare(b.habitId)||a.setNo-b.setNo).map(({exercise:e,setNo,reps,weightKg})=>({exercise:e,setNo,reps,weightKg}));
+    return {date,sets};
   },
   async recordMeasurement(metricId:string,date:string,value:number){
     await delay();const db=load();const metric=metricOf(db,metricId);const d=entryDate(date);
