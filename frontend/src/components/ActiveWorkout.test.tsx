@@ -1,0 +1,79 @@
+// @vitest-environment jsdom
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { QuestDto, WorkoutSetDto, WorkoutSetInput } from '../api/types';
+import { QuestSheet } from './QuestSheet';
+import { firstOpenIndex } from './ActiveWorkout';
+import { exerciseByName } from '../domain/exerciseLibrary';
+import type { SetLogApi } from './SetLog';
+
+afterEach(() => { cleanup(); localStorage.clear(); });
+const quest: QuestDto = { habitId: 'h', goalId: 'g', goalTitle: 'G', title: 'Buổi A', targetMinutes: 45, xpReward: 40, category: 'HEALTH', date: '2026-10-19', status: 'PENDING', completedAt: null,
+  objectives: [{ id: 'o1', title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10, value: 0 }, { id: 'o2', title: 'Plank', target: 135, unit: 'giây', step: 45, value: 0 }] } as QuestDto;
+function fakeApi(initial: WorkoutSetDto[] = []) {
+  let sets = [...initial];
+  return {
+    list: vi.fn(async () => sets),
+    record: vi.fn(async (_h: string, _d: string, i: WorkoutSetInput) => { sets = [...sets, { exercise: i.exercise, setNo: i.setNo, reps: i.reps, weightKg: i.weightKg ?? null }]; return sets; }),
+    remove: vi.fn(async () => sets),
+    last: vi.fn(async () => ({ date: '2026-10-15', sets: [{ exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 40 }] }))
+  } satisfies SetLogApi;
+}
+const start = async (api: SetLogApi, onToggle = vi.fn()) => {
+  render(<QuestSheet quest={quest} date="2026-10-19" busy={false} onClose={() => {}} setLog={api} onToggle={onToggle} onSetObjective={() => {}}/>);
+  await screen.findByLabelText('Nhật ký set Machine Chest Press');
+  await waitFor(() => expect(api.list).toHaveBeenCalled()); await act(async () => { await new Promise(r => setTimeout(r, 50)); });
+  await userEvent.click(await screen.findByRole('button', { name: /Tập từng set/ }));
+  return onToggle;
+};
+
+describe('active workout (B-38)', () => {
+  it('picks the first exercise that still has sets to do', () => {
+    const [a, b] = [exerciseByName('Machine Chest Press')!, exerciseByName('Plank')!];
+    expect(firstOpenIndex([a, b], [])).toBe(0);
+    expect(firstOpenIndex([a, b], [{ exercise: a.name, setNo: 1, reps: 10, weightKg: null }, { exercise: a.name, setNo: 2, reps: 10, weightKg: null }])).toBe(1);
+  });
+  it('shows set N / M, adjusts reps and weight, records the set and starts the rest, without XP or completion', async () => {
+    const api = fakeApi(); const onToggle = await start(api);
+    expect(screen.getByText(/Set 1 \/ 2/)).toBeTruthy();
+    await waitFor(() => expect(screen.getByLabelText('mức tạ (kg) hiện tại').textContent).toBe('40'));
+    await userEvent.click(screen.getByRole('button', { name: 'Tăng mức tạ (kg)' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Giảm rep' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Hoàn thành set' }));
+    expect(api.record).toHaveBeenCalledWith('h', '2026-10-19', { exercise: 'Machine Chest Press', setNo: 1, reps: 9, weightKg: 42.5 });
+    expect(await screen.findByRole('timer')).toBeTruthy();
+    expect(screen.getByText(/Set 2 \/ 2/)).toBeTruthy();
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+  it('adjusts the rest time and lets you skip the countdown', async () => {
+    await start(fakeApi());
+    expect(screen.getByLabelText('thời gian nghỉ hiện tại').textContent).toBe('90 giây');
+    await userEvent.click(screen.getByRole('button', { name: 'Tăng thời gian nghỉ' }));
+    expect(screen.getByLabelText('thời gian nghỉ hiện tại').textContent).toBe('105 giây');
+    await userEvent.click(screen.getByRole('button', { name: 'Hoàn thành set' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Bỏ qua nghỉ' }));
+    expect(screen.queryByRole('timer')).toBeNull();
+  });
+  it('moves to the next exercise when all sets are done; a hold has no weight', async () => {
+    const api = fakeApi([{ exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 40 }, { exercise: 'Machine Chest Press', setNo: 2, reps: 10, weightKg: 40 }]);
+    await start(api);
+    expect(screen.getByRole('heading', { name: 'Plank' })).toBeTruthy(); // opens on the first exercise with sets left
+    await userEvent.click(screen.getByRole('button', { name: 'Bài trước' }));
+    expect(screen.getByRole('status').textContent).toContain('Đã xong 2/2');
+    await userEvent.click(screen.getByRole('button', { name: /Bài tiếp theo/ }));
+    expect(screen.getByRole('heading', { name: 'Plank' })).toBeTruthy();
+    expect(screen.queryByLabelText('mức tạ (kg) hiện tại')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Hoàn thành set' }));
+    expect(api.record).toHaveBeenCalledWith('h', '2026-10-19', { exercise: 'Plank', setNo: 1, reps: 45, weightKg: null });
+  });
+  it('shows the API message and no rest when saving fails; exit returns to the quest', async () => {
+    const api = fakeApi(); api.record.mockRejectedValueOnce(new Error('Chỉ có thể ghi set trong 7 ngày gần nhất.'));
+    await start(api);
+    await userEvent.click(screen.getByRole('button', { name: 'Hoàn thành set' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('7 ngày');
+    expect(screen.queryByRole('timer')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Thoát' }));
+    expect(screen.getByRole('button', { name: /Xác nhận hoàn thành/ })).toBeTruthy();
+  });
+});

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, Clock3, Pause, Pin, PinOff, Play, RotateCcw, Timer, Undo2, Zap } from 'lucide-react';
+import { Check, Clock3, Dumbbell, Pause, Pin, PinOff, Play, RotateCcw, Timer, Undo2, Zap } from 'lucide-react';
 import type { QuestDto, QuestObjectiveDto } from '../api/types';
 import { difficultyForXp, difficultyLabel } from '../domain/difficulty';
 import { categoryLabel } from '../domain/rules';
@@ -7,6 +7,7 @@ import { exerciseByName } from '../domain/exerciseLibrary';
 import { clock, elapsedMs, isRunning, loadTimer, pauseTimer, saveTimer, startTimer, idleTimer, type TimerState } from '../ui/focusTimer';
 import { Modal } from './Modal';
 import { ExerciseSets, useSetLog, type SetLogApi } from './SetLog';
+import { ActiveWorkout } from './ActiveWorkout';
 import { ObjectiveList, metCount } from './ObjectiveList';
 
 const REST_PRESETS = [60, 90, 120];
@@ -22,6 +23,7 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
   const [now, setNow] = useState(() => Date.now());
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [confirmUndo, setConfirmUndo] = useState(false);
+  const [training, setTraining] = useState(false);
   const log = useSetLog(setLog, quest.habitId, date);
   const loggable = setLog ? quest.objectives.map(o => exerciseByName(o.title)).filter((e): e is NonNullable<typeof e> => !!e) : [];
   const done = quest.status === 'COMPLETED';
@@ -37,6 +39,7 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
   const nextLine = quest.objectives.find(o => o.value < o.target);
   const suggested = nextLine ? exerciseByName(nextLine.title) : undefined;
   const suggestedRest = suggested?.restSeconds;
+  if (training && setLog) return <ActiveWorkout quest={quest} date={date} exercises={loggable} sets={log.sets} busy={log.busy} error={log.error} last={setLog.last} onRecord={log.record} onClose={() => setTraining(false)}/>;
   return <Modal title={quest.title} onClose={onClose} sheet>
     <div className="sheet">
       <p className="sheet-meta"><Clock3 size={14}/> {quest.targetMinutes} phút · {categoryLabel(quest.category)} · <Zap size={14}/> {done ? 'Đã nhận' : '+'}{quest.xpReward} XP <span className={`diff-chip diff-${d.toLowerCase()}`}>{difficultyLabel[d]}</span></p>
@@ -44,6 +47,7 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
         <h3 className="sheet-h">Bài tập · {metCount(quest.objectives)}/{quest.objectives.length}</h3>
         <ObjectiveList quest={quest} disabled={busy} onSet={(o, v) => onSetObjective(quest, o, v)}/>
       </section>}
+      {setLog && loggable.length > 0 && !done && <button className="btn btn-primary" onClick={() => setTraining(true)}><Dumbbell size={17}/> Tập từng set</button>}
       {setLog && loggable.length > 0 && <section aria-label="Nhật ký set">
         <h3 className="sheet-h">Nhật ký set</h3>
         <ul className="set-log">{loggable.map(e => <ExerciseSets key={e.id} exercise={e} sets={log.sets} date={date} busy={log.busy} last={setLog.last} onRecord={log.record} onRemove={log.remove}/>)}</ul>
