@@ -12,6 +12,10 @@ export function gateRank(tier: number): number {
   return gates[t - 1].from;
 }
 
+/** First level of each rank, E..S. Single source for the rank gallery's "unlocks at level n". */
+export const RANK_FROM: Readonly<Record<Rank, number>> = Object.fromEntries(BANDS.map(b => [b.rank, b.from])) as Record<Rank, number>;
+export const RANKS: readonly Rank[] = BANDS.map(b => b.rank);
+
 export function rankForLevel(level: number): Rank {
   let rank: Rank = 'E';
   for (const band of BANDS) if (level >= band.from) rank = band.rank;

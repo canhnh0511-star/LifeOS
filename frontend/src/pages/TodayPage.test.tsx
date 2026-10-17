@@ -174,7 +174,8 @@ describe('Today as a status window (B-35)', () => {
       { category: 'HEALTH', xp: 500, level: 6, levelStartXp: 0, nextLevelXp: 700 }, { category: 'CAREER', xp: 100, level: 2, levelStartXp: 0, nextLevelXp: 400 }] };
     render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={d} weekly={{ completedCount: 9, scheduledCount: 12 } as never}/>);
     const status = screen.getByLabelText('Trạng thái nhân vật');
-    expect(status.textContent).toContain('Cấp 12'); expect(status.textContent).toContain('Hạng C · Tiên phong'); expect(status.textContent).toContain('1.250 / 2.000 XP');
+    expect(status.textContent).toContain('Cấp 12'); expect(status.textContent).toContain('Hạng C · Chiến binh'); expect(status.textContent).toContain('1.250 / 2.000 XP');
+    expect(within(status).getByRole('img', { name: /Hạng C:/ }).getAttribute('src')).toBe('/art/ranks/rank-c.jpg'); // the portrait follows the rank
     expect(screen.getByLabelText('Tóm tắt hôm nay').textContent).toContain('9/12');
     const stats = screen.getByLabelText('Chỉ số nhanh');
     expect(stats.querySelectorAll('li')).toHaveLength(2); expect(stats.textContent).toContain('6');

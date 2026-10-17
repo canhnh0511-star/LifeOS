@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { DailyDashboardDto } from '../api/types';
 import { ALL_CATEGORIES } from '../domain/insights';
 import { primaryNav, tabFromHash } from '../ui/nav';
@@ -23,6 +24,17 @@ describe('CharacterPage and the Nhân vật tab', () => {
     expect(screen.getByText('Chuỗi kỷ lục').parentElement!.textContent).toContain('9');
     expect(screen.queryByText(/hôm nay/i)).toBeNull();        // a past day selected on Today must not leak in as "today"
     expect(document.body.textContent).not.toContain('77');
+  });
+  it('shows the portrait for the current rank and opens the rank gallery in place', async () => {
+    render(<CharacterPage dashboard={dashboard} items={[]} busyItemCode={null} onEquip={() => {}} onUnequip={() => {}}/>);
+    expect(screen.getByRole('img', { name: /Hạng E: gầy, mệt mỏi/ })).toBeTruthy();   // level 3 = rank E
+    expect(screen.queryByRole('list', { name: 'Diện mạo theo hạng' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: /Diện mạo theo hạng/ }));
+    const gallery = screen.getByRole('region', { name: 'Diện mạo theo hạng' });          // inline, not a dialog
+    expect(within(gallery).getAllByRole('listitem')).toHaveLength(6);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await userEvent.click(within(gallery).getByRole('button', { name: /Thu gọn/ }));
+    expect(screen.queryByRole('region', { name: 'Diện mạo theo hạng' })).toBeNull();
   });
   it('renders safely before the dashboard has loaded', () => {
     render(<CharacterPage dashboard={null} items={[]} busyItemCode={null} onEquip={() => {}} onUnequip={() => {}}/>);

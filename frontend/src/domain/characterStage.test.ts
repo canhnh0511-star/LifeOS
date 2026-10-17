@@ -18,6 +18,15 @@ describe('character stage (B-28)', () => {
     expect(new Set(ALL_STAGES.map(s => s.rgb)).size).toBe(ALL_STAGES.length);
     ALL_STAGES.forEach((s, i) => { if (i) expect(s.rings.length).toBeGreaterThanOrEqual(ALL_STAGES[i - 1].rings.length); });
   });
+  it('uses the approved rank names, in order', () => {
+    expect(ALL_STAGES.map(s => s.name)).toEqual(['Tân binh', 'Thức tỉnh', 'Chiến binh', 'Tinh nhuệ', 'Bậc thầy', 'Huyền thoại']);
+  });
+  it('gives every rank its own portrait, with a description for the alt text', () => {
+    expect(new Set(ALL_STAGES.map(s => s.art)).size).toBe(ALL_STAGES.length);
+    ALL_STAGES.forEach(s => { expect(s.art).toBe(`/art/ranks/rank-${s.rank.toLowerCase()}.jpg`); expect(s.look.length).toBeGreaterThan(5); });
+    const files = Object.keys(import.meta.glob('../../public/art/ranks/*.jpg', { query: '?url' }));
+    ALL_STAGES.forEach(s => expect(files, `${s.art} is missing from public/`).toContain(`../../public${s.art}`));
+  });
   it('copes with odd levels without throwing', () => {
     expect(stageForLevel(0).rank).toBe('E'); expect(stageForLevel(-3).rank).toBe('E'); expect(stageForLevel(500).rank).toBe('S');
   });

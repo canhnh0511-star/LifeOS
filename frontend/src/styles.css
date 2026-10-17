@@ -315,7 +315,7 @@ button.chest{font:inherit;cursor:pointer;width:100%}button.chest:hover{filter:br
 .today-hero h1,.today-hero p{text-shadow:0 2px 12px #000c}
 .today-hero .hero-new{min-height:40px;padding:0 12px;flex:0 0 auto}
 .today-hero .hunter-status{padding:0;border:0;background:none;box-shadow:none;max-width:68%}
-.today-hero .hunter-rank{display:none}
+.today-hero .hunter-status{gap:12px;justify-content:flex-start}.today-hero .hunter-rank{flex:0 0 auto;filter:none}.today-hero .hunter-rank .rank-portrait{border-radius:50%}
 @media(max-width:560px){
   .today-hero{min-height:172px;padding:14px 14px 16px;background-position:right 12%}
   .today-hero .hero-new span{display:none}.today-hero .hero-new{width:44px;padding:0;justify-content:center}
@@ -416,3 +416,21 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]),select{min-height
 /* Quest detail and workout open in place on Today (no sheet) */
 .inline-panel{display:grid;gap:14px;scroll-margin-top:72px;border-color:var(--accent,#c6f541)}
 .inline-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.inline-panel-head h2{margin:2px 0 0;font-size:20px;outline:none}
+
+/* Phase 1 (design "Hệ thống"): system-window tokens, rank portraits, rank gallery */
+:root{--font-display:"Chakra Petch",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-body:"Be Vietnam Pro",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--sys-cyan:#5cc8ff;--sys-line:rgba(92,200,255,.35);--sys-glass:linear-gradient(180deg,rgba(18,32,56,.82),rgba(10,18,34,.9))}
+:root{font-family:var(--font-body)}
+h1,h2,h3,.hunter-level,.section-eyebrow,.eyebrow,.rank-card-state{font-family:var(--font-display)}
+.rank-portrait{display:inline-block;flex:0 0 auto;border-radius:10px;overflow:hidden;border:1px solid var(--sys-line);background:#0a1222;box-shadow:0 0 24px color-mix(in srgb,var(--rk) 35%,transparent)}
+.rank-portrait img{display:block;width:100%;height:100%;object-fit:cover}
+.rank-portrait.is-locked{box-shadow:none;border-color:rgba(255,255,255,.12)}.rank-portrait.is-locked img{filter:grayscale(.7) brightness(.66)}
+.hunter-portrait{display:flex;gap:18px;align-items:center;border-color:var(--sys-line);background:var(--sys-glass)}
+.hunter-portrait-body{display:grid;gap:6px;min-width:0}.hunter-portrait-body h3{margin:0;font-size:20px;color:var(--text-strong)}.hunter-portrait-body p{margin:0;color:var(--text-muted);font-size:13px}
+.hunter-portrait-body .btn{justify-self:start;margin-top:4px}
+.rank-gallery{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.rank-card{display:grid;justify-items:center;gap:8px;padding:12px 8px 14px;border-radius:10px;border:1px solid var(--sys-line);background:var(--sys-glass)}
+.rank-card.is-current{border-color:var(--accent);box-shadow:0 0 22px rgba(198,250,85,.18)}
+.rank-card.is-locked{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.03)}
+.rank-card-name{display:flex;align-items:center;gap:6px;color:var(--text-strong)}.rank-card.is-locked .rank-card-name{color:var(--text-muted)}
+.rank-card-state{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;letter-spacing:1.4px;color:var(--text-muted)}.rank-card.is-current .rank-card-state{color:var(--accent)}
+@media(max-width:380px){.hunter-portrait{flex-direction:column;align-items:flex-start}.rank-gallery{gap:8px}}

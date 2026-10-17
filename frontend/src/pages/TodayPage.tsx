@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { BookOpen, CalendarDays, Check, ChevronLeft, ChevronRight, Circle, ClipboardList, Dumbbell, Clock3, Timer, Flame, Lock, PartyPopper, Plus, Zap } from 'lucide-react';
 import type { AnalyticsDto, HabitDto, DailyDashboardDto, DailyRewardDto, QuestDto, QuestObjectiveDto } from '../api/types';
 import { stageForLevel } from '../domain/characterStage';
-import { RankBadge } from '../components/RankBadge';
+import { RankPortrait } from '../components/RankPortrait';
 import { ChestArt } from '../components/ChestArt';
 import { ChestOpening } from '../components/ChestOpening';
 import { isOpened, loadOpened, withOpened } from '../ui/openedChests';
@@ -85,13 +85,14 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
     <section className="today-hero is-compact" aria-label="Trạng thái nhân vật">
       <div className="hero-top"><div><h1>{isToday ? <>Hôm <span className="text-gradient">nay</span></> : <span className="text-gradient">Ngày đã chọn</span>}</h1><p>{dateText(selectedDate)} · {total === 0 ? 'chưa có nhiệm vụ nào' : `${done}/${total} nhiệm vụ đã xong`}</p></div><button className="btn btn-outlined hero-new" onClick={onNewHabit} aria-label="Thói quen mới"><Plus size={17}/><span>Thói quen mới</span></button></div>
       <div className="hunter-status">
+        <span className="hunter-rank"><RankPortrait level={level} size={56}/></span>
         <button className="hunter-main" onClick={() => goTo('character')} aria-label={`Cấp ${level}, hạng ${rank}, ${stage.name}, xem nhân vật`}>
           <span className="hunter-level">Cấp {level}</span>
           <span className="hunter-title">Hạng {rank} · {stage.name}</span>
           <ProgressBar value={levelPct} variant="green" size="slim"/>
           <small>{number(cur?.totalXp || 0)} / {number(cur?.nextLevelXp || 0)} XP</small>
         </button>
-        <span className="hunter-rank"><RankBadge level={level} size="lg" decorative/></span>
+        
       </div>
     </section>
     <div className="today-simple">
