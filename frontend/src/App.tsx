@@ -167,7 +167,7 @@ export default function App() {
           {tab === 'journey' && <JourneyPage journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')}/>}
           {tab === 'character' && <CharacterPage dashboard={dashboard} items={items} busyItemCode={busyItemCode} onEquip={item => wear(item, true)} onUnequip={item => wear(item, false)}/>}
           {tab === 'body' && <BodyPage metrics={metrics} failed={metricsFailed} onRetry={() => { void reloadMetrics(); }} today={today} busy={bodyBusy} onRecord={recordMeasure} onRemoveEntry={removeMeasure} onCreate={createMetric} onDelete={deleteMetric}/>}
-          {tab === 'insights' && <InsightsPage analytics={analytics} period={period} onPeriod={setPeriod} currentStreak={dashboard?.progress.currentStreak || 0}/>}
+          {tab === 'insights' && <InsightsPage analytics={analytics} period={period} onPeriod={setPeriod} currentStreak={dashboard?.progress.currentStreak || 0} today={today} loadDay={loadDay} setLog={setLog}/>}
         </>}
         <footer className="footer"><span>© Life OS · Built for progress, not perfection.</span><span>Version 0.1.0 · {isDemo ? 'Mock API' : 'Real API'} · Asia/Ho_Chi_Minh</span></footer>
       </main>

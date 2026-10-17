@@ -43,5 +43,5 @@
 | B-38 | Màn đang tập từng set (màn 5) | Xong; chỉ frontend, giữ màu xanh |
 | B-39 | Thư viện bài tập và lọc nhóm cơ (màn 6, 7) | Xong (tìm, lọc nhóm cơ, mở chi tiết; vào từ Hành trình); thêm bài vào buổi tập chưa làm |
 | B-40 | Nhân vật và kho đồ theo ảnh tham chiếu (màn 8, 9; gộp B-29) | Chưa làm |
-| B-41 | Thống kê tập luyện (màn 10) | Chưa làm, chờ owner duyệt |
+| B-41 | Thống kê tập luyện (màn 10) | Xong (mục Tập luyện trong Thống kê, 7/30 ngày, tính ở client từ nhật ký set; không có tab "Tất cả" vì chưa có endpoint tổng hợp) |
 
