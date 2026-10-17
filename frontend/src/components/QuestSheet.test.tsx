@@ -78,14 +78,12 @@ describe('QuestSheet (RPG-03)', () => {
   });
 });
 
-describe('QuestSheet: rest follows the goal the plan was built for', () => {
+describe('QuestSheet: rest follows the standard plan', () => {
   const gym = (goalTitle: string): QuestDto => ({ ...quest('PENDING'), goalTitle, objectives: [{ id: 'o1', title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10, value: 0 }] } as QuestDto);
   const rest = (goalTitle: string) => { render(<QuestSheet quest={gym(goalTitle)} date="2026-10-16" busy={false} onClose={() => {}} onToggle={() => {}} onSetObjective={() => {}}/>); return screen.getByRole('button', { name: /^Nghỉ \d+ giây/ }).textContent; };
   it('suggests the library rest for a plan with no known goal', () => { expect(rest('Tuần 1 quay lại')).toContain('Nghỉ 90 giây'); });
-  it('suggests a short rest for fat loss, a long one for strength', () => {
-    expect(rest('Gym — Giảm mỡ · Tại nhà · 3 buổi/tuần')).toContain('Nghỉ 45 giây');
-    cleanup();
-    expect(rest('Gym — Khỏe hơn · Phòng gym đủ máy · 3 buổi/tuần')).toContain('Nghỉ 150 giây');
+  it('suggests 90 s after a compound lift for the standard plan', () => {
+    expect(rest('Gym — Tăng cơ · giảm mỡ toàn thân (3 buổi)')).toContain('Nghỉ 90 giây');
   });
 });
 

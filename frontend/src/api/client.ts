@@ -1,4 +1,4 @@
-import type { BadgeDto, WorkoutStatsDto, LastWorkoutSetsDto, WorkoutSetDto, WorkoutSetInput, MetricDto, ItemDto, AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, AchievementDto, BossMutationDto, PatchHabit, QuestMutationDto, UserDto, RegisterRequest, LoginRequest } from './types';
+import type { BadgeDto, WorkoutStatsDto, LastWorkoutSetsDto, WorkoutSetDto, WorkoutSetInput, MetricDto, ItemDto, AnalyticsDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, TrainingPlanDto, JourneyDto, ProgressDto, QuestDto, AchievementDto, BossMutationDto, PatchHabit, QuestMutationDto, UserDto, RegisterRequest, LoginRequest } from './types';
 export interface LifeOsApi {
   getMe(): Promise<UserDto>;
   /** Real mode only; the mock has no accounts and always acts as the demo user. */
@@ -14,6 +14,10 @@ export interface LifeOsApi {
   updateHabit(id: string, patch: PatchHabit): Promise<HabitDto>;
   /** Atomic bulk create of goals and habits; no screen uses it yet (UI is locked), it is driven by docs/seed files. */
   importHabitPlan(input: ImportHabitPlanRequest): Promise<ImportedHabitPlanDto>;
+  /** The account's gym plan, or the standard plan (started=false) when it has none; creates nothing. */
+  getPlan(): Promise<TrainingPlanDto>;
+  /** Creates the standard plan for this account unless it already has it (idempotent). */
+  startPlan(startDate: string): Promise<TrainingPlanDto>;
   getQuests(date: string): Promise<QuestDto[]>;
   completeQuest(habitId: string, date: string): Promise<QuestMutationDto>;
   undoQuest(habitId: string, date: string): Promise<QuestMutationDto>;

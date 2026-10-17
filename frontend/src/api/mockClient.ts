@@ -1,11 +1,12 @@
 import type { LifeOsApi } from './client';
-import type { WorkoutSetDto, WorkoutSetInput, AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, DailyRewardDto, ItemDto, MetricDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday, HabitObjectiveDto, ObjectiveInput, QuestObjectiveDto } from './types';
+import type { TrainingPlanDto, WorkoutSetDto, WorkoutSetInput, AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, DailyRewardDto, ItemDto, MetricDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday, HabitObjectiveDto, ObjectiveInput, QuestObjectiveDto } from './types';
 import { ApiError, ErrorCode } from './errors';
 import { ALL_CATEGORIES } from '../domain/insights';
 import { DAILY_TIERS, hasChests, rewardThreshold } from '../domain/dailyRewards';
 import { ITEM_CATALOG, POOL } from '../domain/items';
 import { ACHIEVEMENT_CATALOG, STREAK_TARGET, balancedAchieved, comebackAchieved, spreadAcrossAreas } from '../domain/achievements';
 import { BOSS_CATALOG, CHAPTERS } from '../domain/bosses';
+import { STANDARD_DAYS, STANDARD_PLAN_DESCRIPTION, STANDARD_PLAN_MINUTES, STANDARD_PLAN_TITLE, STANDARD_PLAN_XP, standardPlanTemplate } from '../domain/standardPlan';
 import { categoryLabel, diffDays, isScheduled, levelProgress, longestStreakForHabit, moveDate, streakForHabit, todayInTimezone } from '../domain/rules';
 
 const DB_KEY = 'life-os.mock.v1';
@@ -462,6 +463,13 @@ async function mutateBoss(target:string,defeat:boolean):Promise<BossMutationDto>
   return {bossId:target,status,xpAwarded,totalXp:p.totalXp,level:p.level,effects};
 }
 
+const findPlanGoal=(db:Db)=>db.goals.find(g=>g.status==='ACTIVE'&&g.title.trim().toLowerCase()===STANDARD_PLAN_TITLE.toLowerCase());
+function planOf(db:Db):TrainingPlanDto{
+  const goal=findPlanGoal(db);if(!goal)return standardPlanTemplate();
+  const sessions=db.habits.filter(h=>h.goalId===goal.id&&h.status==='ACTIVE').sort((a,b)=>a.title.localeCompare(b.title))
+    .map(h=>({habitId:h.id,title:h.title,targetMinutes:h.targetMinutes,xpReward:h.xpReward,weekdays:[...h.weekdays],objectives:h.objectives.map(o=>({title:o.title,target:o.target,unit:o.unit,step:o.step}))}));
+  return {started:true,goalId:goal.id,title:goal.title,description:goal.description,sessions};
+}
 export const mockClient:LifeOsApi={
   async getMe(){await delay();return user;},
   async register(){await delay();return user;},
@@ -547,6 +555,17 @@ export const mockClient:LifeOsApi={
     });
     if(Object.keys(errors).length)fail(errors);
     db.goals.push(...goals);db.habits.push(...habits);save(db);return {goals,habits};
+  },
+  async getPlan():Promise<TrainingPlanDto>{
+    await delay();return planOf(load());
+  },
+  async startPlan(startDate:string):Promise<TrainingPlanDto>{
+    // One plan per account: an ACTIVE goal with the standard title. Starting it again returns it and creates nothing.
+    const db=load();if(!findPlanGoal(db)){
+      await mockClient.importHabitPlan({startDate,goals:[{title:STANDARD_PLAN_TITLE,category:'HEALTH',description:STANDARD_PLAN_DESCRIPTION,
+        habits:STANDARD_DAYS.map(d=>({title:d.title,targetMinutes:STANDARD_PLAN_MINUTES,xpReward:STANDARD_PLAN_XP,weekdays:[...d.weekdays] as Weekday[],objectives:d.lines.map(l=>({...l}))}))}]});
+    }
+    return planOf(load());
   },
   async updateHabit(habitId,patch){
     await delay();assertOnlyKeys(patch,['status','title','targetMinutes','xpReward','weekdays','endDate','objectives']);

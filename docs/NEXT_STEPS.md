@@ -23,6 +23,8 @@ Nguồn: `docs/LIFE_OS_SOLO_LEVELING_GYM_REFOCUS.md` §8–9; bằng chứng: `d
 
 **Hướng mới (owner 2026-10-17, ADR-040):** ✅ lát cắt 1 (diện mạo theo hạng E→S, tên hạng, font), ✅ lát cắt 2 (giáo án theo mục tiêu: màn thiết lập 3 bước, `planBuilder`, nghỉ theo mục tiêu; số rep/nghỉ cần huấn luyện viên rà). ✅ lát cắt 3 (Thăng hạng hiện ảnh hạng cũ → mới và danh sách mở khoá, nhãn "Tầng n/N" trong màn tập, thẻ "Tổng kết buổi" gồm bài/set/khối lượng/thời gian/XP). Còn: 5 chỉ số gym thay 5 lĩnh vực đời sống, boss tuần theo buổi tập, Bóng theo kỷ lục (cần RFC backend cho chỉ số).
 
+**Một giáo án từ backend (owner 2026-10-18, ADR-041):** nhánh `feat/single-plan-be`. Chỉ còn một giáo án chuẩn (toàn thân 3 buổi), định nghĩa ở `backend/.../plan/StandardPlan.java`; `GET/POST /api/v1/plan`; wizard còn 2 bước; bỏ các giáo án có sẵn khác và `planBuilder`. **Chưa merge vào main:** code backend và `TrainingPlanIntegrationTest` chưa được build trong môi trường tác giả (không tải được Maven Central). Cần chạy `cd backend && ./mvnw test` (hoặc để CI chạy) rồi mới merge. Còn lại: đưa ảnh hướng dẫn bài tập khi có; huấn luyện viên rà số rep/nghỉ.
+
 **Phase 2 — RPG (P1):** hoàn thành buổi thưởng XP đúng một lần (đã có), tổng kết buổi, huy hiệu, avatar. **Phase 3 — hoàn thiện (P2):** QA di động, offline/lỗi, truy cập.
 
 Chưa kiểm: bản deploy thật (cần tài khoản), iPhone thật/PWA, VoiceOver.

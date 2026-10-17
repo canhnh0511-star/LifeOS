@@ -119,6 +119,22 @@ paths:
         '201': {description: Created goals and habits, content: {application/json: {schema: {$ref: '#/components/schemas/ImportedHabitPlan'}}}}
         '409': {$ref: '#/components/responses/Conflict'}
         '422': {$ref: '#/components/responses/ValidationError'}
+  /plan:
+    get:
+      tags: [Plan]
+      operationId: getPlan
+      description: The account's gym plan. While `started` is false it is the standard plan that POST /plan would create (`goalId` and every `habitId` are null); nothing is created by this call. There is one standard plan; each account gets its own goal and habits.
+      responses:
+        '200': {description: The account's plan or the standard plan, content: {application/json: {schema: {$ref: '#/components/schemas/TrainingPlan'}}}}
+    post:
+      tags: [Plan]
+      operationId: startPlan
+      description: Creates the standard plan for this account (a goal and three habits, validated like the plan import). Idempotent - when the account already has the plan, returns it with 200 and creates nothing. Errors - 422 VALIDATION_FAILED with `fields.startDate`.
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [startDate], properties: {startDate: {$ref: '#/components/schemas/LocalDate'}}}}}}
+      responses:
+        '201': {description: Plan created, content: {application/json: {schema: {$ref: '#/components/schemas/TrainingPlan'}}}}
+        '200': {description: The account already had its plan, content: {application/json: {schema: {$ref: '#/components/schemas/TrainingPlan'}}}}
+        '422': {$ref: '#/components/responses/ValidationError'}
   /habits/{id}:
     patch:
       tags: [Habits]
@@ -470,6 +486,31 @@ components:
       properties:
         goals: {type: array, items: {$ref: '#/components/schemas/Goal'}}
         habits: {type: array, items: {$ref: '#/components/schemas/Habit'}}
+    TrainingPlan:
+      type: object
+      required: [started, goalId, title, description, sessions]
+      properties:
+        started: {type: boolean}
+        goalId: {type: string, nullable: true}
+        title: {type: string}
+        description: {type: string}
+        sessions:
+          type: array
+          items:
+            type: object
+            required: [habitId, title, targetMinutes, xpReward, weekdays, objectives]
+            properties:
+              habitId: {type: string, nullable: true}
+              title: {type: string}
+              targetMinutes: {type: integer}
+              xpReward: {type: integer}
+              weekdays: {type: array, items: {type: integer, minimum: 1, maximum: 7}}
+              objectives:
+                type: array
+                items:
+                  type: object
+                  required: [title, target, unit, step]
+                  properties: {title: {type: string}, target: {type: integer}, unit: {type: string}, step: {type: integer}}
     PatchHabit:
       type: object
       minProperties: 1

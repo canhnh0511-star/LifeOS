@@ -836,3 +836,34 @@ describe('clearDayRecords', () => {
     expect(await clearDayRecords(mockClient, D0)).toEqual({ sets: 0, completed: 0, progress: 0 });
   });
 });
+
+describe('mock plan (one standard plan per account)', () => {
+  const today = () => todayInTimezone();
+  it('shows the standard plan without creating anything while the account has none', async () => {
+    const before = (await mockClient.getGoals()).length;
+    const plan = await mockClient.getPlan();
+    expect(plan.started).toBe(false); expect(plan.goalId).toBeNull();
+    expect(plan.sessions.map(s => s.title.slice(0, 6))).toEqual(['Buổi A', 'Buổi B', 'Buổi C']);
+    expect((await mockClient.getGoals()).length).toBe(before);
+  });
+  it('starting creates the plan as an ordinary goal with three gym habits, and shows it as started', async () => {
+    const started = await mockClient.startPlan(today());
+    expect(started.started).toBe(true); expect(started.goalId).toBeTruthy();
+    expect(started.sessions.every(s => s.habitId)).toBe(true);
+    const habits = (await mockClient.getHabits()).filter(h => h.goalId === started.goalId);
+    expect(habits).toHaveLength(3); expect(habits.map(h => h.weekdays[0]).sort()).toEqual([1, 3, 5]);
+    expect((await mockClient.getPlan()).goalId).toBe(started.goalId);
+  });
+  it('starting twice keeps the same plan and creates nothing more', async () => {
+    const first = await mockClient.startPlan(today());
+    const habitsAfterFirst = (await mockClient.getHabits()).length;
+    const again = await mockClient.startPlan(today());
+    expect(again.goalId).toBe(first.goalId);
+    expect((await mockClient.getHabits()).length).toBe(habitsAfterFirst);
+  });
+  it('refuses a bad start date and creates nothing', async () => {
+    const err = await rejection(mockClient.startPlan('not-a-date'));
+    expect(err).toMatchObject({ status: 422 });
+    expect((await mockClient.getPlan()).started).toBe(false);
+  });
+});

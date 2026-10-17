@@ -4,7 +4,7 @@ import type { QuestDto, QuestObjectiveDto } from '../api/types';
 import { difficultyForXp, difficultyLabel } from '../domain/difficulty';
 import { categoryLabel } from '../domain/rules';
 import { exerciseByName, isLibraryLine, muscleLabel, type Exercise } from '../domain/exerciseLibrary';
-import { goalFromTitle, restSecondsFor } from '../domain/planBuilder';
+import { restSecondsFor } from '../domain/plan';
 import { sessionSummary } from '../domain/sessionSummary';
 import { number } from '../ui/format';
 import { clock, elapsedMs, isRunning, loadTimer, pauseTimer, saveTimer, startTimer, idleTimer, type TimerState } from '../ui/focusTimer';
@@ -32,8 +32,7 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
   const log = useSetLog(setLog, quest.habitId, date);
   // The plan can prescribe other numbers than the library default (e.g. 2 sets instead of 3): the checklist line is the truth (target = sets x reps, step = reps).
   // A plan built by the goal wizard names its goal in the title; its rest times follow that goal, other plans keep the library's.
-  const planGoal = goalFromTitle(quest.goalTitle);
-  const restFor = (e: Exercise): number | undefined => planGoal ? restSecondsFor(planGoal, e) : e.restSeconds;
+  const restFor = (e: Exercise): number | undefined => restSecondsFor(quest.goalTitle, e);
   const loggable = setLog ? quest.objectives.flatMap(o => { const e = exerciseByName(o.title); if (!e || !isLibraryLine(o)) return []; const sets = o.step > 0 && o.target % o.step === 0 ? o.target / o.step : e.sets; const rest = restFor(e); return [{ ...e, sets, reps: o.step > 0 ? o.step : e.reps, ...(rest ? { restSeconds: rest } : {}) }]; }) : [];
   const done = quest.status === 'COMPLETED';
   const running = isRunning(timer), resting = restEndsAt !== null && restEndsAt > now;

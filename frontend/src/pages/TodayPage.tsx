@@ -70,7 +70,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   const gymToday = (dashboard?.quests ?? []).some(q => q.objectives.some(isLibraryLine));
   const upcoming = habits && isToday && !gymToday ? nextGymSession(habits, today) : null;
   const gymNudge = !habits || !isToday || gymToday ? null
-    : !hasGymHabit(habits) ? (onImportPlan ? <article className="panel gym-nudge" aria-label="Giáo án gym"><div><h3><Dumbbell size={17}/> Chưa có lịch tập</h3><p>Chọn mục tiêu, nơi tập và số buổi mỗi tuần. Hệ thống tạo giáo án cho bạn, rồi Hôm nay có buổi tập để ghi từng set và xem tiến độ.</p></div><button className="btn btn-primary" onClick={onImportPlan}>Bắt đầu hành trình</button></article> : null)
+    : !hasGymHabit(habits) ? (onImportPlan ? <article className="panel gym-nudge" aria-label="Giáo án gym"><div><h3><Dumbbell size={17}/> Chưa có lịch tập</h3><p>Hệ thống sẽ nạp giáo án 3 buổi mỗi tuần cho bạn, rồi Hôm nay có buổi tập để ghi từng set và xem tiến độ.</p></div><button className="btn btn-primary" onClick={onImportPlan}>Bắt đầu hành trình</button></article> : null)
     : upcoming ? <article className="panel gym-nudge" aria-label="Buổi tập kế tiếp"><div><h3><Dumbbell size={17}/> Hôm nay không có buổi tập</h3><p>Buổi kế tiếp: <strong>{upcoming.habit.title}</strong> · {formatDate(upcoming.date, { weekday: 'long', day: 'numeric', month: 'numeric' })}{(() => { const g = [...new Set(upcoming.habit.objectives.map(o => exerciseByName(o.title)?.group).filter(Boolean))].map(x => muscleLabel[x!]); return g.length ? ` · ${g.join(', ')}` : ''; })()}</p></div>{loadDay && <button className="btn btn-quiet" onClick={() => setShowWeek(true)}>Xem lịch tuần</button>}</article> : null;
   const noPlan = !!habits && isToday && !gymToday && !hasGymHabit(habits);
   // A session with sets already on the server is "in progress": the main button resumes it instead of starting over.
@@ -102,7 +102,6 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
       <div className="today-actions" role="group" aria-label="Lối tắt">
         {loadDay && <button type="button" className="btn btn-secondary" onClick={() => setShowWeek(true)}><CalendarDays size={16}/> Lịch tuần</button>}
         <button type="button" className="btn btn-secondary" onClick={() => goTo('exercises')}><BookOpen size={16}/> Bài tập</button>
-        {onImportPlan && <button type="button" className="btn btn-secondary" onClick={onImportPlan}><Dumbbell size={16}/> Giáo án</button>}
       </div>
       {noPlan && gymNudge}
       {next && nextIsGym && <><TodayMission quest={next} sets={daySets} reward={rewardLabel} running={isRunning(loadTimer(next.habitId, selectedDate))} startLabel={loggedSets > 0 ? `Tiếp tục buổi tập · đã ghi ${loggedSets} set` : 'Bắt đầu buổi tập'} onStart={() => { setAutoTrain(true); setDetailId(next.habitId); }}/><DungeonFloors quest={next} sets={daySets} onOpen={() => { setAutoTrain(true); setDetailId(next.habitId); }}/></>}
