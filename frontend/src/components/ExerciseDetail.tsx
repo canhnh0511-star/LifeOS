@@ -1,17 +1,15 @@
-import { Dumbbell, Gauge, Layers } from 'lucide-react';
+import { ChevronUp, Dumbbell, Gauge, Layers } from 'lucide-react';
 import { muscleLabel, type Exercise } from '../domain/exerciseLibrary';
 import { infoFor, kindLabel, levelLabel } from '../domain/exerciseInfo';
 import { guideFor } from '../domain/exerciseGuide';
-import { Modal } from './Modal';
 import { MuscleFigure } from './MuscleFigure';
 
-/** One exercise in detail (B-37): muscles, equipment, level, kind, the plan numbers and technique cues. Read-only. */
+/** One exercise in detail, shown in place (no popup, no separate screen): muscles, equipment, level, the guide, the plan numbers. `onClose` collapses it. */
 export function ExerciseDetail({ exercise: e, onClose, action }: { exercise: Exercise; onClose: () => void; action?: React.ReactNode }) {
   const x = infoFor(e);
   const guide = guideFor(e.id);
   const unit = e.unit === 'giây' ? 'giây' : 'rep';
-  return <Modal title={e.nameVi ?? e.name} onClose={onClose} sheet>
-    <div className="xd">
+  return <div className="xd xd-inline" role="region" aria-label={`Chi tiết ${e.nameVi ?? e.name}`}>
       <div className="xd-top">
         <MuscleFigure primary={e.group} secondary={x.secondary}/>
         <dl className="xd-facts">
@@ -32,6 +30,6 @@ export function ExerciseDetail({ exercise: e, onClose, action }: { exercise: Exe
         <p className="form-note">Hướng dẫn chi tiết cho bài này đang được biên soạn.</p></section>}
       <p className="form-note xd-safety">Đau nhói, tê hoặc chóng mặt: dừng bài và hỏi huấn luyện viên. Đây là hướng dẫn cho người mới, không thay thế tư vấn y tế.</p>
       {action}
-    </div>
-  </Modal>;
+      <button type="button" className="btn btn-quiet xd-collapse" onClick={onClose}><ChevronUp size={16}/> Thu gọn</button>
+  </div>;
 }

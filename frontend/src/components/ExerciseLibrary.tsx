@@ -40,10 +40,10 @@ function AddToSession({ exercise, habits, onAdd }: { exercise: Exercise; habits:
 }
 
 /** Search and muscle-group filter state, kept by the owner so it survives opening a detail and coming back. */
-export function useExerciseFilter() { const [group, setGroup] = useState<MuscleGroup | null>(null); const [query, setQuery] = useState(''); return { group, setGroup, query, setQuery }; }
+export function useExerciseFilter() { const [group, setGroup] = useState<MuscleGroup | null>(null); const [query, setQuery] = useState(''); const [openId, setOpenId] = useState<string | null>(null); return { group, setGroup, query, setQuery, openId, setOpenId }; }
 
 /** The searchable list itself (no frame): used inside the library dialog and as the Bài tập page. */
-export function ExerciseBrowser({ filter: { group, setGroup, query, setQuery }, onOpen }: { filter: ReturnType<typeof useExerciseFilter>; onOpen: (e: Exercise) => void }) {
+export function ExerciseBrowser({ filter: { group, setGroup, query, setQuery, openId, setOpenId }, habits, onAddToHabit }: { filter: ReturnType<typeof useExerciseFilter>; habits?: HabitDto[]; onAddToHabit?: (habitId: string, objectives: ObjectiveInput[]) => Promise<void> }) {
   const shown = useMemo(() => filterExercises(EXERCISES, group, query), [group, query]);
   return <div className="xl">
       <label className="xl-search"><Search size={16}/><input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Tìm bài tập, nhóm cơ, dụng cụ" aria-label="Tìm bài tập"/></label>
@@ -53,28 +53,24 @@ export function ExerciseBrowser({ filter: { group, setGroup, query, setQuery }, 
       </div>
       <p className="form-note" role="status">{shown.length} bài</p>
       {shown.length === 0 ? <p className="xl-empty">Không có bài nào khớp. Thử bỏ bớt từ khoá hoặc chọn nhóm cơ khác.</p>
-        : <ul className="xl-list">{shown.map(e => <li key={e.id}><button type="button" className="xl-item" onClick={() => onOpen(e)} aria-label={`Chi tiết ${e.nameVi ?? e.name}`}>
+        : <ul className="xl-list">{shown.map(e => { const isOpen = openId === e.id; return <li key={e.id} className={isOpen ? 'is-open' : ''}><button type="button" className="xl-item" aria-expanded={isOpen} onClick={() => setOpenId(isOpen ? null : e.id)} aria-label={`Chi tiết ${e.nameVi ?? e.name}`}>
           <MuscleFigure primary={e.group} size={28}/><span><strong>{e.nameVi ?? e.name}</strong><small lang="en">{e.name}</small><small>{muscleLabel[e.group]} · {infoFor(e).equipment} · {levelLabel[infoFor(e).level]}</small></span><small className="xl-plan">{e.sets}×{e.reps}</small>
-        </button></li>)}</ul>}
+        </button>{isOpen && <ExerciseDetail exercise={e} onClose={() => setOpenId(null)} action={habits && onAddToHabit && <AddToSession exercise={e} habits={habits} onAdd={onAddToHabit}/>}/>}</li>; })}</ul>}
   </div>;
 }
 
 export function ExerciseLibrary({ onClose, habits, onAddToHabit }: { onClose: () => void; habits?: HabitDto[]; onAddToHabit?: (habitId: string, objectives: ObjectiveInput[]) => Promise<void> }) {
   const filter = useExerciseFilter();
-  const [open, setOpen] = useState<Exercise | null>(null);
-  if (open) return <ExerciseDetail exercise={open} onClose={() => setOpen(null)} action={habits && onAddToHabit && <AddToSession exercise={open} habits={habits} onAdd={onAddToHabit}/>}/>;
   return <Modal title="Thư viện bài tập" onClose={onClose} sheet>
-    <ExerciseBrowser filter={filter} onOpen={setOpen}/>
+    <ExerciseBrowser filter={filter} habits={habits} onAddToHabit={onAddToHabit}/>
   </Modal>;
 }
 
-/** The Bài tập tab: the same browser as a page, with the detail (and "add to session") opening over it. */
+/** The Bài tập tab: the same browser as a page; tapping an exercise expands it in place. */
 export function ExercisesPage({ habits, onAddToHabit }: { habits?: HabitDto[]; onAddToHabit?: (habitId: string, objectives: ObjectiveInput[]) => Promise<void> }) {
   const filter = useExerciseFilter();
-  const [open, setOpen] = useState<Exercise | null>(null);
   return <>
-    <div className="page-header"><div><div className="eyebrow"><span className="eyebrow-dash"/> THƯ VIỆN</div><h1>Bài <span className="text-gradient">tập</span></h1><p>Chọn một bài để xem cách tập, lỗi thường gặp và thêm vào buổi tập.</p></div></div>
-    <article className="panel"><ExerciseBrowser filter={filter} onOpen={setOpen}/></article>
-    {open && <ExerciseDetail exercise={open} onClose={() => setOpen(null)} action={habits && onAddToHabit && <AddToSession exercise={open} habits={habits} onAdd={onAddToHabit}/>}/>}
+    <div className="page-header"><div><div className="eyebrow"><span className="eyebrow-dash"/> THƯ VIỆN</div><h1>Bài <span className="text-gradient">tập</span></h1><p>Chạm vào một bài để xem cách tập, lỗi thường gặp và thêm vào buổi tập.</p></div></div>
+    <article className="panel"><ExerciseBrowser filter={filter} habits={habits} onAddToHabit={onAddToHabit}/></article>
   </>;
 }

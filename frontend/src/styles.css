@@ -408,3 +408,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]),select{min-height
 .aw-progress{display:grid;gap:6px}.aw-progress strong{font-size:13px;color:var(--text-muted);font-weight:600}
 .aw-cue{margin:6px 0 0;font-size:14px;color:var(--text);max-width:34ch;margin-inline:auto}.aw-last{margin:4px 0 0;font-size:13px;color:var(--text-muted)}
 .aw-dot{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:64px;padding:0 12px;white-space:nowrap}
+
+/* Exercise detail opens in place */
+.xd-inline{padding:14px;margin:8px 0 4px;border:1px solid var(--border,#2a3646);border-radius:14px;background:#0f1722}.xd-collapse{justify-self:start}
+.xl-list>li.is-open{display:grid;gap:0}.xl-list>li.is-open>.xl-item{border-bottom-left-radius:0;border-bottom-right-radius:0}

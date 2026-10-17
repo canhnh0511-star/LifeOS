@@ -99,14 +99,16 @@ describe('set log in the quest sheet (B-34)', () => {
 });
 
 describe('exercise detail from the quest sheet (B-37)', () => {
-  it('opens technique for a library exercise only, and comes back to the sheet', async () => {
+  it('shows technique in place (no popup) for a library exercise only, and collapses it again', async () => {
     const q = quest(); q.objectives = [...q.objectives, { id: 'o2', title: 'Bài tự đặt tên', target: 3, unit: 'lần', step: 1, value: 0 } as QuestDto['objectives'][number]];
     render(<QuestSheet quest={q} date="2026-10-19" busy={false} onClose={() => {}} onToggle={() => {}} onSetObjective={() => {}}/>);
     expect(screen.queryByRole('button', { name: 'Kỹ thuật Bài tự đặt tên' })).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: 'Kỹ thuật Đẩy ngực với máy' }));
-    expect(screen.getByRole('dialog', { name: 'Đẩy ngực với máy' })).toBeTruthy();
-    await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
+    expect(screen.getByRole('region', { name: 'Chi tiết Đẩy ngực với máy' })).toBeTruthy();
+    expect(screen.getAllByRole('dialog')).toHaveLength(1); // still only the quest sheet: nothing was stacked on top
     expect(screen.getByRole('dialog', { name: 'Buổi A' })).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Thu gọn' }));
+    expect(screen.queryByRole('region', { name: 'Chi tiết Đẩy ngực với máy' })).toBeNull();
   });
 });
 

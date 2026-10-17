@@ -51,6 +51,14 @@ describe('active workout: battle mode (Phase 1)', () => {
     expect(pills.textContent).toContain('Set 2');
     expect(pills.querySelector('[aria-label="Set 1: xong, 10 rep, 40 kg"]')).toBeTruthy();
   });
+  it('shows technique in place under the exercise, without leaving the workout screen', async () => {
+    await start(fakeApi());
+    await userEvent.click(screen.getByRole('button', { name: 'Kỹ thuật' }));
+    expect(screen.getByRole('region', { name: /Chi tiết Đẩy ngực với máy/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Hoàn thành set' })).toBeTruthy(); // the set controls are still right there
+    await userEvent.click(screen.getByRole('button', { name: 'Ẩn kỹ thuật' }));
+    expect(screen.queryByRole('region', { name: /Chi tiết/ })).toBeNull();
+  });
   it('"Tạm dừng" leaves the screen and says the logged sets are kept', async () => {
     await start(fakeApi());
     expect(screen.getByText(/Các set đã ghi được lưu/)).toBeTruthy();

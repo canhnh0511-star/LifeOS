@@ -15,13 +15,23 @@ describe('Bài tập tab', () => {
     expect(screen.getByRole('button', { name: /Chi tiết Hít đất/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Chi tiết Kéo xà đơn/ })).toBeNull();
   });
-  it('opens an exercise in detail and returns to the same search when closed', async () => {
+  it('expands an exercise in place (no popup), keeps the search, and opens only one at a time', async () => {
     render(<ExercisesPage/>);
     await userEvent.type(screen.getByLabelText('Tìm bài tập'), 'plank');
-    await userEvent.click(screen.getByRole('button', { name: /Chi tiết Plank/ }));
-    expect(screen.getByRole('dialog', { name: /Plank/ })).toBeTruthy();
-    await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
+    const row = screen.getByRole('button', { name: /Chi tiết Plank/ });
+    expect(row.getAttribute('aria-expanded')).toBe('false');
+    await userEvent.click(row);
+    expect(row.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('region', { name: /Chi tiết Plank/ })).toBeTruthy();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect((screen.getByLabelText('Tìm bài tập') as HTMLInputElement).value).toBe('plank');
+    await userEvent.click(row);
+    expect(screen.queryByRole('region', { name: /Chi tiết Plank/ })).toBeNull();
+  });
+  it('opening a second exercise closes the first', async () => {
+    render(<ExercisesPage/>);
+    await userEvent.click(screen.getByRole('button', { name: /Chi tiết Hít đất/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Chi tiết Ép ngực với máy cáp/ }));
+    expect(screen.getAllByRole('region', { name: /^Chi tiết/ })).toHaveLength(1);
   });
 });

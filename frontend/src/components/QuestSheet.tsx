@@ -43,7 +43,6 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
   const suggested = nextLine ? exerciseByName(nextLine.title) : undefined;
   const suggestedRest = suggested?.restSeconds;
   const detailExercise = detail ? exerciseByName(detail) : undefined;
-  if (detailExercise) return <ExerciseDetail exercise={detailExercise} onClose={() => setDetail(null)}/>;
   if (training && setLog) return <ActiveWorkout quest={quest} date={date} exercises={loggable} sets={log.sets} busy={log.busy} error={log.error} last={setLog.last} onRecord={log.record} onRemove={log.remove} onFinish={quest.status === 'COMPLETED' ? undefined : () => { onToggle(quest); setTraining(false); }} xp={quest.xpReward} onClose={() => setTraining(false)}/>;
   return <Modal title={quest.title} onClose={onClose} sheet>
     <div className="sheet">
@@ -52,7 +51,8 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
       {setLog && loggable.length > 0 && !done && <button className="btn btn-primary" onClick={() => setTraining(true)}><Dumbbell size={17}/> Tập từng set</button>}
       {quest.objectives.length > 0 && <section aria-label="Bài tập">
         <h3 className="sheet-h">Bài tập · {metCount(quest.objectives)}/{quest.objectives.length}</h3>
-        <ObjectiveList quest={quest} disabled={busy} onSet={(o, v) => onSetObjective(quest, o, v)} onInfo={o => setDetail(o.title)} hasInfo={o => !!exerciseByName(o.title)}/>
+        <ObjectiveList quest={quest} disabled={busy} onSet={(o, v) => onSetObjective(quest, o, v)} onInfo={o => setDetail(d => d === o.title ? null : o.title)} hasInfo={o => !!exerciseByName(o.title)}/>
+        {detailExercise && <ExerciseDetail exercise={detailExercise} onClose={() => setDetail(null)}/>}
       </section>}
       {setLog && loggable.length > 0 && <section aria-label="Nhật ký set">
         <h3 className="sheet-h">Nhật ký set</h3>
