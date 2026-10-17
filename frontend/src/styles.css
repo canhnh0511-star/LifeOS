@@ -467,3 +467,13 @@ h1,h2,h3,.hunter-level,.section-eyebrow,.eyebrow,.rank-card-state{font-family:va
 .wizard-actions{display:grid;gap:8px;position:sticky;bottom:0;padding-top:8px;background:linear-gradient(180deg,transparent,#060a12 30%)}
 .wizard-cta{height:56px;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:center;gap:10px}
 .wizard-links{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.wizard-links .btn{min-height:44px}
+
+/* Phase 3: rank-up shows the old and the new look */
+.rank-change{display:flex;align-items:flex-end;justify-content:center;gap:12px;margin:4px 0}.rank-change-arrow{font-family:var(--font-display);font-size:30px;line-height:1;color:var(--sys-cyan);padding-bottom:58px}
+.rank-change .rank-portrait:last-child{border:2px solid #6ee7a8;box-shadow:0 0 50px rgba(110,231,168,.55)}
+.celebration-rank{margin:0;font-family:var(--font-display);font-weight:700;font-size:22px;color:#6ee7a8}
+.celebration-unlocks{list-style:none;margin:6px 0 0;padding:12px 14px;display:grid;gap:8px;width:100%;text-align:left;border:1px solid rgba(110,231,168,.45);border-radius:8px;background:rgba(14,40,40,.6)}
+.celebration-unlocks li{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--text-strong)}.celebration-unlocks li:before{content:"✓";color:#6ee7a8;font-weight:800}
+.session-summary{border:1px solid rgba(198,250,85,.4);border-radius:12px;padding:12px 14px;background:linear-gradient(180deg,rgba(198,250,85,.07),transparent)}
+.session-summary dl{margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px}.session-summary dt{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted)}
+.session-summary dd{margin:2px 0 0;font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--text-strong)}.session-summary .session-xp{color:var(--accent)}

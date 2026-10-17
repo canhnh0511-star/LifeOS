@@ -21,7 +21,7 @@ Nguồn: `docs/LIFE_OS_SOLO_LEVELING_GYM_REFOCUS.md` §8–9; bằng chứng: `d
 6b. ✅ (2026-10-17, mock + 339 test) Không còn popup/sheet cho chi tiết: chi tiết bài mở tại chỗ (tab Bài tập, thư viện, màn tập, checklist) và chi tiết buổi tập + màn đang tập mở ngay trong trang Hôm nay, dưới đúng thẻ vừa bấm (`InlinePanel`: tự cuộn tới, focus vào tiêu đề, Esc hoặc "Thu gọn" để đóng). Chỉ còn dialog thật cho: hộp mở rương, cài đặt, form tạo/sửa, nạp giáo án.
 7. Tổng kết buổi tập (số bài/set, thời lượng nếu đo được, XP, bước tiếp theo) — chưa làm; làm sau 4b.
 
-**Hướng mới (owner 2026-10-17, ADR-040):** ✅ lát cắt 1 (diện mạo theo hạng E→S, tên hạng, font), ✅ lát cắt 2 (giáo án theo mục tiêu: màn thiết lập 3 bước, `planBuilder`, nghỉ theo mục tiêu; số rep/nghỉ cần huấn luyện viên rà). Còn: tổng kết buổi tập kiểu hầm ngục, 5 chỉ số gym thay 5 lĩnh vực đời sống, boss tuần theo buổi tập, Bóng theo kỷ lục (cần RFC backend cho chỉ số).
+**Hướng mới (owner 2026-10-17, ADR-040):** ✅ lát cắt 1 (diện mạo theo hạng E→S, tên hạng, font), ✅ lát cắt 2 (giáo án theo mục tiêu: màn thiết lập 3 bước, `planBuilder`, nghỉ theo mục tiêu; số rep/nghỉ cần huấn luyện viên rà). ✅ lát cắt 3 (Thăng hạng hiện ảnh hạng cũ → mới và danh sách mở khoá, nhãn "Tầng n/N" trong màn tập, thẻ "Tổng kết buổi" gồm bài/set/khối lượng/thời gian/XP). Còn: 5 chỉ số gym thay 5 lĩnh vực đời sống, boss tuần theo buổi tập, Bóng theo kỷ lục (cần RFC backend cho chỉ số).
 
 **Phase 2 — RPG (P1):** hoàn thành buổi thưởng XP đúng một lần (đã có), tổng kết buổi, huy hiệu, avatar. **Phase 3 — hoàn thiện (P2):** QA di động, offline/lỗi, truy cập.
 

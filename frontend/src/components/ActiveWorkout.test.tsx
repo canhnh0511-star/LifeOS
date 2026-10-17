@@ -28,6 +28,15 @@ const start = async (api: SetLogApi, onToggle = vi.fn()) => {
   return onToggle;
 };
 
+describe('active workout: dungeon floors', () => {
+  it('calls the current exercise "Tầng n/N" with its muscle group, and moves to the next floor', async () => {
+    await start(fakeApi());
+    expect(screen.getByText(/^Tầng 1\/2 · /)).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Bài sau' }));
+    expect(screen.getByText(/^Tầng 2\/2 · /)).toBeTruthy();
+  });
+});
+
 describe('active workout: battle mode (Phase 1)', () => {
   it('shows how many exercises are finished out of the total, and updates when one is completed', async () => {
     const api = fakeApi([{ exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 40 }, { exercise: 'Machine Chest Press', setNo: 2, reps: 10, weightKg: 40 }]);

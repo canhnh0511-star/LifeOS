@@ -40,6 +40,22 @@ describe('hasCelebration', () => {
   });
 });
 
+describe('Celebration: rank-up shows the change', () => {
+  it('puts the portrait of the old rank next to the new one, names the new rank and lists what it unlocks', () => {
+    render(<Celebration data={{ level: 5, areas: [], rank: 'D' }} onClose={() => {}}/>);
+    expect(screen.getByRole('img', { name: /^Hạng E:/ }).getAttribute('src')).toBe('/art/ranks/rank-e.jpg');
+    expect(screen.getByRole('img', { name: /^Hạng D:/ }).getAttribute('src')).toBe('/art/ranks/rank-d.jpg');
+    expect(screen.getByText('Hạng D · Thức tỉnh')).toBeTruthy();
+    const unlocks = screen.getByRole('list', { name: 'Mở khoá' });
+    expect(unlocks.textContent).toContain('Diện mạo nhân vật hạng D'); expect(unlocks.textContent).toContain('Danh hiệu "Thức tỉnh"');
+  });
+  it('shows no portraits for a plain level-up or a boss win', () => {
+    render(<Celebration data={{ level: 6, areas: [] }} onClose={() => {}}/>);
+    expect(screen.queryByRole('img', { name: /^Hạng/ })).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Mở khoá' })).toBeNull();
+  });
+});
+
 describe('Celebration', () => {
   it('is a labelled modal dialog that takes focus and gives it back on Escape', async () => {
     render(<Harness data={{ level: 5, areas: [] }}/>); const trigger = screen.getByText('trigger');

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Check, Clock3, Dumbbell, Pause, Pin, PinOff, Play, RotateCcw, Timer, Undo2, Zap } from 'lucide-react';
+import { Check, Clock3, Dumbbell, Pause, Pin, PinOff, Play, RotateCcw, Timer, Trophy, Undo2, Zap } from 'lucide-react';
 import type { QuestDto, QuestObjectiveDto } from '../api/types';
 import { difficultyForXp, difficultyLabel } from '../domain/difficulty';
 import { categoryLabel } from '../domain/rules';
 import { exerciseByName, isLibraryLine, muscleLabel, type Exercise } from '../domain/exerciseLibrary';
 import { goalFromTitle, restSecondsFor } from '../domain/planBuilder';
+import { sessionSummary } from '../domain/sessionSummary';
+import { number } from '../ui/format';
 import { clock, elapsedMs, isRunning, loadTimer, pauseTimer, saveTimer, startTimer, idleTimer, type TimerState } from '../ui/focusTimer';
 import { InlinePanel } from './InlinePanel';
 import { ExerciseSets, useSetLog, type SetLogApi } from './SetLog';
@@ -51,6 +53,16 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
   return <InlinePanel title={quest.title} onClose={onClose}>
     <div className="sheet">
       <p className="sheet-meta"><Clock3 size={14}/> {quest.targetMinutes} phút · {categoryLabel(quest.category)} · <Zap size={14}/> {done ? 'Đã nhận' : '+'}{quest.xpReward} XP <span className={`diff-chip diff-${d.toLowerCase()}`}>{difficultyLabel[d]}</span></p>
+      {done && setLog && loggable.length > 0 && (() => { const sm = sessionSummary(loggable, log.sets, elapsedMs(timer, now)); return <section aria-label="Tổng kết buổi" className="session-summary">
+        <h3 className="sheet-h"><Trophy size={15}/> Buổi hoàn thành</h3>
+        <dl>
+          <div><dt>Bài tập</dt><dd>{sm.exercisesDone} / {sm.exercisesTotal}</dd></div>
+          <div><dt>Set</dt><dd>{sm.setsDone} / {sm.setsPlanned}</dd></div>
+          {sm.volumeKg > 0 && <div><dt>Khối lượng</dt><dd>{number(sm.volumeKg)} kg</dd></div>}
+          {sm.minutes !== null && <div><dt>Thời gian</dt><dd>{sm.minutes} phút</dd></div>}
+          <div><dt>Phần thưởng</dt><dd className="session-xp">+{quest.xpReward} XP</dd></div>
+        </dl>
+      </section>; })()}
       {loggable.length > 0 && <p className="xd-chips" aria-label="Nhóm cơ của buổi">{[...new Set(loggable.map(e => e.group))].map(g => <span key={g} className="diff-chip">{muscleLabel[g]}</span>)}</p>}
       {setLog && loggable.length > 0 && !done && <button className="btn btn-primary" onClick={() => setTraining(true)}><Dumbbell size={17}/> Tập từng set</button>}
       {quest.objectives.length > 0 && <section aria-label="Bài tập">

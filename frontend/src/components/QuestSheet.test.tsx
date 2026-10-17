@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { QuestDto } from '../api/types';
 import { QuestSheet } from './QuestSheet';
@@ -86,6 +86,25 @@ describe('QuestSheet: rest follows the goal the plan was built for', () => {
     expect(rest('Gym — Giảm mỡ · Tại nhà · 3 buổi/tuần')).toContain('Nghỉ 45 giây');
     cleanup();
     expect(rest('Gym — Khỏe hơn · Phòng gym đủ máy · 3 buổi/tuần')).toContain('Nghỉ 150 giây');
+  });
+});
+
+describe('QuestSheet: summary of a finished session', () => {
+  const done = { ...quest('COMPLETED'), completedAt: '2026-10-16T10:00:00Z', xpReward: 50, objectives: [
+    { id: 'o1', title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10, value: 20 }, { id: 'o2', title: 'Seated Cable Row', target: 20, unit: 'rep', step: 10, value: 20 }] } as QuestDto;
+  const api = (sets: { exercise: string; setNo: number; reps: number; weightKg: number | null }[]) => ({ list: vi.fn().mockResolvedValue(sets), record: vi.fn(), remove: vi.fn(), last: vi.fn().mockResolvedValue({ date: null, sets: [] }) });
+  it('adds up exercises, sets, volume and XP of a completed gym session', async () => {
+    render(<QuestSheet quest={done} date="2026-10-16" busy={false} onClose={() => {}} onToggle={() => {}} onSetObjective={() => {}} setLog={api([
+      { exercise: 'Machine Chest Press', setNo: 1, reps: 10, weightKg: 40 }, { exercise: 'Machine Chest Press', setNo: 2, reps: 10, weightKg: 40 }, { exercise: 'Seated Cable Row', setNo: 1, reps: 10, weightKg: 30 }])}/>);
+    const box = await screen.findByRole('region', { name: 'Tổng kết buổi' });
+    expect(within(box).getByText('2 / 2')).toBeTruthy();      // exercises
+    expect(within(box).getByText('3 / 4')).toBeTruthy();      // sets done / planned
+    expect(within(box).getByText('1.100 kg')).toBeTruthy();   // 10x40 + 10x40 + 10x30
+    expect(within(box).getByText('+50 XP')).toBeTruthy();
+  });
+  it('is not shown before the session is completed', () => {
+    render(<QuestSheet quest={{ ...done, status: 'PENDING', completedAt: null } as QuestDto} date="2026-10-16" busy={false} onClose={() => {}} onToggle={() => {}} onSetObjective={() => {}} setLog={api([])}/>);
+    expect(screen.queryByRole('region', { name: 'Tổng kết buổi' })).toBeNull();
   });
 });
 
