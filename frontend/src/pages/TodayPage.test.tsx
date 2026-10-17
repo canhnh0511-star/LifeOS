@@ -206,3 +206,27 @@ describe('Main Quest start button for a gym session', () => {
     expect(screen.getByRole('button', { name: /Xác nhận hoàn thành/ })).toBeTruthy();
   });
 });
+
+describe('gym nudge on Today', () => {
+  const habit = (over: Partial<import('../api/types').HabitDto> = {}) => ({ id: 'a', goalId: 'g', title: 'Buổi A', targetMinutes: 45, xpReward: 40, weekdays: [1], startDate: '2026-10-12', endDate: null, status: 'ACTIVE', objectives: [{ id: 'o', title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10 }], ...over }) as import('../api/types').HabitDto;
+  it('offers to load a gym plan when there is none', async () => {
+    const onImportPlan = vi.fn();
+    render(<TodayPage {...props} onImportPlan={onImportPlan} habits={[]} onToggleQuest={() => {}} dashboard={dashboard([quest('w', 'PENDING', 'Uống nước')])}/>);
+    await userEvent.click(within(screen.getByLabelText('Giáo án gym')).getByRole('button', { name: 'Nạp giáo án gym' }));
+    expect(onImportPlan).toHaveBeenCalled();
+  });
+  it('says when the next session is when today has none (2026-10-16 is a Friday, the session is on Monday)', () => {
+    render(<TodayPage {...props} onImportPlan={() => {}} habits={[habit()]} onToggleQuest={() => {}} dashboard={dashboard([quest('w', 'PENDING', 'Uống nước')])}/>);
+    const card = screen.getByLabelText('Buổi tập kế tiếp');
+    expect(card.textContent).toContain('Buổi A'); expect(card.textContent).toContain('Ngực');
+  });
+  it('shows no nudge when a gym session is on today, on a past day, or while the habits are unknown', () => {
+    const gym = { ...quest('g', 'PENDING', 'Buổi A'), objectives: [{ id: 'o', title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10, value: 0 }] } as QuestDto;
+    const { rerender } = render(<TodayPage {...props} onImportPlan={() => {}} habits={[habit()]} onToggleQuest={() => {}} dashboard={dashboard([gym])}/>);
+    expect(screen.queryByLabelText('Buổi tập kế tiếp')).toBeNull(); expect(screen.queryByLabelText('Giáo án gym')).toBeNull();
+    rerender(<TodayPage {...props} selectedDate="2026-10-15" onImportPlan={() => {}} habits={[]} onToggleQuest={() => {}} dashboard={dashboard([quest('w', 'PENDING')])}/>);
+    expect(screen.queryByLabelText('Giáo án gym')).toBeNull();
+    rerender(<TodayPage {...props} onImportPlan={() => {}} onToggleQuest={() => {}} dashboard={dashboard([quest('w', 'PENDING')])}/>);
+    expect(screen.queryByLabelText('Giáo án gym')).toBeNull();
+  });
+});

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Circle, ClipboardList, Dumbbell, Clock3, Timer, Flame, Lock, PartyPopper, Plus, Zap } from 'lucide-react';
-import type { AnalyticsDto, DailyDashboardDto, DailyRewardDto, QuestDto, QuestObjectiveDto } from '../api/types';
+import type { AnalyticsDto, HabitDto, DailyDashboardDto, DailyRewardDto, QuestDto, QuestObjectiveDto } from '../api/types';
 import { stageForLevel } from '../domain/characterStage';
 import { RankBadge } from '../components/RankBadge';
 import { ChestArt } from '../components/ChestArt';
@@ -11,6 +11,8 @@ import { difficultyForXp, difficultyLabel } from '../domain/difficulty';
 import { categoryLabel, formatDate, moveDate } from '../domain/rules';
 import { loadPin, pendingFirst, pickMain, savePin } from '../ui/mainQuest';
 import { isRunning, loadTimer } from '../ui/focusTimer';
+import { exerciseByName, muscleLabel } from '../domain/exerciseLibrary';
+import { hasGymHabit, nextGymSession } from '../domain/gymSession';
 import { WeekPlan } from '../components/WeekPlan';
 import { QuestSheet } from '../components/QuestSheet';
 import type { SetLogApi } from '../components/SetLog';
@@ -24,7 +26,7 @@ interface Props {
   dashboard: DailyDashboardDto | null;
   selectedDate: string; today: string; busyId: string | null;
   onSelectDate: (update: (date: string) => string) => void;
-  onToggleQuest: (quest: QuestDto) => void; onSetObjective: (quest: QuestDto, objective: QuestObjectiveDto, value: number) => void; onNewHabit: () => void; onImportPlan?: () => void; setLog?: SetLogApi; loadDay?: (date: string) => Promise<DailyDashboardDto>; weekly?: AnalyticsDto | null; goTo: (tab: Tab) => void;
+  onToggleQuest: (quest: QuestDto) => void; onSetObjective: (quest: QuestDto, objective: QuestObjectiveDto, value: number) => void; onNewHabit: () => void; onImportPlan?: () => void; setLog?: SetLogApi; loadDay?: (date: string) => Promise<DailyDashboardDto>; habits?: HabitDto[]; weekly?: AnalyticsDto | null; goTo: (tab: Tab) => void;
 }
 
 const Difficulty = ({ xp }: { xp: number }) => { const d = difficultyForXp(xp); return <span className={`diff-chip diff-${d.toLowerCase()}`} title="Độ khó chỉ để hiển thị, suy từ XP">{difficultyLabel[d]}</span>; };
@@ -33,7 +35,7 @@ const Difficulty = ({ xp }: { xp: number }) => { const d = difficultyForXp(xp); 
  * Today answers one question: what do I do next? A one-line summary, the next quest with a single button, then the full list.
  * Level, stats, balance and the campaign live in their own tabs.
  */
-export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate, onToggleQuest, onSetObjective, onNewHabit, onImportPlan, setLog, loadDay, weekly, goTo }: Props) {
+export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate, onToggleQuest, onSetObjective, onNewHabit, onImportPlan, setLog, loadDay, habits, weekly, goTo }: Props) {
   const [showWeek, setShowWeek] = useState(false);
   const [opening, setOpening] = useState<DailyRewardDto | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -60,6 +62,12 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   const nextChest = rewards.find(r => r.state === 'LOCKED');
   const unopened = rewards.some(r => r.state === 'EARNED' && !isOpened(opened, selectedDate, r.tier));
   const rewardHint = !rewards.length ? '' : (unopened ? 'Chạm vào rương để mở' + (nextChest ? ' · ' : '') : '') + (nextChest ? `Còn ${Math.max(1, nextChest.threshold - done)} nhiệm vụ để mở ${tierName(nextChest.tier)}` : unopened ? '' : 'Đã mở hết rương');
+  // Gym nudge: no plan yet -> offer to load one; plan loaded but nothing to train today -> say when the next session is.
+  const gymToday = (dashboard?.quests ?? []).some(q => q.objectives.some(o => !!exerciseByName(o.title)));
+  const upcoming = habits && isToday && !gymToday ? nextGymSession(habits, today) : null;
+  const gymNudge = !habits || !isToday || gymToday ? null
+    : !hasGymHabit(habits) ? (onImportPlan ? <article className="panel gym-nudge" aria-label="Giáo án gym"><div><h3><Dumbbell size={17}/> Chưa có giáo án gym</h3><p>Nạp một giáo án để Hôm nay có buổi tập, ghi từng set và xem thống kê.</p></div><button className="btn btn-primary" onClick={onImportPlan}>Nạp giáo án gym</button></article> : null)
+    : upcoming ? <article className="panel gym-nudge" aria-label="Buổi tập kế tiếp"><div><h3><Dumbbell size={17}/> Hôm nay không có buổi tập</h3><p>Buổi kế tiếp: <strong>{upcoming.habit.title}</strong> · {formatDate(upcoming.date, { weekday: 'long', day: 'numeric', month: 'numeric' })}{(() => { const g = [...new Set(upcoming.habit.objectives.map(o => exerciseByName(o.title)?.group).filter(Boolean))].map(x => muscleLabel[x!]); return g.length ? ` · ${g.join(', ')}` : ''; })()}</p></div>{loadDay && <button className="btn btn-quiet" onClick={() => setShowWeek(true)}>Xem lịch tuần</button>}</article> : null;
   const NextIcon = next ? categoryIcons[next.category] : null;
   return <>
     {showWeek && loadDay && <WeekPlan today={today} selectedDate={selectedDate} loadDay={loadDay} onPick={d => { onSelectDate(() => d); setShowWeek(false); }} onClose={() => setShowWeek(false)}/>}
@@ -86,6 +94,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
           {next.objectives.length === 0 && <button className="btn btn-quiet next-up-quick" disabled={busyId === next.habitId} onClick={() => onToggleQuest(next)}><Check size={16}/> Hoàn thành</button>}
         </div>
       </article>}
+      {gymNudge}
       <div className="today-tiles" aria-label="Tóm tắt hôm nay">
         <div className="today-tile" title="Số ngày liên tiếp hoàn thành ít nhất một nửa nhiệm vụ trong ngày"><Flame size={22}/><span><small>Chuỗi ngày</small><strong>{dashboard?.dayStreak || 0} ngày</strong></span></div>
         <div className="today-tile"><Zap size={22}/><span><small>{isToday ? 'XP hôm nay' : 'XP ngày này'}</small><strong>+{dashboard?.earnedXpToday || 0}</strong></span></div>
