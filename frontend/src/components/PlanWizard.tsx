@@ -1,39 +1,43 @@
-import { useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, Dumbbell } from 'lucide-react';
-import type { GoalDto, HabitDto, ImportHabitPlanRequest } from '../api/types';
+import type { GoalDto, HabitDto, TrainingPlanDto } from '../api/types';
 import { useDialog } from '../hooks/useDialog';
-import { muscleLabel, planRequest, prescribed } from '../domain/exerciseLibrary';
-import { DAY_LABEL, GOALS, PLACES, SESSION_OPTIONS, buildProgram, replacementFor, type PlanChoice, type TrainPlace, type TrainingGoal } from '../domain/planBuilder';
-import { todayInTimezone } from '../domain/rules';
+import { exerciseByName, muscleLabel, viName } from '../domain/exerciseLibrary';
+import { DAY_LABEL, replacementFor } from '../domain/plan';
 import { RankPortrait } from './RankPortrait';
 
 export interface Replacement { goalIds: string[]; habitIds: string[]; }
-type Step = 1 | 2 | 3;
-const STEPS: readonly { n: Step; label: string }[] = [{ n: 1, label: '1 · Thức tỉnh' }, { n: 2, label: '2 · Mục tiêu' }, { n: 3, label: '3 · Giáo án' }];
+type Step = 1 | 2;
+const STEPS: readonly { n: Step; label: string }[] = [{ n: 1, label: '1 · Thức tỉnh' }, { n: 2, label: '2 · Giáo án' }];
 const WEEKDAY_NAME: Record<number, string> = { 1: 'Thứ Hai', 2: 'Thứ Ba', 3: 'Thứ Tư', 4: 'Thứ Năm', 5: 'Thứ Sáu', 6: 'Thứ Bảy', 7: 'Chủ nhật' };
 
 /**
- * First-run flow in three steps: the story, then goal / place / frequency, then the plan those answers produce.
- * Nothing is sent before "Bắt đầu hành trình". The plan is built by `buildProgram` and imported through the ordinary plan import.
+ * First-run flow in two steps: the story, then the account's plan. There is one plan; it comes from the backend (`loadPlan`) and nothing is
+ * created before "Bắt đầu hành trình", which calls `onStart`.
  */
-export function PlanWizard({ displayName, goals, habits, onImport, onClose, onChooseProgram }: {
+export function PlanWizard({ displayName, goals, habits, loadPlan, onStart, onClose }: {
   displayName?: string; goals: readonly GoalDto[]; habits: readonly HabitDto[];
-  onImport: (request: ImportHabitPlanRequest, replace: Replacement) => Promise<void>; onClose: () => void; onChooseProgram: () => void;
+  loadPlan: () => Promise<TrainingPlanDto>; onStart: (replace: Replacement) => Promise<void>; onClose: () => void;
 }) {
   const titleId = useId(), card = useRef<HTMLElement>(null);
   useDialog(card, onClose);
   const [step, setStep] = useState<Step>(1);
-  const [choice, setChoice] = useState<PlanChoice>({ goal: 'MUSCLE', place: 'GYM', sessions: 3 });
+  const [plan, setPlan] = useState<TrainingPlanDto | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [open, setOpen] = useState(0);
   const [replace, setReplace] = useState(true);
   const [saving, setSaving] = useState(false);
-  const program = useMemo(() => buildProgram(choice), [choice]);
-  const old = useMemo(() => replacementFor(goals, habits), [goals, habits]);
-  const go = (to: Step) => { setStep(to); if (to === 3) setOpen(0); };
+  const old = replacementFor(goals, habits);
+  useEffect(() => {
+    let alive = true; setFailed(false);
+    loadPlan().then(p => { if (alive) setPlan(p); }).catch(() => { if (alive) setFailed(true); });
+    return () => { alive = false; };
+  }, [loadPlan, attempt]);
   const start = async () => {
     if (saving) return;
     setSaving(true);
-    try { await onImport(planRequest(program, todayInTimezone()), replace ? old : { goalIds: [], habitIds: [] }); } finally { setSaving(false); }
+    try { await onStart(replace ? old : { goalIds: [], habitIds: [] }); } finally { setSaving(false); }
   };
   const name = displayName?.trim();
 
@@ -57,59 +61,36 @@ export function PlanWizard({ displayName, goals, habits, onImport, onClose, onCh
       </div>}
 
       {step === 2 && <div className="wizard-body">
-        <h2 id={titleId}>Mục tiêu của bạn</h2>
-        <p className="wizard-lead">Lựa chọn này quyết định bài tập, số rep và thời gian nghỉ trong giáo án.</p>
-        <div className="wizard-choices" role="radiogroup" aria-label="Mục tiêu của bạn">
-          {(Object.keys(GOALS) as TrainingGoal[]).map(g => <label key={g} className={`wizard-card ${choice.goal === g ? 'is-selected' : ''}`}>
-            <input type="radio" name="goal" value={g} checked={choice.goal === g} onChange={() => setChoice({ ...choice, goal: g })}/>
-            <span className="wizard-card-text"><strong>{GOALS[g].label}</strong><small>{GOALS[g].summary}</small>
-              <span className="wizard-chips"><span>{GOALS[g].repsText}</span><span>{GOALS[g].restText}</span></span></span>
-          </label>)}
-        </div>
-        <h3 className="wizard-sub" id={`${titleId}-place`}>Bạn tập ở đâu? <small>Chỉ hiện bài có dụng cụ bạn có</small></h3>
-        <div className="wizard-pills" role="radiogroup" aria-label="Bạn tập ở đâu?">
-          {(Object.keys(PLACES) as TrainPlace[]).map(p => <label key={p} className={`wizard-pill ${choice.place === p ? 'is-selected' : ''}`}>
-            <input type="radio" name="place" value={p} checked={choice.place === p} onChange={() => setChoice({ ...choice, place: p })}/><span>{PLACES[p].label}</span>
-          </label>)}
-        </div>
-        <h3 className="wizard-sub">Số buổi mỗi tuần</h3>
-        <div className="wizard-pills wizard-count" role="radiogroup" aria-label="Số buổi mỗi tuần">
-          {SESSION_OPTIONS.map(n => <label key={n} className={`wizard-pill ${choice.sessions === n ? 'is-selected' : ''}`}>
-            <input type="radio" name="sessions" value={n} checked={choice.sessions === n} onChange={() => setChoice({ ...choice, sessions: n })}/>{n}
-          </label>)}
-        </div>
-      </div>}
-
-      {step === 3 && <div className="wizard-body">
         <h2 id={titleId}>Giáo án của bạn</h2>
-        <div className="wizard-chips wizard-summary">
-          <span>{GOALS[choice.goal].label}</span><span>{PLACES[choice.place].label}</span>
-          <span>{choice.sessions} buổi/tuần: {program.days.map(d => DAY_LABEL[d.weekdays[0]]).join(' · ')}</span>
-        </div>
-        <ul className="wizard-sessions">
-          {program.days.map((d, i) => <li key={d.title} className={i === open ? 'is-open' : ''}>
-            <button type="button" aria-expanded={i === open} aria-controls={`${titleId}-s${i}`} onClick={() => setOpen(i === open ? -1 : i)}>
-              <span className="wizard-session-name"><strong>{d.title}</strong>
-                <small>{WEEKDAY_NAME[d.weekdays[0]]} · {d.groups.map(g => muscleLabel[g]).join(' · ')} · {d.exerciseIds.length} bài · khoảng {program.sessionMinutes} phút</small></span>
-              <ChevronDown size={18} aria-hidden="true"/>
-            </button>
-            {i === open && <ol id={`${titleId}-s${i}`} className="wizard-exercises">
-              {d.exerciseIds.map(id => { const e = prescribed(d, id); return <li key={id}><span>{e.nameVi ?? e.name}</span><span className="wizard-sets">{e.sets} × {e.reps}{e.unit === 'giây' ? ' giây' : ''}{e.note ? ` ${e.note}` : ''}</span></li>; })}
-            </ol>}
-          </li>)}
-        </ul>
-        <p className="wizard-note">Đổi bài, đổi ngày hoặc số buổi bất cứ lúc nào.</p>
-        {old.habitIds.length > 0 && <label className="plan-replace"><input type="checkbox" checked={replace} onChange={e => setReplace(e.target.checked)}/> <span>Thay giáo án đang dùng ({old.habitIds.length} buổi): lưu trữ giáo án cũ, biến mất từ ngày mai, lịch sử vẫn giữ.</span></label>}
+        {failed ? <><p role="alert" className="set-error">Không tải được giáo án.</p><button type="button" className="btn btn-secondary" onClick={() => setAttempt(n => n + 1)}>Thử lại</button></>
+          : !plan ? <p className="form-note" role="status">Đang tải giáo án…</p>
+          : <>
+            <div className="wizard-chips wizard-summary">
+              <span>{plan.sessions.length} buổi/tuần: {plan.sessions.map(s => DAY_LABEL[s.weekdays[0]]).join(' · ')}</span>
+              <span>khoảng {Math.max(...plan.sessions.map(s => s.targetMinutes))} phút/buổi</span>
+            </div>
+            <ul className="wizard-sessions">
+              {plan.sessions.map((s, i) => { const groups = [...new Set(s.objectives.flatMap(o => { const e = exerciseByName(o.title); return e ? [e.group] : []; }))];
+                return <li key={s.title} className={i === open ? 'is-open' : ''}>
+                  <button type="button" aria-expanded={i === open} aria-controls={`${titleId}-s${i}`} onClick={() => setOpen(i === open ? -1 : i)}>
+                    <span className="wizard-session-name"><strong>{s.title}</strong>
+                      <small>{WEEKDAY_NAME[s.weekdays[0]]} · {groups.map(g => muscleLabel[g]).join(' · ')} · {s.objectives.length} bài</small></span>
+                    <ChevronDown size={18} aria-hidden="true"/>
+                  </button>
+                  {i === open && <ol id={`${titleId}-s${i}`} className="wizard-exercises">
+                    {s.objectives.map(o => <li key={o.title}><span>{viName(o.title)}</span><span className="wizard-sets">{o.target / o.step} × {o.step}{o.unit === 'giây' ? ' giây' : ''}</span></li>)}
+                  </ol>}
+                </li>; })}
+            </ul>
+            <p className="wizard-note">{plan.description}</p>
+            {old.habitIds.length > 0 && <label className="plan-replace"><input type="checkbox" checked={replace} onChange={e => setReplace(e.target.checked)}/> <span>Thay giáo án đang dùng ({old.habitIds.length} buổi): lưu trữ giáo án cũ, biến mất từ ngày mai, lịch sử vẫn giữ.</span></label>}
+          </>}
       </div>}
 
       <footer className="wizard-actions">
-        {step === 1 && <button type="button" className="btn btn-primary wizard-cta" onClick={() => go(2)}>Tiếp tục <ChevronRight size={18} aria-hidden="true"/></button>}
-        {step === 2 && <button type="button" className="btn btn-primary wizard-cta" onClick={() => go(3)}>Tạo giáo án <ChevronRight size={18} aria-hidden="true"/></button>}
-        {step === 3 && <button type="button" className="btn btn-primary wizard-cta" disabled={saving} onClick={start}><Dumbbell size={18} aria-hidden="true"/> {saving ? 'Đang tạo…' : 'Bắt đầu hành trình'}</button>}
-        <div className="wizard-links">
-          {step > 1 && <button type="button" className="btn btn-quiet" onClick={() => go((step - 1) as Step)}><ChevronLeft size={16} aria-hidden="true"/> Quay lại</button>}
-          <button type="button" className="btn btn-quiet" onClick={onChooseProgram}>Chọn giáo án có sẵn</button>
-        </div>
+        {step === 1 && <button type="button" className="btn btn-primary wizard-cta" onClick={() => { setStep(2); setOpen(0); }}>Tiếp tục <ChevronRight size={18} aria-hidden="true"/></button>}
+        {step === 2 && <button type="button" className="btn btn-primary wizard-cta" disabled={saving || !plan} onClick={start}><Dumbbell size={18} aria-hidden="true"/> {saving ? 'Đang tạo…' : 'Bắt đầu hành trình'}</button>}
+        {step > 1 && <div className="wizard-links"><button type="button" className="btn btn-quiet" onClick={() => setStep(1)}><ChevronLeft size={16} aria-hidden="true"/> Quay lại</button></div>}
       </footer>
     </section>
   </div>;

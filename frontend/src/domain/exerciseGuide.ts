@@ -1,6 +1,6 @@
 /**
  * Beginner teaching content for the exercise detail: setup, steps, breathing and common mistakes.
- * Written for the 13 exercises of the week-1 plan first; other exercises show "being written" instead of invented instructions.
+ * Written first for the exercises of the standard plan; other exercises show "being written" instead of invented instructions.
  * Plain technique only: no medical claims, no promised results. Needs a trainer's review before it is treated as final.
  * Pictures are pending (no licensed or first-party illustrations yet); the detail screen says so.
  */
@@ -75,7 +75,32 @@ export const GUIDES: Readonly<Record<string, ExerciseGuide>> = {
     ['Đứng, hai chân rộng bằng vai.', 'Cầm hai tạ nhẹ sát hông, khuỷu hơi gập, ngực mở, bụng siết.', 'Dùng tạ nhẹ hơn bạn nghĩ; bài này không cần tạ nặng.'],
     ['Nâng hai tay sang hai bên, dẫn bằng khuỷu, đến ngang vai.', 'Dừng ngắn ở đỉnh.', 'Hạ chậm về sát hông.', 'Lặp lại mà không đung đưa người.'],
     'Thở ra khi nâng, hít vào khi hạ.',
-    ['Dùng tạ nặng rồi vung người lấy đà.', 'Nâng cao quá vai và nhún vai.', 'Chỉ nhấc cổ tay thay vì nâng cả cánh tay.'])
+    ['Dùng tạ nặng rồi vung người lấy đà.', 'Nâng cao quá vai và nhún vai.', 'Chỉ nhấc cổ tay thay vì nâng cả cánh tay.']),
+  'db-shoulder-press': g(
+    ['Ngồi trên ghế có tựa lưng, lưng và đầu áp vào tựa, hai bàn chân đặt chắc xuống sàn.', 'Cầm mỗi tay một quả tạ, đưa lên ngang vai, khuỷu nằm ngay dưới cổ tay.', LIGHT],
+    ['Siết bụng, giữ lưng áp vào tựa.', 'Đẩy hai tạ thẳng lên trên đầu đến khi tay gần thẳng, không khoá khuỷu.', 'Dừng một nhịp ngắn.', 'Hạ chậm về ngang vai, kiểm soát suốt đường đi.'],
+    PRESS_BREATH,
+    ['Ưỡn lưng mạnh để đẩy tạ lên.', 'Để khuỷu bung quá rộng hoặc quá thấp so với vai.', 'Khoá khuỷu mạnh ở đỉnh.', 'Chọn tạ quá nặng nên hai tay lệch nhau.']),
+  'glute-bridge': g(
+    ['Nằm ngửa trên thảm, hai gối gập, hai bàn chân đặt phẳng trên sàn rộng bằng hông.', 'Hai tay để dọc thân, lòng bàn tay úp xuống.', 'Gót chân cách mông khoảng một gang tay.'],
+    ['Siết bụng và mông.', 'Đạp gót chân, nâng hông lên đến khi vai, hông và gối thành một đường thẳng.', 'Dừng một nhịp ngắn ở đỉnh, siết chặt mông.', 'Hạ hông chậm về sàn.'],
+    'Thở ra khi nâng hông, hít vào khi hạ.',
+    ['Ưỡn lưng dưới quá mức ở đỉnh.', 'Đẩy bằng mũi chân thay vì gót.', 'Để gối đổ vào trong.', 'Hạ hông rơi nhanh xuống sàn.']),
+  'push-up': g(
+    ['Chống hai tay xuống sàn rộng hơn vai một chút, hai chân duỗi ra sau.', 'Cơ thể thành một đường thẳng từ đầu đến gót, mắt nhìn xuống sàn.', 'Nếu chưa đủ sức, chống đầu gối hoặc đặt tay lên ghế cao.'],
+    ['Siết bụng và mông để giữ thân thẳng.', 'Gập khuỷu, hạ ngực gần sát sàn, khuỷu tạo góc khoảng 45° với thân.', 'Đẩy sàn ra xa để trở về vị trí ban đầu, tay gần thẳng.', 'Giữ nhịp đều, không vội.'],
+    'Hít vào khi hạ người, thở ra khi đẩy lên.',
+    ['Võng lưng hoặc đẩy mông cao lên.', 'Mở khuỷu sang hai bên thành hình chữ T.', 'Chỉ hạ nửa chừng.', 'Ngửa hoặc cúi đầu quá mức.']),
+  'db-row': g(
+    ['Đặt một tay và một gối lên ghế phẳng, lưng thẳng và song song với sàn.', 'Tay còn lại cầm tạ, buông thẳng xuống dưới vai, chân bên kia đặt chắc trên sàn.', LIGHT],
+    ['Hạ vai xuống, siết bụng, giữ lưng phẳng.', 'Kéo tạ về phía hông, khuỷu đi sát thân.', 'Dừng một nhịp ngắn, siết lưng.', 'Hạ tạ chậm đến khi tay thẳng, rồi lặp lại; đổi bên sau khi xong set.'],
+    'Thở ra khi kéo tạ lên, hít vào khi hạ.',
+    ['Xoay thân hoặc giật tạ bằng đà.', 'Kéo tạ bằng tay thay vì lưng, nhún vai lên.', 'Lưng tròn hoặc cúi quá thấp.', 'Chọn tạ quá nặng nên không giữ được thân vững.']),
+  'bird-dog': g(
+    ['Quỳ chống bốn điểm trên thảm: hai tay dưới vai, hai gối dưới hông.', 'Lưng phẳng, cổ thẳng, mắt nhìn xuống sàn.', 'Siết nhẹ bụng để giữ thân vững.'],
+    ['Duỗi thẳng một tay ra trước và chân đối diện ra sau cùng lúc.', 'Giữ thân và hông thẳng, không nghiêng hay xoay.', 'Dừng một nhịp ngắn.', 'Thu về chậm rồi đổi bên.'],
+    'Thở ra khi duỗi, hít vào khi thu về.',
+    ['Nâng chân quá cao làm võng lưng dưới.', 'Xoay hông sang bên.', 'Làm quá nhanh, không giữ được thân vững.', 'Nhún vai hoặc ngẩng đầu.']),
 };
 
 export const guideFor = (id: string): ExerciseGuide | undefined => GUIDES[id];

@@ -2,12 +2,14 @@ import { ChevronUp, Dumbbell, Gauge, Layers } from 'lucide-react';
 import { muscleLabel, type Exercise } from '../domain/exerciseLibrary';
 import { infoFor, kindLabel, levelLabel } from '../domain/exerciseInfo';
 import { guideFor } from '../domain/exerciseGuide';
+import { exerciseImage } from '../domain/exerciseImage';
 import { MuscleFigure } from './MuscleFigure';
 
 /** One exercise in detail, shown in place (no popup, no separate screen): muscles, equipment, level, the guide, the plan numbers. `onClose` collapses it. */
 export function ExerciseDetail({ exercise: e, onClose, action }: { exercise: Exercise; onClose: () => void; action?: React.ReactNode }) {
   const x = infoFor(e);
   const guide = guideFor(e.id);
+  const pic = exerciseImage(e.id);
   const unit = e.unit === 'giây' ? 'giây' : 'rep';
   return <div className="xd xd-inline" role="region" aria-label={`Chi tiết ${e.nameVi ?? e.name}`}>
       <div className="xd-top">
@@ -19,7 +21,9 @@ export function ExerciseDetail({ exercise: e, onClose, action }: { exercise: Exe
         </dl>
       </div>
       <p className="xd-chips"><span className="diff-chip"><Dumbbell size={13}/> {x.equipment}</span><span className="diff-chip"><Gauge size={13}/> Độ khó: {levelLabel[x.level]}</span><span className="diff-chip"><Layers size={13}/> {kindLabel[x.kind]}</span></p>
-      <p className="xd-nopic" role="note">Chưa có ảnh động tác cho bài này (đang chuẩn bị). Hãy đọc kỹ các bước bên dưới hoặc nhờ huấn luyện viên chỉ.</p>
+      {pic
+        ? <figure className="xd-pic"><img src={pic} alt={`Ảnh hướng dẫn ${e.nameVi ?? e.name}: tư thế bắt đầu (trái) và tư thế kết thúc (phải)`} loading="lazy" width={640} height={640}/></figure>
+        : <p className="xd-nopic" role="note">Chưa có ảnh động tác cho bài này (đang chuẩn bị). Hãy đọc kỹ các bước bên dưới hoặc nhờ huấn luyện viên chỉ.</p>}
       {guide ? <>
         <section aria-label="Chuẩn bị"><h3 className="sheet-h">Chuẩn bị</h3><ul className="xd-list">{guide.setup.map(t => <li key={t}>{t}</li>)}</ul></section>
         <section aria-label="Cách tập"><h3 className="sheet-h">Cách tập</h3><ol className="xd-cues">{guide.steps.map(t => <li key={t}>{t}</li>)}</ol></section>

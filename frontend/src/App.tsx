@@ -3,13 +3,12 @@ import { CalendarDays, Menu, RotateCcw, Settings2, Sparkles, X } from 'lucide-re
 import { api, isDemo } from './api';
 import { exportDemoData, resetDemoData } from './api/mockClient';
 import { clearDayRecords } from './api/dayRecords';
-import type { ObjectiveInput, ImportHabitPlanRequest, MetricDto, ItemDto, BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, PatchHabit, QuestDto, QuestObjectiveDto, RewardEffectDto } from './api/types';
+import type { ObjectiveInput, MetricDto, ItemDto, BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, PatchHabit, QuestDto, QuestObjectiveDto, RewardEffectDto } from './api/types';
 import { formatDate, todayInTimezone } from './domain/rules';
 import { Celebration, hasCelebration, type CelebrationData } from './components/Celebration';
 import { levelUps } from './domain/levelUps';
 import { EditHabitForm, GoalForm, HabitForm } from './components/forms';
 import { Modal } from './components/Modal';
-import { PlanImportForm } from './components/PlanImportForm';
 import { PlanWizard } from './components/PlanWizard';
 import type { SetLogApi } from './components/SetLog';
 import { Logo } from './components/primitives';
@@ -26,8 +25,8 @@ import { moreNav, primaryNav, tabFromHash, type Tab } from './ui/nav';
 import { ExercisesPage } from './pages/ExercisesPage';
 import './styles.css';
 
-type ModalKind = 'goal' | 'habit' | 'editHabit' | 'settings' | 'plan' | null;
-const MODAL_TITLES = { goal: 'Mục tiêu mới', habit: 'Thói quen mới', editHabit: 'Sửa thói quen', settings: 'Cài đặt hệ thống', plan: 'Chọn giáo án có sẵn' } as const;
+type ModalKind = 'goal' | 'habit' | 'editHabit' | 'settings' | null;
+const MODAL_TITLES = { goal: 'Mục tiêu mới', habit: 'Thói quen mới', editHabit: 'Sửa thói quen', settings: 'Cài đặt hệ thống' } as const;
 /** Error notices start with this mark so the toast can tell them from system messages. */
 const ERROR_MARK = '⚠ ';
 const failure = (e: unknown, fallback: string) => ERROR_MARK + (e instanceof Error ? e.message : fallback);
@@ -140,15 +139,16 @@ export default function App() {
   const loadHistory = useMemo(() => () => loadGymHistory(api, today, 35), [today]);
   const loadDay = useMemo(() => (date: string) => api.getDashboard(date), []);
   const setLog = useMemo<SetLogApi>(() => ({ list: api.getWorkoutSets, record: api.recordWorkoutSet, remove: api.removeWorkoutSet, last: api.getLastWorkoutSets }), []);
-  const importPlan = async (v: ImportHabitPlanRequest, replace: { goalIds: string[]; habitIds: string[] } = { goalIds: [], habitIds: [] }) => {
-    // The server refuses a plan whose goal is still active, so the old goal is archived first; if the import then fails, say so plainly.
+  const loadPlan = useMemo(() => () => api.getPlan(), []);
+  const startPlan = async (replace: { goalIds: string[]; habitIds: string[] }) => {
+    // Starting the plan is idempotent on the server, but an older plan on the same weekdays would clash with it, so that one is archived first; if starting then fails, say so plainly.
     let archived = 0;
     try {
       for (const id of replace.goalIds) { await api.updateGoal(id, { status: 'ARCHIVED' }); archived++; }
       for (const id of replace.habitIds) { try { await api.updateHabit(id, { status: 'ARCHIVED' }); archived++; } catch { /* its goal is archived, so it stops showing anyway */ } }
-      const r = await api.importHabitPlan(v);
-      setModal(null); setWizard(false); setNotice(`Đã nạp giáo án: ${r.habits.length} buổi tập.${archived ? ' Giáo án cũ đã được lưu trữ, biến mất từ ngày mai.' : ''}`); refresh();
-    } catch (e) { setNotice(failure(e, 'Không nạp được giáo án.') + (archived ? ' Giáo án cũ đã được lưu trữ; hãy nạp lại hoặc khôi phục trong Hành trình.' : '')); refresh(); }
+      const r = await api.startPlan(today);
+      setModal(null); setWizard(false); markWizardSeen(); setNotice(`Đã bắt đầu giáo án: ${r.sessions.length} buổi tập.${archived ? ' Giáo án cũ đã được lưu trữ, biến mất từ ngày mai.' : ''}`); refresh();
+    } catch (e) { setNotice(failure(e, 'Không bắt đầu được giáo án.') + (archived ? ' Giáo án cũ đã được lưu trữ; hãy thử lại hoặc khôi phục trong Hành trình.' : '')); refresh(); }
   };
   const saveHabit = async (v: CreateHabitRequest) => { try { await api.createHabit(v); setModal(null); setNotice('Đã tạo thói quen mới.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi xảy ra.')); } };
   const addToSession = async (habitId: string, objectives: ObjectiveInput[]) => { await api.updateHabit(habitId, { objectives }); refresh(); };
@@ -189,7 +189,7 @@ export default function App() {
         {loading && !dashboard ? <div className="loading-shell"><div className="loader"/><p>Đang chuẩn bị hành trình của bạn...</p></div> : <>
           {tab === 'today' && <TodayPage dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} onImportPlan={() => setWizard(true)} setLog={setLog} loadDay={loadDay} habits={habits} weekly={weekly} goTo={goTo}/>}
           {tab === 'exercises' && <ExercisesPage habits={habits} onAddToHabit={addToSession}/>}
-          {tab === 'journey' && <JourneyPage onAddToHabit={addToSession} journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')} onImportPlan={() => setModal('plan')}/>}
+          {tab === 'journey' && <JourneyPage onAddToHabit={addToSession} journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')} onImportPlan={() => setWizard(true)}/>}
           {tab === 'character' && <CharacterPage loadBadges={loadBadges} habits={habits} today={today} loadHistory={loadHistory} dashboard={dashboard} items={items} busyItemCode={busyItemCode} onEquip={item => wear(item, true)} onUnequip={item => wear(item, false)}/>}
           {tab === 'body' && <BodyPage metrics={metrics} failed={metricsFailed} onRetry={() => { void reloadMetrics(); }} today={today} busy={bodyBusy} onRecord={recordMeasure} onRemoveEntry={removeMeasure} onCreate={createMetric} onDelete={deleteMetric}/>}
           {tab === 'insights' && <InsightsPage habits={habits} today={today} loadHistory={loadHistory}/>}
@@ -202,10 +202,9 @@ export default function App() {
       {modal === 'goal' && <GoalForm onClose={() => setModal(null)} onSave={saveGoal}/>}
       {modal === 'habit' && <HabitForm goals={goals} onClose={() => setModal(null)} onSave={saveHabit}/>}
       {modal === 'editHabit' && editing && <EditHabitForm habit={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={saveHabitEdit}/>}
-      {modal === 'plan' && <PlanImportForm onClose={() => setModal(null)} onImport={importPlan} existingHabits={habits} existingGoals={goals}/>}
       {modal === 'settings' && <SettingsPanel isDemo={isDemo} onExport={exportData} onReset={reset} onClearToday={clearToday} onLogout={logout}/>}
     </Modal>}
-    {wizard && <PlanWizard displayName={dashboard?.user.displayName} goals={goals} habits={habits} onImport={importPlan} onClose={() => { setWizard(false); markWizardSeen(); }} onChooseProgram={() => { setWizard(false); setModal('plan'); }}/>}
+    {wizard && <PlanWizard displayName={dashboard?.user.displayName} goals={goals} habits={habits} loadPlan={loadPlan} onStart={startPlan} onClose={() => { setWizard(false); markWizardSeen(); }}/>}
     {celebration && <Celebration data={celebration} onClose={() => setCelebration(null)}/>}
     {notice && <div role={notice.startsWith(ERROR_MARK) ? 'alert' : 'status'} className={`toast ${notice.startsWith(ERROR_MARK) ? 'toast-error' : ''}`}><Sparkles size={18}/><span className="toast-text"><b className="toast-tag">{notice.startsWith(ERROR_MARK) ? 'LỖI' : 'HỆ THỐNG'}</b>{notice.replace(ERROR_MARK, '')}</span><button aria-label="Đóng thông báo" onClick={() => setNotice('')}><X size={15}/></button></div>}
   </div>;

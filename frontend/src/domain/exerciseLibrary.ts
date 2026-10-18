@@ -1,9 +1,9 @@
-import type { ImportHabitPlanRequest, ObjectiveInput, Weekday } from '../api/types';
+import type { ObjectiveInput } from '../api/types';
 
 /**
- * Static gym content (B-32): exercises by muscle group and a few ready-made weekly programs.
- * Names are the canonical exercise names that the set log (B-34) will use. Everything here is data on the client; a program becomes real
- * only when the user imports it, through the existing import call, and then it is ordinary goals, habits and checklist lines.
+ * Static gym content (B-32): the exercise library, by muscle group. The one gym plan lives in the backend (ADR-041).
+ * Names are the canonical exercise names that the set log (B-34) will use. Everything here is data on the client.
+ *
  */
 export type MuscleGroup = 'CHEST' | 'BACK' | 'LEGS' | 'SHOULDERS' | 'ARMS' | 'CORE';
 export const muscleLabel: Record<MuscleGroup, string> = { CHEST: 'Ngực', BACK: 'Lưng', LEGS: 'Chân', SHOULDERS: 'Vai', ARMS: 'Tay', CORE: 'Bụng' };
@@ -88,67 +88,8 @@ export const viName = (name: string): string => exerciseByName(name)?.nameVi ?? 
 export const exerciseById = (id: string): Exercise => { const e = byId.get(id); if (!e) throw new Error(`Unknown exercise ${id}`); return e; };
 export const exercisesFor = (group: MuscleGroup): Exercise[] => EXERCISES.filter(e => e.group === group);
 
-export interface ProgramDay { title: string; weekdays: Weekday[]; groups: MuscleGroup[]; exerciseIds: string[]; /** this program's own sets and reps for an exercise, instead of the library default */ overrides?: Record<string, { sets: number; reps: number }>; }
-export interface Program { id: string; name: string; description: string; /** goal description when it should say more than the card does (rest days, effort) */ goalNote?: string; sessionMinutes?: number; sessionXp?: number; days: ProgramDay[]; }
-/** The exercise as this day prescribes it. */
-export function prescribed(day: ProgramDay, id: string): Exercise { const e = exerciseById(id); const o = day.overrides?.[id]; return o ? { ...e, ...o } : e; }
-
-export const PROGRAMS: readonly Program[] = [
-  { id: 'week1-return', name: 'Tuần 1 — quay lại tập (45 phút)', description: 'Thứ 2, 4, 6, 7 và chủ nhật, cường độ nhẹ cho người quay lại sau thời gian nghỉ. Mỗi buổi 5 bài, 2 set.',
-    goalNote: 'Tuần 1 quay lại tập: 5 buổi nhẹ (thứ 2, 4, 6, 7 và chủ nhật), tạ nhẹ còn 3–4 lần lặp dự trữ. Thứ 3 và thứ 5 nghỉ hoặc đi bộ nhẹ 20–30 phút, giãn cơ (không XP, không tính là bỏ lỡ). Cuối tuần là hai buổi ngắn: nếu mệt, bỏ qua buổi chủ nhật.',
-    sessionMinutes: 45, sessionXp: 40, days: [
-    { title: 'Buổi A — Ngực ưu tiên / Toàn thân', weekdays: [1], groups: ['CHEST', 'BACK', 'LEGS', 'CORE'], exerciseIds: ['machine-chest-press', 'incline-db-press', 'seated-row', 'leg-press', 'dead-bug'],
-      overrides: { 'incline-db-press': { sets: 2, reps: 10 }, 'seated-row': { sets: 2, reps: 10 }, 'leg-press': { sets: 2, reps: 10 } } },
-    { title: 'Buổi B — Chân, lưng, vai', weekdays: [3], groups: ['LEGS', 'BACK', 'SHOULDERS', 'CORE'], exerciseIds: ['goblet-squat', 'lat-pulldown', 'db-romanian-deadlift', 'machine-shoulder-press', 'plank'],
-      overrides: { 'lat-pulldown': { sets: 2, reps: 10 }, plank: { sets: 2, reps: 20 } } },
-    { title: 'Buổi C — Ngực, lưng, chân', weekdays: [5], groups: ['CHEST', 'BACK', 'LEGS', 'SHOULDERS'], exerciseIds: ['machine-chest-press', 'seated-row', 'seated-leg-curl', 'leg-extension', 'db-lateral-raise'],
-      overrides: { 'seated-row': { sets: 2, reps: 10 } } },
-    { title: 'Buổi D — Toàn thân nhẹ (thứ 7)', weekdays: [6], groups: ['LEGS', 'CHEST', 'BACK', 'SHOULDERS', 'CORE'], exerciseIds: ['goblet-squat', 'machine-chest-press', 'seated-row', 'machine-shoulder-press', 'dead-bug'],
-      overrides: { 'seated-row': { sets: 2, reps: 10 } } },
-    { title: 'Buổi E — Chân và core nhẹ (chủ nhật)', weekdays: [7], groups: ['LEGS', 'CORE'], exerciseIds: ['leg-press', 'seated-leg-curl', 'leg-extension', 'plank', 'dead-bug'],
-      overrides: { 'leg-press': { sets: 2, reps: 12 }, plank: { sets: 2, reps: 20 } } }
-  ] },
-  { id: 'push-pull-legs', name: 'Đẩy / Kéo / Chân — 3 buổi', description: 'Thứ 2, 4, 6. Hợp người mới hoặc ít thời gian: mỗi nhóm cơ được tập một lần mỗi tuần.', days: [
-    { title: 'Đẩy: Ngực + Vai + Tay sau', weekdays: [1], groups: ['CHEST', 'SHOULDERS', 'ARMS'], exerciseIds: ['bench-press', 'incline-db-press', 'overhead-press', 'lateral-raise', 'triceps-pushdown'] },
-    { title: 'Kéo: Lưng + Vai sau + Tay trước', weekdays: [3], groups: ['BACK', 'SHOULDERS', 'ARMS'], exerciseIds: ['pull-up', 'barbell-row', 'seated-row', 'face-pull', 'barbell-curl'] },
-    { title: 'Chân + Bụng', weekdays: [5], groups: ['LEGS', 'CORE'], exerciseIds: ['back-squat', 'romanian-deadlift', 'leg-press', 'calf-raise', 'plank'] }
-  ] },
-  { id: 'body-part-5', name: 'Chia nhóm cơ — 5 buổi', description: 'Thứ 2 đến thứ 6, mỗi ngày một nhóm cơ. Nghỉ thứ 7 và chủ nhật.', days: [
-    { title: 'Ngực', weekdays: [1], groups: ['CHEST'], exerciseIds: ['bench-press', 'incline-db-press', 'cable-fly', 'chest-dip'] },
-    { title: 'Lưng', weekdays: [2], groups: ['BACK'], exerciseIds: ['deadlift', 'pull-up', 'barbell-row', 'lat-pulldown'] },
-    { title: 'Chân', weekdays: [3], groups: ['LEGS'], exerciseIds: ['back-squat', 'romanian-deadlift', 'leg-press', 'walking-lunge', 'calf-raise'] },
-    { title: 'Vai', weekdays: [4], groups: ['SHOULDERS'], exerciseIds: ['overhead-press', 'lateral-raise', 'rear-delt-fly', 'face-pull'] },
-    { title: 'Tay + Bụng', weekdays: [5], groups: ['ARMS', 'CORE'], exerciseIds: ['barbell-curl', 'skull-crusher', 'hammer-curl', 'overhead-triceps', 'hanging-leg-raise', 'plank'] }
-  ] },
-  { id: 'full-body-3', name: 'Toàn thân — 3 buổi', description: 'Thứ 2, 4, 6. Mỗi buổi đủ các nhóm cơ lớn, có ngày nghỉ xen giữa.', days: [
-    { title: 'Toàn thân A', weekdays: [1], groups: ['LEGS', 'CHEST', 'BACK', 'SHOULDERS', 'CORE'], exerciseIds: ['back-squat', 'bench-press', 'barbell-row', 'overhead-press', 'plank'] },
-    { title: 'Toàn thân B', weekdays: [3], groups: ['BACK', 'CHEST', 'LEGS', 'CORE'], exerciseIds: ['deadlift', 'incline-db-press', 'lat-pulldown', 'walking-lunge', 'hanging-leg-raise'] },
-    { title: 'Toàn thân C', weekdays: [5], groups: ['LEGS', 'CHEST', 'BACK', 'ARMS'], exerciseIds: ['leg-press', 'push-up', 'seated-row', 'barbell-curl', 'triceps-pushdown'] }
-  ] },
-  { id: 'recomp-3', name: 'Tăng cơ · giảm mỡ toàn thân (3 buổi)', description: 'Thứ 2, 4, 6. Mỗi buổi tạ toàn thân 6 bài, 3 set, hợp người mới đang muốn giảm mỡ và lên cơ.',
-    goalNote: 'Toàn thân 3 buổi (thứ 2, 4, 6), mỗi buổi 6 bài 3 set × 10–12 rep, nghỉ 60–90 giây, dừng khi còn đủ sức làm thêm 2 rep. Thứ 3 và thứ 7: cardio nhẹ 30–40 phút (đi bộ dốc, đạp xe). Chủ nhật nghỉ. Ăn thấp hơn mức duy trì khoảng 500 kcal, đủ đạm. Khi làm đủ 3 × 12 thoải mái thì tăng tạ 2,5–5%.',
-    sessionMinutes: 55, sessionXp: 50, days: [
-    { title: 'Buổi A — Toàn thân (đẩy, kéo, chân)', weekdays: [1], groups: ['LEGS', 'CHEST', 'BACK', 'SHOULDERS', 'CORE'], exerciseIds: ['leg-press', 'machine-chest-press', 'lat-pulldown', 'db-shoulder-press', 'glute-bridge', 'plank'],
-      overrides: { 'machine-chest-press': { sets: 3, reps: 10 }, 'db-shoulder-press': { sets: 3, reps: 10 }, 'glute-bridge': { sets: 3, reps: 12 }, plank: { sets: 3, reps: 40 } } },
-    { title: 'Buổi B — Toàn thân (tạ đơn)', weekdays: [3], groups: ['LEGS', 'CHEST', 'BACK', 'SHOULDERS', 'CORE'], exerciseIds: ['goblet-squat', 'push-up', 'db-row', 'db-romanian-deadlift', 'db-lateral-raise', 'bird-dog'],
-      overrides: { 'goblet-squat': { sets: 3, reps: 10 }, 'push-up': { sets: 3, reps: 10 }, 'db-romanian-deadlift': { sets: 3, reps: 10 }, 'db-lateral-raise': { sets: 3, reps: 12 }, 'bird-dog': { sets: 3, reps: 10 } } },
-    { title: 'Buổi C — Toàn thân (kết hợp)', weekdays: [5], groups: ['LEGS', 'CHEST', 'BACK', 'SHOULDERS', 'CORE'], exerciseIds: ['leg-press', 'push-up', 'db-row', 'db-shoulder-press', 'glute-bridge', 'plank'],
-      overrides: { 'push-up': { sets: 3, reps: 10 }, 'db-shoulder-press': { sets: 3, reps: 10 }, 'glute-bridge': { sets: 3, reps: 12 }, plank: { sets: 3, reps: 40 } } }
-  ] }
-];
-
-/** XP and time of one session; "Khó" by the display thresholds, like the owner's example quest. */
-const DEFAULT_MINUTES = 60, DEFAULT_XP = 50;
-
 /** One checklist line per exercise: the target is all repetitions of all sets, one tap adds one set. */
 export function objectiveFor(e: Exercise): ObjectiveInput { return { title: e.name, target: e.sets * e.reps, unit: e.unit, step: e.reps }; }
-
-export function planRequest(program: Program, startDate: string): ImportHabitPlanRequest {
-  return { startDate, goals: [{
-    title: `Gym — ${program.name}`, category: 'HEALTH', description: program.goalNote ?? program.description,
-    habits: program.days.map(d => ({ title: d.title, targetMinutes: program.sessionMinutes ?? DEFAULT_MINUTES, xpReward: program.sessionXp ?? DEFAULT_XP, weekdays: d.weekdays, objectives: d.exerciseIds.map(id => objectiveFor(prescribed(d, id))) }))
-  }] };
-}
 
 /** The checklist of a habit with one library exercise added at the end; null when the habit already has it (by name). */
 export function withExercise(habit: { objectives: { title: string; target: number; unit: string; step: number }[] }, e: Exercise): ObjectiveInput[] | null {

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { EXERCISES, PROGRAMS } from './exerciseLibrary';
+import { EXERCISES, exerciseByName } from './exerciseLibrary';
+import { STANDARD_DAYS } from './standardPlan';
 import { GUIDES, guideFor } from './exerciseGuide';
 
-const week1 = PROGRAMS.find(p => p.id === 'week1-return')!;
-const week1Ids = [...new Set(week1.days.flatMap(d => d.exerciseIds))];
+const week1Ids = [...new Set(STANDARD_DAYS.flatMap(d => d.lines.map(l => exerciseByName(l.title)!.id)))]; // the exercises of the standard plan
 
 describe('exercise guides (beginner teaching content)', () => {
-  it('covers every exercise of the week-1 plan with setup, 3-5 steps, breathing and 2-4 common mistakes', () => {
-    expect(week1Ids.length).toBe(13);
+  it('covers every exercise of the standard plan with setup, 3-5 steps, breathing and 2-4 common mistakes', () => {
+    expect(week1Ids.length).toBe(12);
     for (const id of week1Ids) {
       const g = guideFor(id);
       expect(g, id).toBeTruthy();
