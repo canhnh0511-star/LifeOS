@@ -6,6 +6,8 @@ import { infoFor, levelLabel } from '../domain/exerciseInfo';
 import { Modal } from './Modal';
 import { ExerciseDetail } from './ExerciseDetail';
 import { MuscleFigure } from './MuscleFigure';
+import { ExerciseThumb } from './ExercisePicture';
+import { exerciseImage } from '../domain/exerciseImage';
 
 const GROUPS = Object.keys(muscleLabel) as MuscleGroup[];
 const plain = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').toLowerCase();
@@ -54,7 +56,7 @@ export function ExerciseBrowser({ filter: { group, setGroup, query, setQuery, op
       <p className="form-note" role="status">{shown.length} bài</p>
       {shown.length === 0 ? <p className="xl-empty">Không có bài nào khớp. Thử bỏ bớt từ khoá hoặc chọn nhóm cơ khác.</p>
         : <ul className="xl-list">{shown.map(e => { const isOpen = openId === e.id; return <li key={e.id} className={isOpen ? 'is-open' : ''}><button type="button" className="xl-item" aria-expanded={isOpen} onClick={() => setOpenId(isOpen ? null : e.id)} aria-label={`Chi tiết ${e.nameVi ?? e.name}`}>
-          <MuscleFigure primary={e.group} size={28}/><span><strong>{e.nameVi ?? e.name}</strong><small lang="en">{e.name}</small><small>{muscleLabel[e.group]} · {infoFor(e).equipment} · {levelLabel[infoFor(e).level]}</small></span><small className="xl-plan">{e.sets}×{e.reps}</small>
+          {exerciseImage(e.id) ? <ExerciseThumb exercise={e} size={56}/> : <MuscleFigure primary={e.group} size={28}/>}<span><strong>{e.nameVi ?? e.name}</strong><small lang="en">{e.name}</small><small>{muscleLabel[e.group]} · {infoFor(e).equipment} · {levelLabel[infoFor(e).level]}</small></span><small className="xl-plan">{e.sets}×{e.reps}</small>
         </button>{isOpen && <ExerciseDetail exercise={e} onClose={() => setOpenId(null)} action={habits && onAddToHabit && <AddToSession exercise={e} habits={habits} onAdd={onAddToHabit}/>}/>}</li>; })}</ul>}
   </div>;
 }

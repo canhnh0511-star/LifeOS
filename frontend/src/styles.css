@@ -401,8 +401,13 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]),select{min-height
 
 /* Vietnamese exercise name first; the English name is a quiet second line */
 .aw-name-en,.xl-item small[lang="en"]{display:block;color:var(--text-muted);font-size:12px}
-.xd-pic{margin:0}.xd-pic img{display:block;width:100%;height:auto;border-radius:12px;border:1px solid var(--border,#2a3646)}
-.xd-nopic{margin:0;padding:10px 12px;border:1px dashed var(--border,#2a3646);border-radius:12px;color:var(--text-muted);font-size:13px}
+.xd-pic{margin:0;position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--border,#2a3646);background:#05080d}
+/* The pictures are square with dark bands above and below the two poses; crop to the poses (3:2) so the figure is as large as the screen allows. */
+.xd-pic img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;object-position:50% 50%}
+.xd-pic figcaption{position:absolute;inset:auto 0 0 0;display:grid;grid-template-columns:1fr 1fr;padding:22px 10px 8px;background:linear-gradient(transparent,rgba(5,8,13,.85));font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-strong,#e8eef6)}
+.xd-pic figcaption span{text-align:center}
+.xd-nopic{margin:0;display:flex;gap:12px;align-items:center;padding:14px;border:1px dashed var(--border,#2a3646);border-radius:12px;color:var(--text-muted);font-size:13px}
+.xd-nopic svg{flex:none;color:var(--accent)}.xd-nopic strong{display:block;color:var(--text-strong);font-size:14px;margin-bottom:2px}
 .xd-list{margin:0;padding-left:20px;display:grid;gap:6px}.xd-text{margin:0}.xd-safety{margin:0}
 
 /* Active workout: progress, one-line cue, last time, labelled set pills */
@@ -523,3 +528,9 @@ h1,h2,h3,.hunter-level,.section-eyebrow,.eyebrow,.rank-card-state{font-family:va
 .dungeon-next{height:22px;padding:0 10px;border-radius:11px;background:rgba(198,250,85,.14);border:1px solid rgba(198,250,85,.4);color:#c6fa55;font:700 11px/20px var(--font-display);white-space:nowrap}
 .hunter-card .rank-portrait{border-radius:50%;border:2px solid var(--sys-cyan);box-shadow:none}
 .today-simple>.today-actions{margin:12px 0 0}
+/* B-4b: exercise pictures in lists and on the workout screen */
+.xt{flex:none;display:grid;place-items:center;overflow:hidden;border-radius:10px;border:1px solid var(--border,#2a3646);background:#05080d;color:var(--accent)}
+.xt img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 50%}
+.aw-pic{margin:10px auto 0;max-width:420px;text-align:left}.xd-nopic.is-compact{padding:8px 12px;font-size:12px}.xd-nopic.is-compact strong{display:inline;margin:0 8px 0 0;font-size:13px}
+
+.xl-item .xt,.wizard-exercises li>.xt:first-child{flex:none;display:grid}

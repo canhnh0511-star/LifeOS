@@ -5,6 +5,7 @@ import { useDialog } from '../hooks/useDialog';
 import { exerciseByName, muscleLabel, viName } from '../domain/exerciseLibrary';
 import { DAY_LABEL, replacementFor } from '../domain/plan';
 import { RankPortrait } from './RankPortrait';
+import { ExerciseThumb } from './ExercisePicture';
 
 export interface Replacement { goalIds: string[]; habitIds: string[]; }
 type Step = 1 | 2;
@@ -78,7 +79,7 @@ export function PlanWizard({ displayName, goals, habits, loadPlan, onStart, onCl
                     <ChevronDown size={18} aria-hidden="true"/>
                   </button>
                   {i === open && <ol id={`${titleId}-s${i}`} className="wizard-exercises">
-                    {s.objectives.map(o => <li key={o.title}><span>{viName(o.title)}</span><span className="wizard-sets">{o.target / o.step} × {o.step}{o.unit === 'giây' ? ' giây' : ''}</span></li>)}
+                    {s.objectives.map(o => { const ex = exerciseByName(o.title); return <li key={o.title}>{ex && <ExerciseThumb exercise={ex} size={40}/>}<span>{viName(o.title)}</span><span className="wizard-sets">{o.target / o.step} × {o.step}{o.unit === 'giây' ? ' giây' : ''}</span></li>; })}
                   </ol>}
                 </li>; })}
             </ul>

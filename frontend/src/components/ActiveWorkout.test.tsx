@@ -35,6 +35,13 @@ describe('active workout: dungeon floors', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Bài sau' }));
     expect(screen.getByText(/^Tầng 2\/2 · /)).toBeTruthy();
   });
+  it('shows the instruction picture right under the name, and the technique panel does not repeat it', async () => {
+    await start(fakeApi());
+    expect(screen.getAllByRole('img', { name: /Ảnh hướng dẫn Đẩy ngực với máy/ })).toHaveLength(1);
+    await userEvent.click(screen.getByRole('button', { name: /Kỹ thuật/ }));
+    expect(screen.getAllByRole('img', { name: /Ảnh hướng dẫn Đẩy ngực với máy/ })).toHaveLength(1);
+    expect(screen.getByRole('region', { name: /Chi tiết Đẩy ngực với máy/ })).toBeTruthy();
+  });
 });
 
 describe('active workout: battle mode (Phase 1)', () => {

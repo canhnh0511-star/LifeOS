@@ -26,6 +26,18 @@ describe('exercise detail teaches the movement', () => {
     expect(screen.queryByText(/Chưa có ảnh động tác/)).toBeNull();
     expect(screen.getByText(/Đau nhói/)).toBeTruthy();
   });
+  it('puts the picture first, above the muscle facts, with the start and end poses named', () => {
+    render(<ExerciseDetail exercise={exerciseById('leg-press')} onClose={() => {}}/>);
+    const region = screen.getByRole('region', { name: /Chi tiết/ });
+    const figure = region.querySelector('figure.xd-pic')!, facts = region.querySelector('.xd-top')!;
+    expect(region.firstElementChild).toBe(figure);
+    expect(figure.compareDocumentPosition(facts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(figure.textContent).toContain('Bắt đầu'); expect(figure.textContent).toContain('Kết thúc');
+  });
+  it('names the equipment in the placeholder when there is no picture', () => {
+    render(<ExerciseDetail exercise={exerciseById('bench-press')} onClose={() => {}}/>);
+    expect(screen.getByRole('note').textContent).toContain('Thanh đòn, ghế phẳng');
+  });
   it('falls back to a text note when the exercise has no picture', () => {
     render(<ExerciseDetail exercise={exerciseById('bench-press')} onClose={() => {}}/>);
     expect(screen.getByText(/Chưa có ảnh động tác/)).toBeTruthy();

@@ -19,6 +19,11 @@ describe('filterExercises by Vietnamese and English names', () => {
     render(<ExerciseLibrary onClose={() => {}}/>);
     expect(screen.getByRole('button', { name: /Chi tiết Hít đất/ })).toBeTruthy();
   });
+  it('shows a small picture in the list for exercises that have one, and keeps the muscle figure for those that do not', () => {
+    render(<ExerciseLibrary onClose={() => {}}/>);
+    expect(screen.getByRole('button', { name: /Chi tiết Hít đất/ }).querySelector('img')!.getAttribute('src')).toBe('/art/exercises/push-up.jpg');
+    expect(screen.getByRole('button', { name: /Chi tiết Đẩy ngực với thanh đòn/ }).querySelector('img')).toBeNull();
+  });
 });
 
 describe('filterExercises', () => {
