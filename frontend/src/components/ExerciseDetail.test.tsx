@@ -19,9 +19,16 @@ describe('exercise detail teaches the movement', () => {
     expect(screen.getByRole('heading', { name: 'Kỹ thuật' })).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Cách tập' })).toBeNull();
   });
-  it('always has a picture slot with a text fallback and a safety note', () => {
+  it('shows the instruction picture when the exercise has one', () => {
     render(<ExerciseDetail exercise={exerciseById('plank')} onClose={() => {}}/>);
-    expect(screen.getByText(/Chưa có ảnh động tác/)).toBeTruthy();
+    const img = screen.getByRole('img', { name: /Ảnh hướng dẫn/ }) as HTMLImageElement;
+    expect(img.getAttribute('src')).toBe('/art/exercises/plank.jpg');
+    expect(screen.queryByText(/Chưa có ảnh động tác/)).toBeNull();
     expect(screen.getByText(/Đau nhói/)).toBeTruthy();
+  });
+  it('falls back to a text note when the exercise has no picture', () => {
+    render(<ExerciseDetail exercise={exerciseById('bench-press')} onClose={() => {}}/>);
+    expect(screen.getByText(/Chưa có ảnh động tác/)).toBeTruthy();
+    expect(screen.queryByRole('img', { name: /Ảnh hướng dẫn/ })).toBeNull();
   });
 });
