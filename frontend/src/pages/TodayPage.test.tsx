@@ -197,7 +197,7 @@ describe('Main Quest start button for a gym session', () => {
     render(<TodayPage {...props} setLog={setLog} onToggleQuest={() => {}} dashboard={dashboard([gym])}/>);
     await userEvent.click(screen.getByRole('button', { name: /Bắt đầu buổi tập|Mở danh sách việc|Xem chi tiết/ }));
     expect(await screen.findByRole('button', { name: 'Hoàn thành set' })).toBeTruthy();
-    await userEvent.click(screen.getByRole('button', { name: 'Tạm dừng' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Tạm dừng buổi tập' }));
     expect(screen.getByRole('button', { name: /Xác nhận hoàn thành/ })).toBeTruthy();
     cleanup();
     render(<TodayPage {...props} setLog={setLog} onToggleQuest={() => {}} dashboard={dashboard([quest('b', 'PENDING', 'Piano')])}/>);
@@ -207,18 +207,17 @@ describe('Main Quest start button for a gym session', () => {
   });
 });
 
-describe('quest detail and workout open in place (no popup)', () => {
+describe('quest detail opens in place (no popup); the workout is its own screen', () => {
   const gym = { ...quest('g', 'PENDING', 'Buổi A'), objectives: [{ id: 'o', title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10, value: 0 }] } as QuestDto;
   const setLog = { list: async () => [], record: async () => [], remove: async () => [], last: async () => ({ date: null, sets: [] }) };
-  it('opens the workout right under the main quest card, with no dialog, and Escape collapses it', async () => {
+  it('opens the workout as its own full screen (a dialog over Today), and Escape returns to Today', async () => {
     render(<TodayPage {...props} setLog={setLog} onToggleQuest={() => {}} dashboard={dashboard([gym])}/>);
     await userEvent.click(screen.getByRole('button', { name: 'Bắt đầu buổi tập' }));
-    expect(screen.queryByRole('dialog')).toBeNull();
-    const panel = await screen.findByRole('region', { name: 'Đang tập · Buổi A' });
-    expect(screen.getByLabelText('NHIỆM VỤ HÀNG NGÀY').compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Hoàn thành set' })).toBeTruthy();
+    const screenEl = await screen.findByRole('dialog', { name: 'Buổi tập · Buổi A' });
+    expect(within(screenEl).getByRole('button', { name: 'Hoàn thành set' })).toBeTruthy();
+    expect(within(screenEl).getByRole('timer', { name: 'Thời gian buổi tập' })).toBeTruthy();
     await userEvent.keyboard('{Escape}');
-    expect(screen.queryByRole('region', { name: /Đang tập/ })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: /Buổi tập/ })).toBeNull();
     expect(screen.getByLabelText('NHIỆM VỤ HÀNG NGÀY')).toBeTruthy(); // Today is still there
   });
   it('opens a non-main quest right below its own row', async () => {
@@ -296,7 +295,7 @@ describe('Today as the daily gate (designed screen)', () => {
     render(<TodayPage {...props} setLog={log} onToggleQuest={() => {}} dashboard={dashboard([gym, quest('w', 'PENDING', 'Uống nước')])}/>);
     expect(screen.getByText('Việc khác').closest('article')!.textContent).not.toContain('Buổi A');
     await userEvent.click(screen.getByRole('button', { name: /^Tầng 2: / }));
-    expect(await screen.findByRole('region', { name: 'Đang tập · Buổi A — Đẩy' })).toBeTruthy();
+    expect(await screen.findByRole('dialog', { name: 'Buổi tập · Buổi A — Đẩy' })).toBeTruthy();
   });
   it('has no "other" list when the gym session is the only quest, and shows the streak in the header', () => {
     render(<TodayPage {...props} setLog={log} onToggleQuest={() => {}} dashboard={{ ...dashboard([gym]), dayStreak: 6 }}/>);
