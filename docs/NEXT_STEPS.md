@@ -2,6 +2,8 @@
 
 Nguồn: `docs/LIFE_OS_SOLO_LEVELING_GYM_REFOCUS.md` §8–9; bằng chứng: `docs/audit/PHASE0_AUDIT.md`. Ticket cũ còn hiệu lực: `docs/tickets/` (B-25 → B-41, B-11 → B-13).
 
+**Cập nhật (owner 2026-10-18):** màn tập là ngoại lệ của nguyên tắc dưới đây: "Tập từng set" mở màn hình riêng (toàn màn hình), từng bước một: set → nghỉ → set tiếp theo → tổng kết, đồng hồ buổi tập ở đầu mọi bước (dùng chung với đồng hồ của nhiệm vụ), chọn thời gian nghỉ ngay ở bước nghỉ. "Nhật ký set" đổi thành "Ghi set thủ công" (thu gọn, có giải thích).
+
 **Nguyên tắc giao diện (owner 2026-10-17):** chi tiết bài tập **không** mở popup và **không** chuyển sang màn riêng; bung ra ngay tại chỗ (chạm để mở, "Thu gọn" để đóng, mỗi lần một bài trong danh sách; buổi tập và màn đang tập cũng mở tại chỗ trong Hôm nay). Hình minh hoạ (4b) cũng nằm trong khối bung ra đó và trên thẻ bài đang tập.
 
 **Phase 1 — dùng được (P0)**, mỗi mục có test:

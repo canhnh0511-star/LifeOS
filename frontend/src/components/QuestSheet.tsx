@@ -10,7 +10,7 @@ import { number } from '../ui/format';
 import { clock, elapsedMs, isRunning, loadTimer, pauseTimer, saveTimer, startTimer, idleTimer, type TimerState } from '../ui/focusTimer';
 import { InlinePanel } from './InlinePanel';
 import { ExerciseSets, useSetLog, type SetLogApi } from './SetLog';
-import { ActiveWorkout } from './ActiveWorkout';
+import { WorkoutRunner } from './WorkoutRunner';
 import { ExerciseDetail } from './ExerciseDetail';
 import { ObjectiveList, metCount } from './ObjectiveList';
 
@@ -48,7 +48,7 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
   const suggested = nextLine ? exerciseByName(nextLine.title) : undefined;
   const suggestedRest = suggested ? restFor(suggested) : undefined;
   const detailExercise = detail ? exerciseByName(detail) : undefined;
-  if (training && setLog) return <ActiveWorkout quest={quest} date={date} exercises={loggable} sets={log.sets} busy={log.busy} error={log.error} last={setLog.last} onRecord={log.record} onRemove={log.remove} onFinish={quest.status === 'COMPLETED' ? undefined : () => { onToggle(quest); setTraining(false); }} xp={quest.xpReward} onClose={() => setTraining(false)}/>;
+  if (training && setLog) return <WorkoutRunner timer={timer} onTimer={change} quest={quest} date={date} exercises={loggable} sets={log.sets} busy={log.busy} error={log.error} last={setLog.last} onRecord={log.record} onRemove={log.remove} onFinish={quest.status === 'COMPLETED' ? undefined : () => { onToggle(quest); setTraining(false); }} xp={quest.xpReward} onClose={() => setTraining(false)}/>;
   return <InlinePanel title={quest.title} onClose={onClose}>
     <div className="sheet">
       <p className="sheet-meta"><Clock3 size={14}/> {quest.targetMinutes} phút · {categoryLabel(quest.category)} · <Zap size={14}/> {done ? 'Đã nhận' : '+'}{quest.xpReward} XP <span className={`diff-chip diff-${d.toLowerCase()}`}>{difficultyLabel[d]}</span></p>
@@ -70,10 +70,11 @@ export function QuestSheet({ quest, date, busy, onClose, onToggle, onSetObjectiv
         {detailExercise && <ExerciseDetail exercise={detailExercise} onClose={() => setDetail(null)}/>}
       </section>}
       {setLog && loggable.length > 0 && <section aria-label="Nhật ký set">
-        <h3 className="sheet-h">Nhật ký set</h3>
+        <details className="set-manual"><summary>Ghi set thủ công</summary>
+        <p className="form-note">Dùng khi bạn đã tập xong mà không mở màn tập từng bước: tự nhập số rep và mức tạ của từng set.</p>
         <ul className="set-log">{loggable.map(e => <ExerciseSets key={e.id} exercise={e} sets={log.sets} date={date} busy={log.busy} last={setLog.last} onRecord={log.record} onRemove={log.remove}/>)}</ul>
         {log.error && <p role="alert" className="set-error">{log.error}</p>}
-        <p className="form-note">Ghi lại bạn đã làm gì, không cộng XP và không tự hoàn thành buổi tập. Hoàn thành vẫn bằng nút xác nhận bên dưới.</p>
+        <p className="form-note">Không cộng XP và không tự hoàn thành buổi tập. Hoàn thành vẫn bằng nút xác nhận bên dưới.</p></details>
       </section>}
       <section aria-label="Đồng hồ buổi tập" className="sheet-timer">
         <h3 className="sheet-h"><Timer size={15}/> Đồng hồ buổi tập</h3>
