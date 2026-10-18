@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Dumbbell } from 'lucide-react';
 import type { Exercise } from '../domain/exerciseLibrary';
 import { infoFor } from '../domain/exerciseInfo';
-import { exerciseImage } from '../domain/exerciseImage';
+import { exerciseCrop, exerciseImage } from '../domain/exerciseImage';
 
 const label = (e: Exercise) => e.nameVi ?? e.name;
 
@@ -19,7 +19,7 @@ export function ExercisePicture({ exercise: e, compact = false }: { exercise: Ex
       <span><strong>{equipment}</strong>{compact ? 'Chưa có ảnh' : 'Chưa có ảnh động tác cho bài này (đang chuẩn bị). Hãy đọc kỹ các bước bên dưới hoặc nhờ huấn luyện viên chỉ.'}</span></div>;
   }
   return <figure className="xd-pic">
-    <img src={src} alt={`Ảnh hướng dẫn ${label(e)}: tư thế bắt đầu (trái) và tư thế kết thúc (phải)`} loading="lazy" width={640} height={427} onError={() => setFailed(src)}/>
+    <img src={src} alt={`Ảnh hướng dẫn ${label(e)}: tư thế bắt đầu (trái) và tư thế kết thúc (phải)`} loading="lazy" width={640} style={exerciseCrop(e.id)} onError={() => setFailed(src)}/>
     <figcaption aria-hidden="true"><span>Bắt đầu</span><span>Kết thúc</span></figcaption>
   </figure>;
 }
@@ -29,6 +29,6 @@ export function ExerciseThumb({ exercise: e, size = 52 }: { exercise: Exercise; 
   const src = exerciseImage(e.id);
   const [failed, setFailed] = useState<string | null>(null);
   return <span className="xt" style={{ width: Math.round(size * 1.5), height: size }} aria-hidden="true">
-    {src && failed !== src ? <img src={src} alt="" loading="lazy" width={Math.round(size * 1.5)} height={size} onError={() => setFailed(src)}/> : <Dumbbell size={Math.round(size / 2.2)}/>}
+    {src && failed !== src ? <img src={src} alt="" loading="lazy" width={Math.round(size * 1.5)} height={size} style={{ objectPosition: exerciseCrop(e.id).objectPosition }} onError={() => setFailed(src)}/> : <Dumbbell size={Math.round(size / 2.2)}/>}
   </span>;
 }
