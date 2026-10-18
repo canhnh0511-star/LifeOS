@@ -1,17 +1,41 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { exerciseById } from '../domain/exerciseLibrary';
 import { ExerciseDetail } from './ExerciseDetail';
 
 afterEach(cleanup);
 
 describe('exercise detail teaches the movement', () => {
-  it('shows setup, numbered steps, breathing and common mistakes when a guide exists', () => {
+  it('shows the guide one part at a time in tabs: steps first, then setup, breathing and common mistakes', async () => {
     render(<ExerciseDetail exercise={exerciseById('goblet-squat')} onClose={() => {}}/>);
-    for (const h of ['Chuẩn bị', 'Cách tập', 'Hít thở', 'Lỗi thường gặp']) expect(screen.getByRole('heading', { name: h })).toBeTruthy();
-    expect(screen.getAllByRole('listitem').length).toBeGreaterThan(8);
+    const tabs = screen.getByRole('tablist', { name: 'Hướng dẫn tập' });
+    expect(within(tabs).getAllByRole('tab').map(t => t.textContent)).toEqual(['Cách tập', 'Chuẩn bị', 'Hít thở', 'Lỗi thường gặp']);
+    expect(within(tabs).getByRole('tab', { name: 'Cách tập' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('heading', { name: 'Cách tập' })).toBeTruthy();
+    expect(within(screen.getByRole('tabpanel')).getAllByRole('listitem').length).toBeGreaterThan(2);
+    for (const h of ['Chuẩn bị', 'Hít thở', 'Lỗi thường gặp']) {
+      await userEvent.click(within(tabs).getByRole('tab', { name: h }));
+      expect(screen.getByRole('heading', { name: h })).toBeTruthy();
+      expect(screen.queryByRole('heading', { name: 'Cách tập' })).toBeNull();
+    }
     expect(screen.queryByText(/đang được biên soạn/)).toBeNull();
+  });
+  it('moves between tabs with the arrow keys', async () => {
+    render(<ExerciseDetail exercise={exerciseById('goblet-squat')} onClose={() => {}}/>);
+    screen.getByRole('tab', { name: 'Cách tập' }).focus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: 'Chuẩn bị' }).getAttribute('aria-selected')).toBe('true');
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}');
+    expect(screen.getByRole('tab', { name: 'Lỗi thường gặp' }).getAttribute('aria-selected')).toBe('true');
+  });
+  it('names the exercise in Vietnamese and English with its level, and the plan numbers in the stats card', () => {
+    render(<ExerciseDetail exercise={exerciseById('goblet-squat')} onClose={() => {}}/>);
+    expect(screen.getByRole('heading', { name: /Squat ôm tạ trước ngực/ })).toBeTruthy();
+    expect(screen.getByText('Goblet Squat')).toBeTruthy();
+    expect(screen.getByText(/Độ khó: Dễ/)).toBeTruthy();
+    expect(screen.getByText(/2 set × 10 rep/)).toBeTruthy();
   });
   it('says the guide is being written, and still shows the short cues, for an exercise without one', () => {
     render(<ExerciseDetail exercise={exerciseById('bench-press')} onClose={() => {}}/>);

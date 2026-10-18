@@ -534,3 +534,14 @@ h1,h2,h3,.hunter-level,.section-eyebrow,.eyebrow,.rank-card-state{font-family:va
 .aw-pic{margin:10px auto 0;max-width:420px;text-align:left}.xd-nopic.is-compact{padding:8px 12px;font-size:12px}.xd-nopic.is-compact strong{display:inline;margin:0 8px 0 0;font-size:13px}
 
 .xl-item .xt,.wizard-exercises li>.xt:first-child{flex:none;display:grid}
+/* Exercise detail as a card: picture, name and chips, stats card, tabbed guide */
+.xd-card{gap:12px;padding:0 0 14px;overflow:hidden}.xd-card>:not(.xd-pic):not(.xd-nopic){margin-inline:14px}
+.xd-card>.xd-pic{border-radius:0;border-width:0 0 1px}.xd-card>.xd-nopic{margin:14px 14px 0}
+.xd-head{display:grid;gap:8px}.xd-name{margin:0;font-family:var(--font-display,inherit);font-size:19px;line-height:1.25;color:var(--text-strong)}.xd-name-en{display:block;margin-top:2px;color:var(--text-muted);font-size:12px}
+.xd-chip{margin-left:0;display:inline-flex;align-items:center;gap:5px;padding:3px 9px}
+.xd-level-easy{border-color:#2f6b45;color:#8de0a8}.xd-level-medium{border-color:#7a6a3c;color:#e7c46a}.xd-level-hard{border-color:#8a3c3c;color:#ff9a9a}
+.xd-stats{padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(198,250,85,.04)}.xd-plan{color:var(--accent)!important;font-weight:600}
+.xd-guide{display:grid;gap:10px}.xd-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.xd-tabs::-webkit-scrollbar{display:none}
+.xd-tabs button{flex:1 1 auto;min-height:40px;padding:0 8px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--text-muted);font-weight:600;font-size:12.5px;white-space:nowrap}
+.xd-tabs button.is-active{border-color:var(--accent);color:var(--accent);background:rgba(198,250,85,.1)}
+.xd-panel{padding:2px 0}.xd-panel .sheet-h{margin-top:0}
