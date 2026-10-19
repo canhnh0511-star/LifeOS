@@ -565,3 +565,9 @@ h1,h2,h3,.hunter-level,.section-eyebrow,.eyebrow,.rank-card-state{font-family:va
 .wr-set{gap:8px}.wr-steppers{display:grid;grid-template-columns:1fr 1fr;gap:10px}.wr-steppers.is-single{grid-template-columns:1fr}.wr-steppers .aw-label{font-size:12px}.wr-steppers .aw-stepper{gap:6px}.wr-set .aw-set{margin:2px 0 0}
 .wr-steppers .aw-stepper{grid-template-columns:44px 1fr 44px}.wr-steppers .aw-step{width:44px;height:44px}.wr-steppers .aw-stepper .aw-value,.wr-steppers input.aw-value{font-size:24px;min-height:44px!important}
 .wr-set .aw-info{justify-self:center;width:auto;min-height:36px;padding:0 14px}
+/* Body goal card */
+.body-goal{display:grid;gap:10px}.body-goal h2{margin:0;font-size:17px;display:flex;align-items:center;gap:8px;color:var(--text-strong)}.body-goal-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.body-goal-sub{margin:0;color:var(--text-muted)}.body-goal-sub strong{color:var(--accent)}
+.body-goal-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0}.body-goal-stats div{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}.body-goal-stats dt{font-size:12px;color:var(--text-muted)}.body-goal-stats dd{margin:2px 0 0;font-size:18px;font-weight:700;color:var(--text-strong)}
+.body-goal-pace{margin:0;font-weight:700}.body-goal-pace.is-on-track,.body-goal-pace.is-ahead{color:var(--accent)}.body-goal-pace.is-behind{color:#e7c46a}.body-goal-bmi{margin:0;font-size:13px;color:var(--text)}.body-goal-warn{margin:0;padding:8px 12px;border:1px solid #7a6a3c;border-radius:10px;color:#e7c46a;font-size:13px}
+.body-goal-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.body-goal-fields label{display:grid;gap:4px;font-size:13px;color:var(--text-muted)}.body-goal-fields input{min-height:44px}

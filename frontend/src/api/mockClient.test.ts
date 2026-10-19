@@ -867,3 +867,18 @@ describe('mock plan (one standard plan per account)', () => {
     expect((await mockClient.getPlan()).started).toBe(false);
   });
 });
+
+describe('mock body goal', () => {
+  const goal = { heightCm: 166, startWeightKg: 86, targetWeightKg: 78.5, startDate: '2026-10-19', days: 100 };
+  it('has none until saved, keeps exactly one and replaces it', async () => {
+    expect((await rejection(mockClient.getBodyGoal())).status).toBe(404);
+    await mockClient.saveBodyGoal(goal);
+    await mockClient.saveBodyGoal({ ...goal, targetWeightKg: 80, days: 120 });
+    expect(await mockClient.getBodyGoal()).toEqual({ ...goal, targetWeightKg: 80, days: 120 });
+  });
+  it('rejects bad values with field errors and stores nothing', async () => {
+    const error = await rejection(mockClient.saveBodyGoal({ heightCm: 90, startWeightKg: 86, targetWeightKg: 86, startDate: 'x', days: 5 }));
+    expect([error.status, Object.keys(error.fields ?? {}).sort()]).toEqual([422, ['days', 'heightCm', 'startDate', 'targetWeightKg']]);
+    expect((await rejection(mockClient.getBodyGoal())).status).toBe(404);
+  });
+});

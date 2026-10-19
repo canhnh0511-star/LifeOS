@@ -66,3 +66,5 @@ export interface BadgeDto { code: string; name: string; description: string; ear
 /** Set statistics for the last `days` days up to today (B-41, ADR-038). `volumeKg` is the sum of reps × weight for sets with a weight. */
 export interface WorkoutStatsDto { from: string; to: string; sessions: number; days: { date: string; sets: number }[]; exercises: { exercise: string; sets: number; reps: number; volumeKg: number }[]; }
 export interface LastWorkoutSetsDto { date: string | null; sets: WorkoutSetDto[]; }
+/** The account's one body goal: height, start and target weight over `days` days (default 100). Tracking only: no XP. */
+export interface BodyGoalDto { heightCm: number; startWeightKg: number; targetWeightKg: number; startDate: string; days: number; }

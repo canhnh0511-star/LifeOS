@@ -116,3 +116,14 @@ describe('httpClient workout set log (B-34)', () => {
     expect(calls[5]).toEqual(['/workout-stats?days=30', 'GET', undefined]);
   });
 });
+
+describe('httpClient body goal', () => {
+  it('reads and saves the goal at /body-goal', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(json(200, { heightCm: 166, startWeightKg: 86, targetWeightKg: 78.5, startDate: '2026-10-19', days: 100 })));
+    vi.stubGlobal('fetch', fetchMock);
+    await httpClient.getBodyGoal();
+    await httpClient.saveBodyGoal({ heightCm: 166, startWeightKg: 86, targetWeightKg: 78.5, startDate: '2026-10-19', days: 100 });
+    expect(fetchMock.mock.calls.map(([url, init]) => [String(url), init?.method ?? 'GET'])).toEqual([['/api/v1/body-goal', 'GET'], ['/api/v1/body-goal', 'PUT']]);
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toMatchObject({ targetWeightKg: 78.5, days: 100 });
+  });
+});

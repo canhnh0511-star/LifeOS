@@ -1,9 +1,10 @@
 import type { LifeOsApi } from './client';
-import type { TrainingPlanDto, WorkoutSetDto, WorkoutSetInput, AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, DailyRewardDto, ItemDto, MetricDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday, HabitObjectiveDto, ObjectiveInput, QuestObjectiveDto } from './types';
+import type { BodyGoalDto, TrainingPlanDto, WorkoutSetDto, WorkoutSetInput, AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, DailyRewardDto, ItemDto, MetricDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday, HabitObjectiveDto, ObjectiveInput, QuestObjectiveDto } from './types';
 import { ApiError, ErrorCode } from './errors';
 import { ALL_CATEGORIES } from '../domain/insights';
 import { DAILY_TIERS, hasChests, rewardThreshold } from '../domain/dailyRewards';
 import { ITEM_CATALOG, POOL } from '../domain/items';
+import { validateGoalInput } from '../domain/bodyGoal';
 import { ACHIEVEMENT_CATALOG, STREAK_TARGET, balancedAchieved, comebackAchieved, spreadAcrossAreas } from '../domain/achievements';
 import { BOSS_CATALOG, CHAPTERS } from '../domain/bosses';
 import { STANDARD_DAYS, STANDARD_PLAN_DESCRIPTION, STANDARD_PLAN_MINUTES, STANDARD_PLAN_TITLE, STANDARD_PLAN_XP, standardPlanTemplate } from '../domain/standardPlan';
@@ -26,7 +27,7 @@ type BossState = { bossId: string; status: 'AVAILABLE' | 'DEFEATED'; cycle: numb
 type AchievementState = { code: AchievementCode; status: 'EARNED' | 'LOCKED'; cycle: number; earnedDate: string | null; earnedAt: string | null };
 type StoredJourney = Omit<JourneyDto, 'chapters'>;
 type Lifecycle = { goals: Record<string, LifecycleEvent[]>; habits: Record<string, LifecycleEvent[]> };
-type Db = { version: typeof DB_VERSION; goals: GoalDto[]; habits: HabitDto[]; lifecycle: Lifecycle; questStates: QuestState[]; xpTransactions: XpEvent[]; bossStates: BossState[]; achievementStates: AchievementState[]; journey: StoredJourney; scheduleHistory?: Record<string, { from: string; weekdays: Weekday[] }[]>; rewardSnapshots?: Record<string, number>; items?: { code: string; sourceKey: string; equipped: boolean }[]; metrics?: MetricDto[]; workoutSets?: StoredSet[] };
+type Db = { version: typeof DB_VERSION; goals: GoalDto[]; habits: HabitDto[]; lifecycle: Lifecycle; questStates: QuestState[]; xpTransactions: XpEvent[]; bossStates: BossState[]; achievementStates: AchievementState[]; journey: StoredJourney; scheduleHistory?: Record<string, { from: string; weekdays: Weekday[] }[]>; rewardSnapshots?: Record<string, number>; items?: { code: string; sourceKey: string; equipped: boolean }[]; metrics?: MetricDto[]; workoutSets?: StoredSet[]; bodyGoal?: BodyGoalDto };
 
 const id = () => typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `mock-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const now = () => new Date().toISOString();
@@ -555,6 +556,13 @@ export const mockClient:LifeOsApi={
     });
     if(Object.keys(errors).length)fail(errors);
     db.goals.push(...goals);db.habits.push(...habits);save(db);return {goals,habits};
+  },
+  async getBodyGoal(){await delay();const g=load().bodyGoal;if(!g)throw notFound('mục tiêu cơ thể');return g;},
+  async saveBodyGoal(input){
+    await delay();const fields=validateGoalInput(input);
+    if(typeof input.startDate!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(input.startDate)||Number.isNaN(Date.parse(input.startDate)))fields.startDate='Ngày bắt đầu có dạng YYYY-MM-DD.';
+    if(Object.keys(fields).length)throw new ApiError(422,ErrorCode.validation,Object.values(fields)[0]!,fields);
+    const db=load();db.bodyGoal={heightCm:input.heightCm,startWeightKg:input.startWeightKg,targetWeightKg:input.targetWeightKg,startDate:input.startDate,days:input.days};save(db);return db.bodyGoal;
   },
   async getPlan():Promise<TrainingPlanDto>{
     await delay();return planOf(load());

@@ -222,6 +222,22 @@ paths:
         '200': {description: Logged sets after the change, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/WorkoutSet'}}}}}
         '404': {$ref: '#/components/responses/NotFound'}
         '422': {$ref: '#/components/responses/ValidationError'}
+  /body-goal:
+    get:
+      tags: [Body]
+      operationId: getBodyGoal
+      description: The one body goal of the signed-in account (height, start and target weight over a number of days). 404 NOT_FOUND until one is saved.
+      responses:
+        '200': {description: The goal, content: {application/json: {schema: {$ref: '#/components/schemas/BodyGoal'}}}}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      tags: [Body]
+      operationId: saveBodyGoal
+      description: Saves the goal, replacing the previous one. Tracking only - no XP, no ledger event. 422 VALIDATION_FAILED with `fields` heightCm, startWeightKg, targetWeightKg, startDate or days.
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/BodyGoal'}}}}
+      responses:
+        '200': {description: The saved goal, content: {application/json: {schema: {$ref: '#/components/schemas/BodyGoal'}}}}
+        '422': {$ref: '#/components/responses/ValidationError'}
   /badges:
     get:
       tags: [Quests]
@@ -480,6 +496,15 @@ components:
                     xpReward: {type: integer, minimum: 0, maximum: 100}
                     weekdays: {type: array, uniqueItems: true, minItems: 1, items: {$ref: '#/components/schemas/Weekday'}}
                     objectives: {type: array, maxItems: 20, items: {$ref: '#/components/schemas/ObjectiveInput'}}
+    BodyGoal:
+      type: object
+      required: [heightCm, startWeightKg, targetWeightKg, startDate, days]
+      properties:
+        heightCm: {type: integer, minimum: 100, maximum: 250}
+        startWeightKg: {type: number, minimum: 20, maximum: 300}
+        targetWeightKg: {type: number, minimum: 20, maximum: 300, description: Must differ from startWeightKg.}
+        startDate: {type: string, format: date}
+        days: {type: integer, minimum: 14, maximum: 366, description: 'Length of the goal; the app suggests 100.'}
     ImportedHabitPlan:
       type: object
       required: [goals, habits]
