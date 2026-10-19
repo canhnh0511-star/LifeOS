@@ -304,3 +304,25 @@ describe('Today as the daily gate (designed screen)', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Cổng hôm nay');
   });
 });
+
+describe('body goal strip on Today', () => {
+  const goal = { heightCm: 166, startWeightKg: 86, targetWeightKg: 78.5, startDate: '2026-10-01', days: 100 };
+  const weights = [{ id: 'w', name: 'Cân nặng', unit: 'kg', builtin: true, entries: [{ date: '2026-10-01', value: 86 }, { date: '2026-10-16', value: 84.5 }] }];
+  it('shows day N of the goal, the weights and the pace, and opens the Body tab', async () => {
+    const goTo = vi.fn();
+    render(<TodayPage {...props} goTo={goTo} onToggleQuest={() => {}} dashboard={dashboard([quest('a', 'PENDING', 'Vai')])} bodyGoal={goal} metrics={weights}/>);
+    const strip = screen.getByRole('button', { name: /Mục tiêu cơ thể: ngày 16 trên 100, 84,5 → 78,5 kg, Đúng tiến độ/ });
+    expect(strip.textContent).toContain('Ngày 16/100');
+    await userEvent.click(strip);
+    expect(goTo).toHaveBeenCalledWith('body');
+  });
+  it('invites you to set a goal when there is none, and shows nothing while it is unknown', async () => {
+    const goTo = vi.fn();
+    const { unmount } = render(<TodayPage {...props} goTo={goTo} onToggleQuest={() => {}} dashboard={dashboard([quest('a', 'PENDING', 'Vai')])} bodyGoal={null}/>);
+    await userEvent.click(screen.getByRole('button', { name: 'Đặt mục tiêu cơ thể 100 ngày' }));
+    expect(goTo).toHaveBeenCalledWith('body');
+    unmount();
+    render(<TodayPage {...props} onToggleQuest={() => {}} dashboard={dashboard([quest('a', 'PENDING', 'Vai')])}/>);
+    expect(screen.queryByText(/mục tiêu cơ thể/i)).toBeNull();
+  });
+});

@@ -1,8 +1,10 @@
 import { Fragment, useEffect, useState } from 'react';
-import { BookOpen, CalendarDays, Check, ChevronLeft, ChevronRight, Circle, ClipboardList, Dumbbell, Clock3, Timer, Flame, Lock, PartyPopper, Plus, Zap } from 'lucide-react';
-import type { AnalyticsDto, WorkoutSetDto, HabitDto, DailyDashboardDto, DailyRewardDto, QuestDto, QuestObjectiveDto } from '../api/types';
+import { BookOpen, CalendarDays, Check, ChevronLeft, ChevronRight, Circle, ClipboardList, Dumbbell, Clock3, Timer, Flame, Lock, PartyPopper, Plus, Target, Zap } from 'lucide-react';
+import type { BodyGoalDto, MetricDto, AnalyticsDto, WorkoutSetDto, HabitDto, DailyDashboardDto, DailyRewardDto, QuestDto, QuestObjectiveDto } from '../api/types';
 import { stageForLevel } from '../domain/characterStage';
 import { xpToNextRank } from '../domain/ranks';
+import { goalProgress, paceLabel } from '../domain/bodyGoal';
+import { formatValue } from '../domain/measurements';
 import { DungeonFloors, TodayMission } from '../components/TodayMission';
 import { RankPortrait } from '../components/RankPortrait';
 import { ChestArt } from '../components/ChestArt';
@@ -28,7 +30,19 @@ interface Props {
   dashboard: DailyDashboardDto | null;
   selectedDate: string; today: string; busyId: string | null;
   onSelectDate: (update: (date: string) => string) => void;
-  onToggleQuest: (quest: QuestDto) => void; onSetObjective: (quest: QuestDto, objective: QuestObjectiveDto, value: number) => void; onNewHabit: () => void; onImportPlan?: () => void; setLog?: SetLogApi; loadDay?: (date: string) => Promise<DailyDashboardDto>; habits?: HabitDto[]; weekly?: AnalyticsDto | null; goTo: (tab: Tab) => void;
+  onToggleQuest: (quest: QuestDto) => void; onSetObjective: (quest: QuestDto, objective: QuestObjectiveDto, value: number) => void; onNewHabit: () => void; onImportPlan?: () => void; setLog?: SetLogApi; loadDay?: (date: string) => Promise<DailyDashboardDto>; habits?: HabitDto[]; weekly?: AnalyticsDto | null; goTo: (tab: Tab) => void; /** the body goal (null: none yet, undefined: unknown) with the measurements its progress comes from */ bodyGoal?: BodyGoalDto | null; metrics?: MetricDto[];
+}
+
+/** One line of the body goal on Today: day N of the goal, the weights and the pace; a nudge to set a goal when there is none. */
+function GoalStrip({ goal, metrics, today, onOpen }: { goal: BodyGoalDto | null; metrics: MetricDto[]; today: string; onOpen: () => void }) {
+  if (!goal) return <button type="button" className="goal-strip is-empty" onClick={onOpen}><Target size={16} aria-hidden="true"/> Đặt mục tiêu cơ thể 100 ngày</button>;
+  const p = goalProgress(goal, metrics, today);
+  const weights = `${p.currentKg === null ? formatValue(goal.startWeightKg) : formatValue(p.currentKg)} → ${formatValue(goal.targetWeightKg)} kg`;
+  return <button type="button" className="goal-strip" onClick={onOpen} aria-label={`Mục tiêu cơ thể: ${p.day === 0 ? 'chưa bắt đầu' : `ngày ${p.day} trên ${goal.days}`}, ${weights}, ${paceLabel[p.pace]}. Mở số đo`}>
+    <span className="goal-strip-top"><span><Target size={15} aria-hidden="true"/> {p.finished ? 'Hết thời gian' : p.day === 0 ? 'Sắp bắt đầu' : `Ngày ${p.day}/${goal.days}`}</span><strong>{weights}</strong></span>
+    <ProgressBar value={Math.round(p.fraction * 100)} variant="green" size="slim"/>
+    <small className={`goal-pace is-${p.pace.toLowerCase().replace('_', '-')}`}>{paceLabel[p.pace]}</small>
+  </button>;
 }
 
 const Difficulty = ({ xp }: { xp: number }) => { const d = difficultyForXp(xp); return <span className={`diff-chip diff-${d.toLowerCase()}`} title="Độ khó chỉ để hiển thị, suy từ XP">{difficultyLabel[d]}</span>; };
@@ -37,7 +51,7 @@ const Difficulty = ({ xp }: { xp: number }) => { const d = difficultyForXp(xp); 
  * Today answers one question: what do I do next? A one-line summary, the next quest with a single button, then the full list.
  * Level, stats, balance and the campaign live in their own tabs.
  */
-export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate, onToggleQuest, onSetObjective, onNewHabit, onImportPlan, setLog, loadDay, habits, weekly, goTo }: Props) {
+export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate, onToggleQuest, onSetObjective, onNewHabit, onImportPlan, setLog, loadDay, habits, weekly, goTo, bodyGoal, metrics = [] }: Props) {
   const [showWeek, setShowWeek] = useState(false);
   const [opening, setOpening] = useState<DailyRewardDto | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -98,6 +112,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
         <span className="hunter-row"><span>{number(cur?.totalXp || 0)} / {number(cur?.nextLevelXp || 0)} XP</span>{toNextRank && <span>Còn {number(toNextRank.xp)} XP lên Hạng {toNextRank.rank}</span>}</span>
       </span>
     </button>
+    {bodyGoal !== undefined && <GoalStrip goal={bodyGoal} metrics={metrics} today={today} onOpen={() => goTo('body')}/>}
     <div className="today-simple">
       <div className="today-actions" role="group" aria-label="Lối tắt">
         {loadDay && <button type="button" className="btn btn-secondary" onClick={() => setShowWeek(true)}><CalendarDays size={16}/> Lịch tuần</button>}
