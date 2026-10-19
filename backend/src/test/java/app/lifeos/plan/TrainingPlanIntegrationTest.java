@@ -55,7 +55,7 @@ class TrainingPlanIntegrationTest {
         TestBrowser b = user();
         HttpResponse<String> r = b.post(PATH, start());
         assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
-        assertThat(r.body()).contains("\"started\":true", "Buổi A", "Buổi B", "Buổi C", "\"target\":36", "\"unit\":\"giây\"", "\"step\":40");
+        assertThat(r.body()).contains("\"started\":true", "Buổi A", "Buổi B", "Buổi C", "\"target\":36", "\"unit\":\"giây\"", "\"step\":30");
         assertThat(r.body()).doesNotContain("\"habitId\":null");
         assertThat(b.get("/api/v1/goals").body()).contains("Tăng cơ · giảm mỡ toàn thân");
         assertThat(b.get("/api/v1/habits").body().split("\"goalId\"", -1)).hasSize(4);

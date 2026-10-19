@@ -10,9 +10,13 @@ import java.util.List;
  */
 final class StandardPlan {
     static final String TITLE = "Gym — Tăng cơ · giảm mỡ toàn thân (3 buổi)";
-    static final String DESCRIPTION = "Toàn thân 3 buổi (thứ 2, 4, 6), mỗi buổi 6 bài 3 set × 10–12 rep, nghỉ 60–90 giây, dừng khi còn đủ sức làm thêm 2 rep. "
-        + "Thứ 3 và thứ 7: cardio nhẹ 30–40 phút (đi bộ dốc, đạp xe). Chủ nhật nghỉ. Ăn thấp hơn mức duy trì khoảng 500 kcal, đủ đạm. "
-        + "Khi làm đủ 3 × 12 thoải mái thì tăng tạ 2,5–5%.";
+    static final String DESCRIPTION =
+        "Dành cho người mới, mục tiêu giảm mỡ và săn chắc trong 100 ngày (14 tuần). "
+        + "Toàn thân 3 buổi (thứ 2, 4, 6), mỗi buổi 6 bài 3 set, nghỉ 60–90 giây, dừng khi còn dư 2–3 rep. "
+        + "Chọn máy và tạ đơn, không nhảy và không chống đẩy sàn để nhẹ khớp gối, cổ chân. "
+        + "Tuần 1–4 làm quen với tạ nhẹ, tuần 5–10 tăng tạ 2,5–5% khi đủ số rep ở mọi set, tuần 11–14 giảm nghỉ còn 45–60 giây. "
+        + "Thứ 3 và thứ 7: đi bộ nhanh hoặc dốc nhẹ 30–40 phút; thứ 5 và chủ nhật nghỉ. "
+        + "Ăn thấp hơn mức duy trì khoảng 400–500 kcal, đạm 1,6–2 g/kg cân nặng mục tiêu, ngủ 7–8 giờ; giảm hợp lý 0,5–0,8 kg mỗi tuần.";
     static final int TARGET_MINUTES = 55;
     static final int XP_REWARD = 50;
 
@@ -21,13 +25,13 @@ final class StandardPlan {
     static final List<Day> DAYS = List.of(
         new Day("Buổi A — Toàn thân (đẩy, kéo, chân)", List.of(1), List.of(
             reps("Leg Press", 3, 12), reps("Machine Chest Press", 3, 10), reps("Lat Pulldown", 3, 10),
-            reps("Dumbbell Shoulder Press", 3, 10), reps("Glute Bridge", 3, 12), hold("Plank", 3, 40))),
+            reps("Dumbbell Shoulder Press", 3, 10), reps("Glute Bridge", 3, 12), hold("Plank", 3, 30))),
         new Day("Buổi B — Toàn thân (tạ đơn)", List.of(3), List.of(
-            reps("Goblet Squat", 3, 10), reps("Push-up", 3, 10), reps("One-arm Dumbbell Row", 3, 10),
+            reps("Goblet Squat", 3, 10), reps("Machine Chest Press", 3, 12), reps("One-arm Dumbbell Row", 3, 10),
             reps("Dumbbell Romanian Deadlift", 3, 10), reps("Dumbbell Lateral Raise", 3, 12), reps("Bird Dog", 3, 10))),
-        new Day("Buổi C — Toàn thân (kết hợp)", List.of(5), List.of(
-            reps("Leg Press", 3, 12), reps("Push-up", 3, 10), reps("One-arm Dumbbell Row", 3, 10),
-            reps("Dumbbell Shoulder Press", 3, 10), reps("Glute Bridge", 3, 12), hold("Plank", 3, 40))));
+        new Day("Buổi C — Toàn thân (chân, lưng, vai)", List.of(5), List.of(
+            reps("Leg Press", 3, 12), reps("Lat Pulldown", 3, 12), reps("Dumbbell Shoulder Press", 3, 10),
+            reps("Dumbbell Romanian Deadlift", 3, 10), reps("Glute Bridge", 3, 15), hold("Plank", 3, 30))));
 
     private StandardPlan() {}
 

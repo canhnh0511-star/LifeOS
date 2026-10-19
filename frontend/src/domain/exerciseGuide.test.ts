@@ -7,7 +7,7 @@ const week1Ids = [...new Set(STANDARD_DAYS.flatMap(d => d.lines.map(l => exercis
 
 describe('exercise guides (beginner teaching content)', () => {
   it('covers every exercise of the standard plan with setup, 3-5 steps, breathing and 2-4 common mistakes', () => {
-    expect(week1Ids.length).toBe(12);
+    expect(week1Ids.length).toBe(11);
     for (const id of week1Ids) {
       const g = guideFor(id);
       expect(g, id).toBeTruthy();

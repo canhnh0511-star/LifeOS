@@ -39,7 +39,7 @@ describe('PlanWizard: two steps from awakening to the plan', () => {
     expect(first.getAttribute('aria-expanded')).toBe('true');
     expect(first.textContent).toContain('Thứ Hai'); expect(first.textContent).toContain('6 bài');
     expect(screen.getByText(viName('Leg Press'))).toBeTruthy();
-    expect(screen.getAllByText('3 × 12')).toHaveLength(2); expect(screen.getByText('3 × 40 giây')).toBeTruthy();   // Leg Press and Glute Bridge
+    expect(screen.getAllByText('3 × 12')).toHaveLength(2); expect(screen.getByText('3 × 30 giây')).toBeTruthy();   // Leg Press and Glute Bridge
     expect(screen.getByRole('button', { name: /Buổi B/ }).getAttribute('aria-expanded')).toBe('false');
     await user.click(screen.getByRole('button', { name: /Buổi B/ }));
     expect(screen.getByText(viName('Goblet Squat'))).toBeTruthy();
