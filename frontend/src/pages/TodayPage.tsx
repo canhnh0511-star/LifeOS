@@ -19,6 +19,8 @@ import { exerciseByName, isLibraryLine, muscleLabel } from '../domain/exerciseLi
 import { hasGymHabit, nextGymSession } from '../domain/gymSession';
 import { WeekPlan } from '../components/WeekPlan';
 import { QuestSheet } from '../components/QuestSheet';
+import { SceneArt } from '../components/SceneArt';
+import { sceneForQuest } from '../domain/scene';
 import type { SetLogApi } from '../components/SetLog';
 import { metCount } from '../components/ObjectiveList';
 import { EmptyState, IconBubble, ProgressBar } from '../components/primitives';
@@ -120,7 +122,8 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
       </div>
       {noPlan && gymNudge}
       {next && nextIsGym && <><TodayMission quest={next} sets={daySets} reward={rewardLabel} running={isRunning(loadTimer(next.habitId, selectedDate))} startLabel={loggedSets > 0 ? `Tiếp tục buổi tập · đã ghi ${loggedSets} set` : 'Bắt đầu buổi tập'} onStart={() => { setAutoTrain(true); setDetailId(next.habitId); }}/><DungeonFloors quest={next} sets={daySets} onOpen={() => { setAutoTrain(true); setDetailId(next.habitId); }}/></>}
-      {next && NextIcon && !nextIsGym && <article className="next-up" aria-label="Việc tiếp theo">
+      {next && NextIcon && !nextIsGym && <article className="next-up has-scene" aria-label="Việc tiếp theo">
+        <SceneArt scene={sceneForQuest(next)}/>
         <div className="next-up-label">VIỆC CHÍNH HÔM NAY <Difficulty xp={next.xpReward}/></div>
         <div className="next-up-main"><IconBubble icon={NextIcon} tone={categoryColors[next.category]}/><div><h2>{next.title}</h2><small><Clock3 size={13}/> {next.targetMinutes} phút · {categoryLabel(next.category)}{next.objectives.length > 0 && ` · ${metCount(next.objectives)}/${next.objectives.length} việc`}</small></div><span className="next-up-xp"><Zap size={13}/> +{next.xpReward} XP</span></div>
         {next.objectives.length > 0 && <ProgressBar value={pct(metCount(next.objectives), next.objectives.length)} variant="green" size="slim"/>}
@@ -146,11 +149,13 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
             const Icon = categoryIcons[q.category]; const completed = q.status === 'COMPLETED';
             if (q.objectives.length > 0) {
               // A quest with a checklist is a card, not one big button: its lines are the controls.
-              return <div key={q.habitId} data-status={completed ? 'done' : metCount(q.objectives) > 0 ? 'doing' : 'todo'} className={`quest-card ${completed ? 'is-done' : ''} ${next?.habitId === q.habitId ? 'is-next' : ''}`}>
+              return <div key={q.habitId} data-status={completed ? 'done' : metCount(q.objectives) > 0 ? 'doing' : 'todo'} className={`quest-card has-scene ${completed ? 'is-done' : ''} ${next?.habitId === q.habitId ? 'is-next' : ''}`}>
+                <SceneArt scene={sceneForQuest(q)}/>
                 <div className="quest-card-head"><IconBubble icon={Icon} tone={categoryColors[q.category]}/><span className="quest-body"><strong>{q.title}</strong><small><Clock3 size={13}/> {q.targetMinutes} phút <i/> {categoryLabel(q.category)} <i/> {metCount(q.objectives)}/{q.objectives.length} việc <Difficulty xp={q.xpReward}/>{next?.habitId === q.habitId && <b className="main-tag">Trọng tâm</b>}</small></span><span className={`xp-tag ${completed ? 'earned' : ''}`}>{completed ? <Check size={13}/> : <Zap size={13}/>} {completed ? 'Xong' : `+${q.xpReward} XP`}</span><button type="button" className="quest-detail-btn" aria-label={`Chi tiết ${q.title}`} onClick={() => setDetailId(q.habitId)}><ClipboardList size={17}/></button></div>
               </div>;
             }
-            return <div key={q.habitId} className="quest-row-wrap"><button className={`quest-row ${completed ? 'is-done' : ''} ${next?.habitId === q.habitId ? 'is-next' : ''}`} aria-label={`${completed ? 'Hoàn tác' : 'Hoàn thành'} nhiệm vụ ${q.title}, ${q.xpReward} XP`} aria-pressed={completed} disabled={busyId === q.habitId} onClick={() => onToggleQuest(q)}>
+            return <div key={q.habitId} className="quest-row-wrap"><button className={`quest-row has-scene ${completed ? 'is-done' : ''} ${next?.habitId === q.habitId ? 'is-next' : ''}`} aria-label={`${completed ? 'Hoàn tác' : 'Hoàn thành'} nhiệm vụ ${q.title}, ${q.xpReward} XP`} aria-pressed={completed} disabled={busyId === q.habitId} onClick={() => onToggleQuest(q)}>
+              <SceneArt scene={sceneForQuest(q)}/>
               <span className={`quest-check ${completed ? 'checked' : ''}`}>{completed ? <Check size={17}/> : <Circle size={19}/>}</span>
               <IconBubble icon={Icon} tone={categoryColors[q.category]}/>
               <span className="quest-body"><strong>{q.title}</strong><small><Clock3 size={13}/> {q.targetMinutes} phút <i/> {categoryLabel(q.category)} <Difficulty xp={q.xpReward}/>{next?.habitId === q.habitId && <b className="main-tag">Trọng tâm</b>}</small></span>

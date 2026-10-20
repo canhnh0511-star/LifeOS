@@ -4,6 +4,7 @@ import { plannedLines } from '../domain/gymSession';
 import { infoFor } from '../domain/exerciseInfo';
 import type { Exercise } from '../domain/exerciseLibrary';
 import { SysPanel } from './SysPanel';
+import { SceneArt } from './SceneArt';
 
 const mineOf = (sets: readonly WorkoutSetDto[], e: Exercise) => sets.filter(s => s.exercise.toLowerCase() === e.name.toLowerCase());
 const isDone = (sets: readonly WorkoutSetDto[], e: Exercise) => mineOf(sets, e).length >= e.sets;
@@ -27,7 +28,8 @@ export function DungeonFloors({ quest, sets, onOpen }: { quest: QuestDto; sets: 
   return <section className="dungeon" aria-label="Hầm ngục hôm nay">
     <header><h3>HẦM NGỤC HÔM NAY</h3><span>{floors.length} tầng</span></header>
     <ol>{floors.map((e, i) => <li key={e.id} className={isDone(sets, e) ? 'is-done' : i === current ? 'is-current' : ''}>
-      <button type="button" onClick={onOpen} aria-label={`Tầng ${i + 1}: ${e.nameVi ?? e.name}${isDone(sets, e) ? ', đã xong' : ''}`}>
+      <button type="button" className="has-scene" onClick={onOpen} aria-label={`Tầng ${i + 1}: ${e.nameVi ?? e.name}${isDone(sets, e) ? ', đã xong' : ''}`}>
+        <SceneArt scene={e.group}/>
         <span className="dungeon-n">{i + 1}</span>
         <span className="dungeon-body"><strong>{e.nameVi ?? e.name}</strong><small>{e.sets} set · {unitText(e)} · {infoFor(e).equipment}</small></span>
         {i === current ? <span className="dungeon-next">Tiếp theo</span> : <ChevronRight size={16} aria-hidden="true"/>}

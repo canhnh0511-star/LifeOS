@@ -585,3 +585,32 @@ h1,h2,h3,.hunter-level,.section-eyebrow,.eyebrow,.rank-card-state{font-family:va
 .body-goal>.btn{min-height:48px;width:100%}
 @media(max-width:340px){.body-goal-fields{grid-template-columns:minmax(0,1fr)}}
 .body-goal-plan{margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:13px;line-height:1.45}.body-goal-plan p{margin:0 0 8px}.body-goal-plan strong{color:var(--text-strong)}.body-goal-plan.is-mismatch{border-color:#7a6a3c;background:rgba(231,196,106,.06)}.body-goal-plan .btn{min-height:44px;width:100%}
+
+/* Anime scene backdrops on Today cards (SceneArt): the picture fills the card; a left-to-right shade keeps the title readable. */
+.has-scene{position:relative;isolation:isolate;overflow:hidden;background:#141a22}
+.has-scene>*:not(.scene-art){position:relative;z-index:1}
+.scene-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:right center;z-index:0;pointer-events:none}
+.scene-art-fallback{background:linear-gradient(135deg,#243247,#3a2f4a)}
+.has-scene::after{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(90deg,rgba(10,13,19,.86) 0%,rgba(10,13,19,.62) 52%,rgba(10,13,19,.05) 100%)}
+.has-scene.is-done .scene-art,.dungeon li.is-done .scene-art{filter:grayscale(.8) brightness(.65)}
+.has-scene strong,.has-scene small{text-shadow:0 1px 6px rgba(0,0,0,.85)}
+.quest-row.has-scene,.quest-card.has-scene{min-height:84px;border-color:rgba(255,255,255,.14)}
+.next-up.has-scene{min-height:150px}
+.dungeon li{margin-bottom:8px;border:1px solid rgba(255,255,255,.12);border-radius:12px;overflow:hidden}.dungeon li:last-child{border-bottom:1px solid rgba(255,255,255,.12)}
+.dungeon li button.has-scene{min-height:76px;padding:10px 12px}
+.dungeon li.is-current{border-color:rgba(198,250,85,.55);box-shadow:0 0 18px rgba(198,250,85,.18)}
+/* Cards are wide and short: keep each picture's focal point (the face) in view. */
+.scene-art[data-scene=CHEST]{object-position:50% 32%}
+.scene-art[data-scene=BACK]{object-position:50% 23%}
+.scene-art[data-scene=LEGS]{object-position:50% 35%}
+.scene-art[data-scene=SHOULDERS]{object-position:50% 14%}
+.scene-art[data-scene=ARMS]{object-position:50% 15%}
+.scene-art[data-scene=CORE]{object-position:50% 29%}
+.scene-art[data-scene=CAREER]{object-position:50% 33%}
+.scene-art[data-scene=CREATIVITY]{object-position:50% 29%}
+.scene-art[data-scene=HEALTH]{object-position:50% 0%}
+.scene-art[data-scene=KNOWLEDGE]{object-position:50% 68%}
+.scene-art[data-scene=MINDFULNESS]{object-position:50% 50%}
+.has-scene small{color:#e6edf7}
+.has-scene .xp-tag,.has-scene .quest-detail-btn,.has-scene .next-up-xp{background:rgba(10,14,20,.82);backdrop-filter:blur(4px)}
+.next-up.has-scene .progress,.next-up.has-scene [role=progressbar]{background:rgba(255,255,255,.22)}
