@@ -59,6 +59,27 @@ export const STANDARD_DAYS_BY_VARIANT: Record<PlanVariant, readonly Day[]> = {
   ]
 };
 
+/**
+ * The light days between the gym sessions (ADR-045; backend `StandardPlan.RECOVERY_*`): a brisk walk on Tuesday and Saturday, stretching on Thursday.
+ * Sunday has no task, it is a real rest day. These are plain checklists (not library exercises), so they have no set-by-set screen.
+ */
+export const WALK_XP = 20, STRETCH_XP = 10, STRETCH_TITLE = 'Giãn cơ phục hồi';
+type Recovery = Day & { targetMinutes: number; xpReward: number };
+const mins = (title: string, minutes: number): TrainingPlanLineDto => ({ title, target: minutes, unit: 'phút', step: 5 });
+const recovery = (walkTitle: string, walkMinutes: number, mainLine: string, mainMinutes: number): readonly Recovery[] => [
+  { title: walkTitle, weekdays: [2, 6], targetMinutes: walkMinutes, xpReward: WALK_XP, lines: [mins('Khởi động: đi bộ chậm', 5), mins(mainLine, mainMinutes), mins('Thả lỏng: đi bộ chậm', 5)] },
+  { title: STRETCH_TITLE, weekdays: [4], targetMinutes: 10, xpReward: STRETCH_XP, lines: ['Giãn đùi trước', 'Giãn đùi sau', 'Mở hông', 'Giãn ngực và vai', 'Giãn lưng dưới'].map(t => hold(t, 2, 30)) }
+];
+export const RECOVERY_DAYS_BY_VARIANT: Record<PlanVariant, readonly Recovery[]> = {
+  GENTLE: recovery('Đi bộ nhanh', 35, 'Đi bộ nhanh hoặc dốc nhẹ', 25),
+  STANDARD: recovery('Đi bộ nhanh', 35, 'Đi bộ nhanh hoặc đạp xe', 25),
+  BUILD: recovery('Đi bộ nhẹ', 25, 'Đi bộ nhẹ', 15)
+};
+const RECOVERY_TITLES = new Set(VARIANTS.flatMap(v => RECOVERY_DAYS_BY_VARIANT[v].map(d => d.title.toLowerCase())));
+/** Whether a habit title is one of the recovery sessions (how an account's plan is told to already have them). */
+export const isRecoveryTitle = (title: string) => RECOVERY_TITLES.has(title.trim().toLowerCase());
+export const hasRecoveryHabit = (habits: readonly { title: string; status: string }[]) => habits.some(h => h.status === 'ACTIVE' && isRecoveryTitle(h.title));
+
 /** The version a body goal calls for: gaining weight is BUILD, losing weight is GENTLE from a BMI of 30 and STANDARD below it; no goal is GENTLE. */
 export function variantFor(goal: Pick<BodyGoalDto, 'heightCm' | 'startWeightKg' | 'targetWeightKg'> | null | undefined): PlanVariant {
   if (!goal) return 'GENTLE';
@@ -71,6 +92,8 @@ export const variantOfDescription = (description: string): PlanVariant | null =>
 
 /** The plan before it is started: what `GET /plan` returns for an account without one. */
 export function standardPlanTemplate(variant: PlanVariant = 'GENTLE'): TrainingPlanDto {
-  const sessions: TrainingPlanSessionDto[] = STANDARD_DAYS_BY_VARIANT[variant].map(d => ({ habitId: null, title: d.title, targetMinutes: STANDARD_PLAN_MINUTES, xpReward: STANDARD_PLAN_XP, weekdays: [...d.weekdays], objectives: d.lines.map(l => ({ ...l })) }));
+  const gym: TrainingPlanSessionDto[] = STANDARD_DAYS_BY_VARIANT[variant].map(d => ({ habitId: null, title: d.title, targetMinutes: STANDARD_PLAN_MINUTES, xpReward: STANDARD_PLAN_XP, weekdays: [...d.weekdays], objectives: d.lines.map(l => ({ ...l })) }));
+  const light: TrainingPlanSessionDto[] = RECOVERY_DAYS_BY_VARIANT[variant].map(d => ({ habitId: null, title: d.title, targetMinutes: d.targetMinutes, xpReward: d.xpReward, weekdays: [...d.weekdays], objectives: d.lines.map(l => ({ ...l })) }));
+  const sessions = [...gym, ...light].sort((a, b) => a.weekdays[0]! - b.weekdays[0]! || a.title.localeCompare(b.title));
   return { started: false, goalId: null, title: STANDARD_PLAN_TITLE, description: STANDARD_DESCRIPTION[variant], sessions, variant, suggestedVariant: variant };
 }

@@ -7,7 +7,7 @@ import { ITEM_CATALOG, POOL } from '../domain/items';
 import { validateGoalInput } from '../domain/bodyGoal';
 import { ACHIEVEMENT_CATALOG, STREAK_TARGET, balancedAchieved, comebackAchieved, spreadAcrossAreas } from '../domain/achievements';
 import { BOSS_CATALOG, CHAPTERS } from '../domain/bosses';
-import { STANDARD_DAYS_BY_VARIANT, STANDARD_DESCRIPTION, STANDARD_PLAN_MINUTES, STANDARD_PLAN_TITLE, STANDARD_PLAN_XP, standardPlanTemplate, variantFor, variantOfDescription } from '../domain/standardPlan';
+import { RECOVERY_DAYS_BY_VARIANT, STANDARD_DAYS_BY_VARIANT, STANDARD_DESCRIPTION, STANDARD_PLAN_MINUTES, STANDARD_PLAN_TITLE, STANDARD_PLAN_XP, standardPlanTemplate, variantFor, variantOfDescription } from '../domain/standardPlan';
 import { categoryLabel, diffDays, isScheduled, levelProgress, longestStreakForHabit, moveDate, streakForHabit, todayInTimezone } from '../domain/rules';
 
 const DB_KEY = 'life-os.mock.v1';
@@ -467,7 +467,7 @@ async function mutateBoss(target:string,defeat:boolean):Promise<BossMutationDto>
 const findPlanGoal=(db:Db)=>db.goals.find(g=>g.status==='ACTIVE'&&g.title.trim().toLowerCase()===STANDARD_PLAN_TITLE.toLowerCase());
 function planOf(db:Db):TrainingPlanDto{
   const suggested=variantFor(db.bodyGoal);const goal=findPlanGoal(db);if(!goal)return standardPlanTemplate(suggested);
-  const sessions=db.habits.filter(h=>h.goalId===goal.id&&h.status==='ACTIVE').sort((a,b)=>a.title.localeCompare(b.title))
+  const sessions=db.habits.filter(h=>h.goalId===goal.id&&h.status==='ACTIVE').sort((a,b)=>(a.weekdays[0]??9)-(b.weekdays[0]??9)||a.title.localeCompare(b.title))
     .map(h=>({habitId:h.id,title:h.title,targetMinutes:h.targetMinutes,xpReward:h.xpReward,weekdays:[...h.weekdays],objectives:h.objectives.map(o=>({title:o.title,target:o.target,unit:o.unit,step:o.step}))}));
   return {started:true,goalId:goal.id,title:goal.title,description:goal.description,sessions,variant:variantOfDescription(goal.description),suggestedVariant:suggested};
 }
@@ -572,7 +572,21 @@ export const mockClient:LifeOsApi={
     const db=load();if(!findPlanGoal(db)){
       const variant=variantFor(db.bodyGoal);
       await mockClient.importHabitPlan({startDate,goals:[{title:STANDARD_PLAN_TITLE,category:'HEALTH',description:STANDARD_DESCRIPTION[variant],
-        habits:STANDARD_DAYS_BY_VARIANT[variant].map(d=>({title:d.title,targetMinutes:STANDARD_PLAN_MINUTES,xpReward:STANDARD_PLAN_XP,weekdays:[...d.weekdays] as Weekday[],objectives:d.lines.map(l=>({...l}))}))}]});
+        habits:[...STANDARD_DAYS_BY_VARIANT[variant].map(d=>({title:d.title,targetMinutes:STANDARD_PLAN_MINUTES,xpReward:STANDARD_PLAN_XP,weekdays:[...d.weekdays] as Weekday[],objectives:d.lines.map(l=>({...l}))})),
+          ...RECOVERY_DAYS_BY_VARIANT[variant].map(d=>({title:d.title,targetMinutes:d.targetMinutes,xpReward:d.xpReward,weekdays:[...d.weekdays] as Weekday[],objectives:d.lines.map(l=>({...l}))}))]}]});
+    }
+    return planOf(load());
+  },
+  async addRecoveryDays(startDate:string):Promise<TrainingPlanDto>{
+    // Adds only the sessions the plan lacks, from startDate on, so no lived day changes. Without a plan there is nothing to add to.
+    if(!isLocalDate(startDate))fail({startDate:'Ngày bắt đầu phải có dạng YYYY-MM-DD.'});
+    const db0=load();const goal=findPlanGoal(db0);
+    if(!goal)throw new ApiError(409,ErrorCode.planNotStarted,'Chưa có giáo án; hãy bắt đầu giáo án trước.');
+    const variant=variantOfDescription(goal.description)??'GENTLE';
+    const have=new Set(db0.habits.filter(h=>h.goalId===goal.id&&h.status==='ACTIVE').map(h=>h.title.trim().toLowerCase()));
+    for(const d of RECOVERY_DAYS_BY_VARIANT[variant]){
+      if(have.has(d.title.toLowerCase()))continue;
+      await mockClient.createHabit({goalId:goal.id,title:d.title,targetMinutes:d.targetMinutes,xpReward:d.xpReward,weekdays:[...d.weekdays] as Weekday[],startDate,objectives:d.lines.map(l=>({...l}))});
     }
     return planOf(load());
   },

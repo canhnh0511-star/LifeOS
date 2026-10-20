@@ -1,4 +1,5 @@
 import type { GoalCategory, QuestDto } from '../api/types';
+import { isRecoveryTitle } from './standardPlan';
 import { exerciseByName, isLibraryLine, type MuscleGroup } from './exerciseLibrary';
 
 /** The anime backdrop behind a Today card: one per muscle group of the gym library, one per quest category. */
@@ -15,7 +16,8 @@ export const sceneDescription: Record<SceneKey, string> = {
 };
 
 /** The scene of a quest: its first gym exercise's muscle group when it has one, otherwise its category. */
-export function sceneForQuest(q: Pick<QuestDto, 'category' | 'objectives'>): SceneKey {
+export function sceneForQuest(q: Pick<QuestDto, 'category' | 'objectives'> & { title?: string }): SceneKey {
+  if (q.title && isRecoveryTitle(q.title) && /giãn/i.test(q.title)) return 'MINDFULNESS'; // stretching is a calm scene, not the running one
   for (const o of q.objectives) {
     if (!isLibraryLine(o)) continue;
     const e = exerciseByName(o.title);

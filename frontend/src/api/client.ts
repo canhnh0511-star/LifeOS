@@ -21,6 +21,8 @@ export interface LifeOsApi {
   saveBodyGoal(input: BodyGoalDto): Promise<BodyGoalDto>;
   /** Creates the standard plan for this account unless it already has it (idempotent). */
   startPlan(startDate: string): Promise<TrainingPlanDto>;
+  /** Adds the walks and stretching to a plan started without them, from `startDate` on (ADR-045). Idempotent. */
+  addRecoveryDays(startDate: string): Promise<TrainingPlanDto>;
   getQuests(date: string): Promise<QuestDto[]>;
   completeQuest(habitId: string, date: string): Promise<QuestMutationDto>;
   undoQuest(habitId: string, date: string): Promise<QuestMutationDto>;

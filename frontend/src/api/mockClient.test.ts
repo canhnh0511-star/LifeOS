@@ -843,15 +843,18 @@ describe('mock plan (one standard plan per account)', () => {
     const before = (await mockClient.getGoals()).length;
     const plan = await mockClient.getPlan();
     expect(plan.started).toBe(false); expect(plan.goalId).toBeNull();
-    expect(plan.sessions.map(s => s.title.slice(0, 6))).toEqual(['Buổi A', 'Buổi B', 'Buổi C']);
+    expect(plan.sessions.map(s => s.title.slice(0, 6))).toEqual(['Buổi A', 'Đi bộ ', 'Buổi B', 'Giãn c', 'Buổi C']);
     expect((await mockClient.getGoals()).length).toBe(before);
   });
-  it('starting creates the plan as an ordinary goal with three gym habits, and shows it as started', async () => {
+  it('starting creates the plan as an ordinary goal with three gym habits and the two recovery habits, and shows it as started', async () => {
     const started = await mockClient.startPlan(today());
     expect(started.started).toBe(true); expect(started.goalId).toBeTruthy();
     expect(started.sessions.every(s => s.habitId)).toBe(true);
     const habits = (await mockClient.getHabits()).filter(h => h.goalId === started.goalId);
-    expect(habits).toHaveLength(3); expect(habits.map(h => h.weekdays[0]).sort()).toEqual([1, 3, 5]);
+    expect(habits).toHaveLength(5); expect(habits.map(h => h.weekdays[0]).sort()).toEqual([1, 2, 3, 4, 5]);
+    expect(habits.find(h => h.title === 'Đi bộ nhanh')).toMatchObject({ weekdays: [2, 6], targetMinutes: 35, xpReward: 20 });
+    expect(habits.find(h => h.title === 'Giãn cơ phục hồi')).toMatchObject({ weekdays: [4], targetMinutes: 10, xpReward: 10 });
+    expect(habits.some(h => h.weekdays.includes(7))).toBe(false); // Sunday stays free
     expect((await mockClient.getPlan()).goalId).toBe(started.goalId);
   });
   it('starting twice keeps the same plan and creates nothing more', async () => {
@@ -884,7 +887,7 @@ describe('mock body goal', () => {
 });
 
 describe('mock plan versions by body goal (ADR-044)', () => {
-  const goal = (heightCm: number, startWeightKg: number, targetWeightKg: number) => ({ heightCm, startWeightKg, targetWeightKg, startDate: '2026-10-19', days: 100 });
+  const goal = (heightCm: number, startWeightKg: number, targetWeightKg: number) => ({ heightCm, startWeightKg, targetWeightKg, startDate: todayInTimezone(), days: 100 });
   it('shows the version the goal calls for before the plan is started', async () => {
     expect(await mockClient.getPlan()).toMatchObject({ started: false, variant: 'GENTLE', suggestedVariant: 'GENTLE' });
     await mockClient.saveBodyGoal(goal(175, 60, 66));
@@ -892,10 +895,53 @@ describe('mock plan versions by body goal (ADR-044)', () => {
   });
   it('starts the version for the goal, then only suggests another one when the goal changes', async () => {
     await mockClient.saveBodyGoal(goal(175, 85, 78));
-    const started = await mockClient.startPlan('2026-10-19');
+    const started = await mockClient.startPlan(todayInTimezone());
     expect(started).toMatchObject({ started: true, variant: 'STANDARD', suggestedVariant: 'STANDARD' });
     expect(JSON.stringify(started.sessions)).toContain('Push-up');
     await mockClient.saveBodyGoal(goal(175, 60, 66));
     expect(await mockClient.getPlan()).toMatchObject({ started: true, variant: 'STANDARD', suggestedVariant: 'BUILD' });
+  });
+});
+
+describe('mock recovery days (ADR-045)', () => {
+  const tomorrow = () => moveDate(todayInTimezone(), 1);
+  /** A plan started before the recovery days existed: only the three gym sessions. */
+  const oldPlan = async () => {
+    const t = await mockClient.getPlan();
+    const gym = t.sessions.filter(s => !['Đi bộ nhanh', 'Giãn cơ phục hồi'].includes(s.title));
+    await mockClient.importHabitPlan({ startDate: todayInTimezone(), goals: [{ title: t.title, category: 'HEALTH', description: t.description, habits: gym.map(s => ({ title: s.title, targetMinutes: s.targetMinutes, xpReward: s.xpReward, weekdays: s.weekdays as Weekday[], objectives: s.objectives })) }] });
+    return mockClient.getPlan();
+  };
+  it('refuses without a plan and creates nothing', async () => {
+    const before = (await mockClient.getHabits()).length;
+    expect(await rejection(mockClient.addRecoveryDays(tomorrow()))).toMatchObject({ status: 409, code: 'PLAN_NOT_STARTED' });
+    expect((await mockClient.getHabits()).length).toBe(before);
+  });
+  it('adds the walk and the stretching to an old plan from the given day, as plain checklists', async () => {
+    const before = await oldPlan();
+    expect(before.sessions).toHaveLength(3);
+    const after = await mockClient.addRecoveryDays(tomorrow());
+    expect(after.sessions.map(s => s.weekdays[0])).toEqual([1, 2, 3, 4, 5]);
+    const habits = (await mockClient.getHabits()).filter(h => h.goalId === after.goalId);
+    expect(habits.filter(h => h.title === 'Đi bộ nhanh' || h.title === 'Giãn cơ phục hồi').every(h => h.startDate === tomorrow())).toBe(true);
+    expect(after.sessions.find(s => s.title === 'Đi bộ nhanh')!.objectives).toEqual([
+      { title: 'Khởi động: đi bộ chậm', target: 5, unit: 'phút', step: 5 }, { title: 'Đi bộ nhanh hoặc dốc nhẹ', target: 25, unit: 'phút', step: 5 }, { title: 'Thả lỏng: đi bộ chậm', target: 5, unit: 'phút', step: 5 }]);
+  });
+  it('is idempotent and leaves the gym sessions untouched', async () => {
+    const before = await oldPlan();
+    await mockClient.addRecoveryDays(tomorrow());
+    const count = (await mockClient.getHabits()).length;
+    const again = await mockClient.addRecoveryDays(tomorrow());
+    expect((await mockClient.getHabits()).length).toBe(count);
+    expect(again.sessions.filter(s => before.sessions.some(b => b.habitId === s.habitId))).toEqual(before.sessions);
+  });
+  it('refuses a malformed day even when there is nothing to add', async () => {
+    await mockClient.startPlan(todayInTimezone());
+    expect(await rejection(mockClient.addRecoveryDays('not-a-date'))).toMatchObject({ status: 422 });
+  });
+  it('refuses a past or malformed start day', async () => {
+    await oldPlan();
+    expect(await rejection(mockClient.addRecoveryDays('not-a-date'))).toMatchObject({ status: 422 });
+    expect(await rejection(mockClient.addRecoveryDays(moveDate(todayInTimezone(), -1)))).toMatchObject({ status: 422 });
   });
 });

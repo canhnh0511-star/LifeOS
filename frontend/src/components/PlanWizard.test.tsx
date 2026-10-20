@@ -35,6 +35,7 @@ describe('PlanWizard: two steps from awakening to the plan', () => {
     expect(await screen.findByText('Giáo án của bạn')).toBeTruthy();
     expect(loadPlan).toHaveBeenCalled();
     expect(await screen.findByText('3 buổi/tuần: T2 · T4 · T6')).toBeTruthy();
+    expect(screen.getByText('Ngày nhẹ: Đi bộ nhanh T3 · T7, Giãn cơ phục hồi T5; chủ nhật nghỉ')).toBeTruthy(); // ADR-045
     const first = screen.getByRole('button', { name: /Buổi A/ });
     expect(first.getAttribute('aria-expanded')).toBe('true');
     expect(first.textContent).toContain('Thứ Hai'); expect(first.textContent).toContain('6 bài');

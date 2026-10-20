@@ -74,7 +74,35 @@ final class StandardPlan {
             reps("Leg Press", 4, 10), reps("Machine Chest Press", 4, 8), reps("Lat Pulldown", 4, 8),
             reps("Dumbbell Shoulder Press", 3, 10), reps("Dumbbell Romanian Deadlift", 3, 10), hold("Plank", 3, 40))));
 
+    /** A light day between the gym sessions (ADR-045): a brisk walk on Tuesday and Saturday, stretching on Thursday. Sunday has no task: it is a real rest day. */
+    record Recovery(String title, List<Integer> weekdays, int targetMinutes, int xpReward, List<Line> lines) {}
+
+    static final int WALK_XP = 20;
+    static final int STRETCH_XP = 10;
+    static final String STRETCH_TITLE = "Giãn cơ phục hồi";
+
+    static final List<Recovery> RECOVERY_GENTLE = recovery("Đi bộ nhanh", 35, "Đi bộ nhanh hoặc dốc nhẹ", 25);
+    static final List<Recovery> RECOVERY_STANDARD = recovery("Đi bộ nhanh", 35, "Đi bộ nhanh hoặc đạp xe", 25);
+    static final List<Recovery> RECOVERY_BUILD = recovery("Đi bộ nhẹ", 25, "Đi bộ nhẹ", 15);
+
     private StandardPlan() {}
+
+    private static List<Recovery> recovery(String walkTitle, int walkMinutes, String mainLine, int mainMinutes) {
+        return List.of(
+            new Recovery(walkTitle, List.of(2, 6), walkMinutes, WALK_XP, List.of(
+                new Line("Khởi động: đi bộ chậm", 5, "phút", 5), new Line(mainLine, mainMinutes, "phút", 5), new Line("Thả lỏng: đi bộ chậm", 5, "phút", 5))),
+            new Recovery(STRETCH_TITLE, List.of(4), 10, STRETCH_XP, List.of(
+                new Line("Giãn đùi trước", 60, "giây", 30), new Line("Giãn đùi sau", 60, "giây", 30), new Line("Mở hông", 60, "giây", 30),
+                new Line("Giãn ngực và vai", 60, "giây", 30), new Line("Giãn lưng dưới", 60, "giây", 30))));
+    }
+
+    static List<Recovery> recovery(Variant v) { return switch (v) { case GENTLE -> RECOVERY_GENTLE; case STANDARD -> RECOVERY_STANDARD; case BUILD -> RECOVERY_BUILD; }; }
+
+    /** Titles of the recovery sessions in every version: how an account's plan is told to already have them. */
+    static boolean isRecoveryTitle(String title) {
+        for (Variant v : Variant.values()) for (Recovery r : recovery(v)) if (r.title().equalsIgnoreCase(title.trim())) return true;
+        return false;
+    }
 
     /** The version a body goal calls for: gaining weight is BUILD, losing weight is GENTLE from a BMI of 30 and STANDARD below it; no goal is GENTLE. */
     static Variant variantFor(Optional<Basis> goal) {

@@ -129,11 +129,21 @@ paths:
     post:
       tags: [Plan]
       operationId: startPlan
-      description: Creates the standard plan for this account (a goal and three habits, validated like the plan import). Idempotent - when the account already has the plan, returns it with 200 and creates nothing. Errors - 422 VALIDATION_FAILED with `fields.startDate`.
+      description: Creates the standard plan for this account (a goal, three gym habits and two recovery habits, validated like the plan import). Idempotent - when the account already has the plan, returns it with 200 and creates nothing. Errors - 422 VALIDATION_FAILED with `fields.startDate`.
       requestBody: {required: true, content: {application/json: {schema: {type: object, required: [startDate], properties: {startDate: {$ref: '#/components/schemas/LocalDate'}}}}}}
       responses:
         '201': {description: Plan created, content: {application/json: {schema: {$ref: '#/components/schemas/TrainingPlan'}}}}
         '200': {description: The account already had its plan, content: {application/json: {schema: {$ref: '#/components/schemas/TrainingPlan'}}}}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /plan/recovery:
+    post:
+      tags: [Plan]
+      operationId: addRecoveryDays
+      description: Adds the recovery sessions (a brisk walk on Tuesday and Saturday, stretching on Thursday; ADR-045) to a plan that was started without them. They begin on `startDate`, so no past day changes. Idempotent - sessions the plan already has are not added twice. Errors - 409 PLAN_NOT_STARTED when the account has no plan; 422 VALIDATION_FAILED with `fields.startDate`.
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [startDate], properties: {startDate: {$ref: '#/components/schemas/LocalDate'}}}}}}
+      responses:
+        '200': {description: The plan with its recovery sessions, content: {application/json: {schema: {$ref: '#/components/schemas/TrainingPlan'}}}}
+        '409': {description: PLAN_NOT_STARTED, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
         '422': {$ref: '#/components/responses/ValidationError'}
   /habits/{id}:
     patch:

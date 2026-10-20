@@ -51,6 +51,7 @@ export const httpClient: LifeOsApi = {
   saveBodyGoal: input => request('/body-goal', { method: 'PUT', body: JSON.stringify(input) }),
   getPlan: () => request('/plan'),
   startPlan: startDate => request('/plan', { method: 'POST', body: JSON.stringify({ startDate }) }),
+  addRecoveryDays: startDate => request('/plan/recovery', { method: 'POST', body: JSON.stringify({ startDate }) }),
   getQuests: date => request(`/quests?date=${encodeURIComponent(date)}`),
   completeQuest: (habitId, date) => request(`/quests/${habitId}/dates/${date}/completion`, { method:'PUT' }),
   undoQuest: (habitId, date) => request(`/quests/${habitId}/dates/${date}/completion`, { method:'DELETE' }),

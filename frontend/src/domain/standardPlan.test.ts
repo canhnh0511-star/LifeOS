@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PlanVariant } from '../api/types';
 import { exerciseByName } from './exerciseLibrary';
-import { STANDARD_DAYS_BY_VARIANT, STANDARD_DESCRIPTION, STANDARD_PLAN_TITLE, VARIANTS, standardPlanTemplate, variantFor, variantOfDescription } from './standardPlan';
+import { RECOVERY_DAYS_BY_VARIANT, STANDARD_DAYS_BY_VARIANT, STRETCH_TITLE, isRecoveryTitle, STANDARD_DESCRIPTION, STANDARD_PLAN_TITLE, VARIANTS, standardPlanTemplate, variantFor, variantOfDescription } from './standardPlan';
 
 // The backend's definition, read as text so the two copies cannot drift apart unnoticed.
 // @ts-ignore node types are not part of the app's tsconfig; this test runs in node
@@ -16,7 +16,7 @@ describe('standard plan versions', () => {
   it('every version uses only library exercises, with the unit the library gives them, in three sessions of six on Monday, Wednesday and Friday', () => {
     for (const v of VARIANTS) {
       const t = standardPlanTemplate(v);
-      expect(t.sessions.map(s => s.weekdays[0]), v).toEqual([1, 3, 5]);
+      expect(t.sessions.filter(s => !isRecoveryTitle(s.title)).map(s => s.weekdays[0]), v).toEqual([1, 3, 5]);
       expect(t.started).toBe(false); expect(t.goalId).toBeNull(); expect([t.variant, t.suggestedVariant]).toEqual([v, v]);
       for (const d of STANDARD_DAYS_BY_VARIANT[v]) {
         expect(d.lines, v).toHaveLength(6);
@@ -62,5 +62,33 @@ describe('standard plan versions', () => {
         }
       }
     }
+  });
+});
+
+describe('recovery days (ADR-045)', () => {
+  it('puts a walk on Tuesday and Saturday and stretching on Thursday in every version, and leaves Sunday free', () => {
+    for (const v of VARIANTS) {
+      const days = RECOVERY_DAYS_BY_VARIANT[v];
+      expect(days.map(d => d.weekdays), v).toEqual([[2, 6], [4]]);
+      expect(days.flatMap(d => d.weekdays)).not.toContain(7);
+      expect(days.map(d => d.xpReward)).toEqual([20, 10]);
+      for (const d of days) for (const l of d.lines) { expect(l.target % l.step, l.title).toBe(0); expect(exerciseByName(l.title), l.title).toBeUndefined(); } // plain checklists, not library exercises
+      expect(days[0]!.lines.reduce((n, l) => n + l.target, 0), v).toBe(days[0]!.targetMinutes);
+    }
+    expect(RECOVERY_DAYS_BY_VARIANT.BUILD[0]!.title).toBe('Đi bộ nhẹ');
+  });
+  it('shows them in the plan before it is started, in weekday order', () => {
+    expect(standardPlanTemplate('STANDARD').sessions.map(s => s.weekdays[0])).toEqual([1, 2, 3, 4, 5]);
+  });
+  it('agrees with the backend definition: titles, minutes, XP, weekdays and every line', () => {
+    for (const v of VARIANTS) {
+      const [walk, stretch] = RECOVERY_DAYS_BY_VARIANT[v];
+      expect(java, v).toContain(`RECOVERY_${v} = recovery("${walk!.title}", ${walk!.targetMinutes}, "${walk!.lines[1]!.title}", ${walk!.lines[1]!.target})`);
+      expect(walk!.weekdays).toEqual([2, 6]); expect(stretch!.weekdays).toEqual([4]);
+      for (const l of [walk!.lines[0]!, walk!.lines[2]!]) expect(java, l.title).toContain(`new Line("${l.title}", ${l.target}, "${l.unit}", ${l.step})`);
+      for (const l of stretch!.lines) expect(java, l.title).toContain(`new Line("${l.title}", ${l.target}, "${l.unit}", ${l.step})`);
+    }
+    expect(java).toContain('List.of(2, 6)'); expect(java).toContain('List.of(4)');
+    expect(java).toContain('WALK_XP = 20'); expect(java).toContain('STRETCH_XP = 10'); expect(java).toContain(`STRETCH_TITLE = "${STRETCH_TITLE}"`);
   });
 });

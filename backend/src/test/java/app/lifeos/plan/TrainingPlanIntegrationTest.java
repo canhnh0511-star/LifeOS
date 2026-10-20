@@ -45,20 +45,20 @@ class TrainingPlanIntegrationTest {
         TestBrowser b = user();
         HttpResponse<String> r = b.get(PATH);
         assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
-        assertThat(r.body()).contains("\"started\":false", "\"goalId\":null", "\"habitId\":null", "Buổi A", "Buổi B", "Buổi C", "Leg Press", "Bird Dog", "\"weekdays\":[1]", "\"weekdays\":[3]", "\"weekdays\":[5]");
+        assertThat(r.body()).contains("\"started\":false", "\"goalId\":null", "\"habitId\":null", "Buổi A", "Buổi B", "Buổi C", "Leg Press", "Bird Dog", "\"weekdays\":[1]", "\"weekdays\":[3]", "\"weekdays\":[5]", "Đi bộ nhanh", "Giãn cơ phục hồi", "\"weekdays\":[2,6]", "\"weekdays\":[4]");
         assertThat(b.get("/api/v1/goals").body()).isEqualTo("[]");
         assertThat(b.get("/api/v1/habits").body()).isEqualTo("[]");
     }
 
     @Test
-    void startingCreatesTheAccountsOwnGoalAndThreeSessions() throws Exception {
+    void startingCreatesTheAccountsOwnGoalThreeGymSessionsAndTheRecoveryDays() throws Exception {
         TestBrowser b = user();
         HttpResponse<String> r = b.post(PATH, start());
         assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
-        assertThat(r.body()).contains("\"started\":true", "Buổi A", "Buổi B", "Buổi C", "\"target\":36", "\"unit\":\"giây\"", "\"step\":30");
+        assertThat(r.body()).contains("\"started\":true", "Buổi A", "Buổi B", "Buổi C", "Đi bộ nhanh", "Giãn cơ phục hồi", "\"target\":36", "\"unit\":\"giây\"", "\"unit\":\"phút\"", "\"step\":30");
         assertThat(r.body()).doesNotContain("\"habitId\":null");
         assertThat(b.get("/api/v1/goals").body()).contains("Tăng cơ · giảm mỡ toàn thân");
-        assertThat(b.get("/api/v1/habits").body().split("\"goalId\"", -1)).hasSize(4);
+        assertThat(b.get("/api/v1/habits").body().split("\"goalId\"", -1)).hasSize(6);
         assertThat(b.get(PATH).body()).contains("\"started\":true").doesNotContain("\"habitId\":null");
     }
 
@@ -70,7 +70,7 @@ class TrainingPlanIntegrationTest {
         assertThat(again.statusCode()).isEqualTo(200);
         assertThat(goalId(again.body())).isEqualTo(goalId(first));
         assertThat(b.get("/api/v1/goals").body().split("\"title\"", -1)).hasSize(2);
-        assertThat(b.get("/api/v1/habits").body().split("\"goalId\"", -1)).hasSize(4);
+        assertThat(b.get("/api/v1/habits").body().split("\"goalId\"", -1)).hasSize(6);
     }
 
     @Test
@@ -80,7 +80,7 @@ class TrainingPlanIntegrationTest {
         assertThat(c.get(PATH).body()).contains("\"started\":false");
         String planC = c.post(PATH, start()).body();
         assertThat(goalId(planC)).isNotEqualTo(goalId(planA));
-        assertThat(a.get("/api/v1/habits").body().split("\"goalId\"", -1)).hasSize(4);
+        assertThat(a.get("/api/v1/habits").body().split("\"goalId\"", -1)).hasSize(6);
     }
 
     @Test
@@ -146,5 +146,51 @@ class TrainingPlanIntegrationTest {
         HttpResponse<String> r = b.post(PATH, start());
         assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
         assertThat(r.body()).contains("\"variant\":\"BUILD\"");
+    }
+
+    // ---- recovery days (ADR-045) ----
+    private static String tomorrow() { return LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(1).toString(); }
+    private static String from(String date) { return "{\"startDate\":\"" + date + "\"}"; }
+
+    @Test
+    void recoveryDaysAreRefusedWithoutAPlanAndCreateNothing() throws Exception {
+        TestBrowser b = user();
+        HttpResponse<String> r = b.post(PATH + "/recovery", from(tomorrow()));
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(409);
+        assertThat(r.body()).contains("PLAN_NOT_STARTED");
+        assertThat(b.get("/api/v1/habits").body()).isEqualTo("[]");
+    }
+
+    @Test
+    void recoveryDaysAreAddedOnceToAPlanThatLacksThemFromTheGivenDay() throws Exception {
+        TestBrowser b = user();
+        goalId(b.post(PATH, start()).body());
+        // An account that started before the recovery days existed: archive them, then add them back.
+        for (String title : new String[] {"Đi bộ nhanh", "Giãn cơ phục hồi"}) {
+            Matcher m = Pattern.compile("\\{\"id\":\"([^\"]+)\"[^{}]*?\"title\":\"" + title + "\"").matcher(b.get("/api/v1/habits").body());
+            assertThat(m.find()).as(title).isTrue();
+            assertThat(b.send("PATCH", "/api/v1/habits/" + m.group(1), "{\"status\":\"ARCHIVED\"}", true).statusCode()).isEqualTo(200);
+        }
+        HttpResponse<String> r = b.post(PATH + "/recovery", from(tomorrow()));
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
+        assertThat(r.body()).contains("Buổi A", "Đi bộ nhanh", "Giãn cơ phục hồi", "\"weekdays\":[2,6]", "\"weekdays\":[4]");
+        String again = b.post(PATH + "/recovery", from(tomorrow())).body();
+        assertThat(again.split("Đi bộ nhanh", -1)).as("added only once").hasSize(r.body().split("Đi bộ nhanh", -1).length);
+    }
+
+    @Test
+    void recoveryDaysAreIdempotentOnAFreshPlan() throws Exception {
+        TestBrowser b = user();
+        b.post(PATH, start());
+        int before = b.get("/api/v1/habits").body().split("\"goalId\"", -1).length;
+        assertThat(b.post(PATH + "/recovery", from(tomorrow())).statusCode()).isEqualTo(200);
+        assertThat(b.get("/api/v1/habits").body().split("\"goalId\"", -1)).hasSize(before);
+    }
+
+    @Test
+    void aBadDayIsRefusedForTheRecoveryDays() throws Exception {
+        TestBrowser b = user();
+        b.post(PATH, start());
+        assertThat(b.post(PATH + "/recovery", from("not-a-date")).statusCode()).isEqualTo(422);
     }
 }

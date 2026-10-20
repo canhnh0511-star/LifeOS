@@ -614,3 +614,9 @@ h1,h2,h3,.hunter-level,.section-eyebrow,.eyebrow,.rank-card-state{font-family:va
 .has-scene small{color:#e6edf7}
 .has-scene .xp-tag,.has-scene .quest-detail-btn,.has-scene .next-up-xp{background:rgba(10,14,20,.82);backdrop-filter:blur(4px)}
 .next-up.has-scene .progress,.next-up.has-scene [role=progressbar]{background:rgba(255,255,255,.22)}
+.rest-day{position:relative;padding:18px 16px;border:1px solid rgba(255,255,255,.14);border-radius:14px;margin:6px 0;display:grid;gap:8px;min-height:190px}
+.rest-day h3{margin:0;display:flex;align-items:center;gap:8px;font-size:17px;color:var(--text-strong)}.rest-day p{margin:0;color:#e6edf7;font-size:13.5px;line-height:1.45;max-width:30em}
+.rest-day ul{margin:0;padding-left:18px;color:#e6edf7;font-size:13.5px;line-height:1.55}.rest-day .btn{justify-self:start}
+.rest-day{position:relative;padding:18px 16px;border:1px solid rgba(255,255,255,.14);border-radius:14px;margin:6px 0;display:grid;gap:8px;min-height:190px}
+.rest-day h3{margin:0;display:flex;align-items:center;gap:8px;font-size:17px;color:var(--text-strong)}.rest-day p{margin:0;color:#e6edf7;font-size:13.5px;line-height:1.45;max-width:30em}
+.rest-day ul{margin:0;padding-left:18px;color:#e6edf7;font-size:13.5px;line-height:1.55}.rest-day .btn{justify-self:start}

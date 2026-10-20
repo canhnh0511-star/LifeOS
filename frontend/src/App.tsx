@@ -5,7 +5,7 @@ import { ApiError } from './api/errors';
 import { exportDemoData, resetDemoData } from './api/mockClient';
 import { clearDayRecords } from './api/dayRecords';
 import type { TrainingPlanDto, BodyGoalDto, ObjectiveInput, MetricDto, ItemDto, BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, PatchHabit, QuestDto, QuestObjectiveDto, RewardEffectDto } from './api/types';
-import { formatDate, todayInTimezone } from './domain/rules';
+import { formatDate, moveDate, todayInTimezone } from './domain/rules';
 import { Celebration, hasCelebration, type CelebrationData } from './components/Celebration';
 import { levelUps } from './domain/levelUps';
 import { EditHabitForm, GoalForm, HabitForm } from './components/forms';
@@ -162,6 +162,10 @@ export default function App() {
       setModal(null); setWizard(false); markWizardSeen(); setNotice(`Đã bắt đầu giáo án: ${r.sessions.length} buổi tập.${archived ? ' Giáo án cũ đã được lưu trữ, biến mất từ ngày mai.' : ''}`); refresh();
     } catch (e) { setNotice(failure(e, 'Không bắt đầu được giáo án.') + (archived ? ' Giáo án cũ đã được lưu trữ; hãy thử lại hoặc khôi phục trong Hành trình.' : '')); refresh(); }
   };
+  const addRecovery = async () => {
+    try { await api.addRecoveryDays(moveDate(today, 1)); setNotice('Đã thêm đi bộ (thứ 3, thứ 7) và giãn cơ (thứ 5), bắt đầu từ ngày mai.'); refresh(); }
+    catch (e) { setNotice(failure(e, 'Không thêm được ngày hồi phục.')); }
+  };
   const saveHabit = async (v: CreateHabitRequest) => { try { await api.createHabit(v); setModal(null); setNotice('Đã tạo thói quen mới.'); refresh(); } catch (e) { setNotice(failure(e, 'Có lỗi xảy ra.')); } };
   const addToSession = async (habitId: string, objectives: ObjectiveInput[]) => { await api.updateHabit(habitId, { objectives }); refresh(); };
   const saveHabitEdit = async (patch: PatchHabit) => {
@@ -199,7 +203,7 @@ export default function App() {
       <main className="page-content" data-dialog-fallback tabIndex={-1}>
         {error && <div role="alert" className="error-banner">{error}<button onClick={refresh}>Thử lại <RotateCcw size={14}/></button></div>}
         {loading && !dashboard ? <div className="loading-shell"><div className="loader"/><p>Đang chuẩn bị hành trình của bạn...</p></div> : <>
-          {tab === 'today' && <TodayPage bodyGoal={bodyGoal} metrics={metrics} dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} onImportPlan={() => setWizard(true)} setLog={setLog} loadDay={loadDay} habits={habits} weekly={weekly} goTo={goTo}/>}
+          {tab === 'today' && <TodayPage bodyGoal={bodyGoal} metrics={metrics} dashboard={dashboard} selectedDate={selectedDate} today={today} busyId={busyId} onSelectDate={setSelectedDate} onToggleQuest={completion} onSetObjective={setObjective} onNewHabit={() => setModal('habit')} onImportPlan={() => setWizard(true)} onAddRecovery={addRecovery} setLog={setLog} loadDay={loadDay} habits={habits} weekly={weekly} goTo={goTo}/>}
           {tab === 'exercises' && <ExercisesPage habits={habits} onAddToHabit={addToSession}/>}
           {tab === 'journey' && <JourneyPage onAddToHabit={addToSession} journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')} onImportPlan={() => setWizard(true)}/>}
           {tab === 'character' && <CharacterPage loadBadges={loadBadges} habits={habits} today={today} loadHistory={loadHistory} dashboard={dashboard} items={items} busyItemCode={busyItemCode} onEquip={item => wear(item, true)} onUnequip={item => wear(item, false)}/>}

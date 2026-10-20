@@ -4,6 +4,7 @@ import type { GoalDto, HabitDto, TrainingPlanDto } from '../api/types';
 import { useDialog } from '../hooks/useDialog';
 import { exerciseByName, muscleLabel, viName } from '../domain/exerciseLibrary';
 import { DAY_LABEL, replacementFor } from '../domain/plan';
+import { isRecoveryTitle } from '../domain/standardPlan';
 import { RankPortrait } from './RankPortrait';
 import { ExerciseThumb } from './ExercisePicture';
 
@@ -30,6 +31,7 @@ export function PlanWizard({ displayName, goals, habits, loadPlan, onStart, onCl
   const [replace, setReplace] = useState(true);
   const [saving, setSaving] = useState(false);
   const old = replacementFor(goals, habits);
+  const gym = plan?.sessions.filter(s => !isRecoveryTitle(s.title)) ?? [], light = plan?.sessions.filter(s => isRecoveryTitle(s.title)) ?? []; // gym sessions and the light recovery days (ADR-045)
   useEffect(() => {
     let alive = true; setFailed(false);
     loadPlan().then(p => { if (alive) setPlan(p); }).catch(() => { if (alive) setFailed(true); });
@@ -67,19 +69,20 @@ export function PlanWizard({ displayName, goals, habits, loadPlan, onStart, onCl
           : !plan ? <p className="form-note" role="status">Đang tải giáo án…</p>
           : <>
             <div className="wizard-chips wizard-summary">
-              <span>{plan.sessions.length} buổi/tuần: {plan.sessions.map(s => DAY_LABEL[s.weekdays[0]]).join(' · ')}</span>
-              <span>khoảng {Math.max(...plan.sessions.map(s => s.targetMinutes))} phút/buổi</span>
+              <span>{gym.length} buổi/tuần: {gym.map(s => DAY_LABEL[s.weekdays[0]]).join(' · ')}</span>
+              <span>khoảng {Math.max(...gym.map(s => s.targetMinutes))} phút/buổi</span>
+              {light.length > 0 && <span>Ngày nhẹ: {light.map(s => `${s.title} ${s.weekdays.map(d => DAY_LABEL[d]).join(' · ')}`).join(', ')}; chủ nhật nghỉ</span>}
             </div>
             <ul className="wizard-sessions">
               {plan.sessions.map((s, i) => { const groups = [...new Set(s.objectives.flatMap(o => { const e = exerciseByName(o.title); return e ? [e.group] : []; }))];
                 return <li key={s.title} className={i === open ? 'is-open' : ''}>
                   <button type="button" aria-expanded={i === open} aria-controls={`${titleId}-s${i}`} onClick={() => setOpen(i === open ? -1 : i)}>
                     <span className="wizard-session-name"><strong>{s.title}</strong>
-                      <small>{WEEKDAY_NAME[s.weekdays[0]]} · {groups.map(g => muscleLabel[g]).join(' · ')} · {s.objectives.length} bài</small></span>
+                      <small>{isRecoveryTitle(s.title) ? `${s.weekdays.map(d => WEEKDAY_NAME[d]).join(' · ')} · ${s.objectives.length} việc · +${s.xpReward} XP` : `${WEEKDAY_NAME[s.weekdays[0]]} · ${groups.map(g => muscleLabel[g]).join(' · ')} · ${s.objectives.length} bài`}</small></span>
                     <ChevronDown size={18} aria-hidden="true"/>
                   </button>
                   {i === open && <ol id={`${titleId}-s${i}`} className="wizard-exercises">
-                    {s.objectives.map(o => { const ex = exerciseByName(o.title); return <li key={o.title}>{ex && <ExerciseThumb exercise={ex} size={40}/>}<span>{viName(o.title)}</span><span className="wizard-sets">{o.target / o.step} × {o.step}{o.unit === 'giây' ? ' giây' : ''}</span></li>; })}
+                    {s.objectives.map(o => { const ex = exerciseByName(o.title); return <li key={o.title}>{ex && <ExerciseThumb exercise={ex} size={40}/>}<span>{viName(o.title)}</span><span className="wizard-sets">{o.unit === 'phút' ? `${o.target} phút` : `${o.target / o.step} × ${o.step}${o.unit === 'giây' ? ' giây' : ''}`}</span></li>; })}
                   </ol>}
                 </li>; })}
             </ul>

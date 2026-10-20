@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
-import { BookOpen, CalendarDays, Check, ChevronLeft, ChevronRight, Circle, ClipboardList, Dumbbell, Clock3, Timer, Flame, Lock, PartyPopper, Plus, Target, Zap } from 'lucide-react';
+import { BookOpen, CalendarDays, Check, ChevronLeft, ChevronRight, Circle, ClipboardList, Dumbbell, Clock3, Moon, Timer, Flame, Lock, PartyPopper, Plus, Target, Zap } from 'lucide-react';
 import type { BodyGoalDto, MetricDto, AnalyticsDto, WorkoutSetDto, HabitDto, DailyDashboardDto, DailyRewardDto, QuestDto, QuestObjectiveDto } from '../api/types';
 import { stageForLevel } from '../domain/characterStage';
 import { xpToNextRank } from '../domain/ranks';
@@ -17,6 +17,7 @@ import { loadPin, pendingFirst, pickMain, savePin } from '../ui/mainQuest';
 import { isRunning, loadTimer } from '../ui/focusTimer';
 import { exerciseByName, isLibraryLine, muscleLabel } from '../domain/exerciseLibrary';
 import { hasGymHabit, nextGymSession } from '../domain/gymSession';
+import { hasRecoveryHabit } from '../domain/standardPlan';
 import { WeekPlan } from '../components/WeekPlan';
 import { QuestSheet } from '../components/QuestSheet';
 import { SceneArt } from '../components/SceneArt';
@@ -32,7 +33,7 @@ interface Props {
   dashboard: DailyDashboardDto | null;
   selectedDate: string; today: string; busyId: string | null;
   onSelectDate: (update: (date: string) => string) => void;
-  onToggleQuest: (quest: QuestDto) => void; onSetObjective: (quest: QuestDto, objective: QuestObjectiveDto, value: number) => void; onNewHabit: () => void; onImportPlan?: () => void; setLog?: SetLogApi; loadDay?: (date: string) => Promise<DailyDashboardDto>; habits?: HabitDto[]; weekly?: AnalyticsDto | null; goTo: (tab: Tab) => void; /** the body goal (null: none yet, undefined: unknown) with the measurements its progress comes from */ bodyGoal?: BodyGoalDto | null; metrics?: MetricDto[];
+  onToggleQuest: (quest: QuestDto) => void; onSetObjective: (quest: QuestDto, objective: QuestObjectiveDto, value: number) => void; onNewHabit: () => void; onImportPlan?: () => void; /** adds the walks and stretching to a plan started without them (ADR-045) */ onAddRecovery?: () => void; setLog?: SetLogApi; loadDay?: (date: string) => Promise<DailyDashboardDto>; habits?: HabitDto[]; weekly?: AnalyticsDto | null; goTo: (tab: Tab) => void; /** the body goal (null: none yet, undefined: unknown) with the measurements its progress comes from */ bodyGoal?: BodyGoalDto | null; metrics?: MetricDto[];
 }
 
 /** One line of the body goal on Today: day N of the goal, the weights and the pace; a nudge to set a goal when there is none. */
@@ -47,13 +48,24 @@ function GoalStrip({ goal, metrics, today, onOpen }: { goal: BodyGoalDto | null;
   </button>;
 }
 
+/** A day with no task in a gym plan (Sunday): a real rest day with a few light habits and the weekly weigh-in, no XP and no streak impact (ADR-045). */
+function RestDayCard({ onBody }: { onBody: () => void }) {
+  return <article className="rest-day has-scene" aria-label="Ngày nghỉ">
+    <SceneArt scene="MINDFULNESS"/>
+    <h3><Moon size={17} aria-hidden="true"/> Ngày nghỉ</h3>
+    <p>Cơ bắp lớn lên khi bạn nghỉ. Hôm nay không có nhiệm vụ và không ảnh hưởng chuỗi ngày.</p>
+    <ul><li>Ngủ đủ 7–8 giờ.</li><li>Uống đủ nước, ăn đủ đạm.</li><li>Cân và ghi số đo tuần này để xem tiến độ.</li></ul>
+    <button type="button" className="btn btn-secondary" onClick={onBody}>Mở số đo</button>
+  </article>;
+}
+
 const Difficulty = ({ xp }: { xp: number }) => { const d = difficultyForXp(xp); return <span className={`diff-chip diff-${d.toLowerCase()}`} title="Độ khó chỉ để hiển thị, suy từ XP">{difficultyLabel[d]}</span>; };
 
 /**
  * Today answers one question: what do I do next? A one-line summary, the next quest with a single button, then the full list.
  * Level, stats, balance and the campaign live in their own tabs.
  */
-export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate, onToggleQuest, onSetObjective, onNewHabit, onImportPlan, setLog, loadDay, habits, weekly, goTo, bodyGoal, metrics = [] }: Props) {
+export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate, onToggleQuest, onSetObjective, onNewHabit, onImportPlan, onAddRecovery, setLog, loadDay, habits, weekly, goTo, bodyGoal, metrics = [] }: Props) {
   const [showWeek, setShowWeek] = useState(false);
   const [opening, setOpening] = useState<DailyRewardDto | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -88,6 +100,9 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
   const gymNudge = !habits || !isToday || gymToday ? null
     : !hasGymHabit(habits) ? (onImportPlan ? <article className="panel gym-nudge" aria-label="Giáo án gym"><div><h3><Dumbbell size={17}/> Chưa có lịch tập</h3><p>Hệ thống sẽ nạp giáo án 3 buổi mỗi tuần cho bạn, rồi Hôm nay có buổi tập để ghi từng set và xem tiến độ.</p></div><button className="btn btn-primary" onClick={onImportPlan}>Bắt đầu hành trình</button></article> : null)
     : upcoming ? <article className="panel gym-nudge" aria-label="Buổi tập kế tiếp"><div><h3><Dumbbell size={17}/> Hôm nay không có buổi tập</h3><p>Buổi kế tiếp: <strong>{upcoming.habit.title}</strong> · {formatDate(upcoming.date, { weekday: 'long', day: 'numeric', month: 'numeric' })}{(() => { const g = [...new Set(upcoming.habit.objectives.map(o => exerciseByName(o.title)?.group).filter(Boolean))].map(x => muscleLabel[x!]); return g.length ? ` · ${g.join(', ')}` : ''; })()}</p></div>{loadDay && <button className="btn btn-quiet" onClick={() => setShowWeek(true)}>Xem lịch tuần</button>}</article> : null;
+  // A plan started before the recovery days existed (ADR-045): offer to add the walks and stretching, from tomorrow.
+  const recoveryOffer = habits && isToday && onAddRecovery && hasGymHabit(habits) && !hasRecoveryHabit(habits)
+    ? <article className="panel gym-nudge" aria-label="Ngày hồi phục"><div><h3><Moon size={17}/> Thêm ngày hồi phục</h3><p>Đi bộ nhanh thứ 3 và thứ 7, giãn cơ thứ 5, chủ nhật nghỉ. Bắt đầu từ ngày mai, không đổi các ngày đã qua.</p></div><button className="btn btn-secondary" onClick={onAddRecovery}>Thêm ngày hồi phục</button></article> : null;
   const noPlan = !!habits && isToday && !gymToday && !hasGymHabit(habits);
   // A session with sets already on the server is "in progress": the main button resumes it instead of starting over.
   const nextIsGym = !!next && next.status !== 'COMPLETED' && next.objectives.some(isLibraryLine);
@@ -135,6 +150,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
       </article>}
       {detail && next?.habitId === detail.habitId && panel}
       {!noPlan && gymNudge}
+      {recoveryOffer}
       {allDone && <article className="next-up next-up-done" aria-label="Đã xong hôm nay">
         <div className="next-up-main"><PartyPopper size={28}/><div><h2>Bạn đã hoàn thành hết hôm nay.</h2><small>Nghỉ ngơi, hoặc xem nhân vật của bạn tiến bộ thế nào.</small></div></div>
         <button className="btn btn-secondary" onClick={() => goTo('character')}>Xem nhân vật</button>
@@ -144,7 +160,7 @@ export function TodayPage({ dashboard, selectedDate, today, busyId, onSelectDate
         <div className="quests-header"><div><h2>{nextIsGym ? 'Việc khác' : 'Việc hôm nay'} <span className="count-pill">{listed.length}</span></h2></div>
           <div className="date-controls"><button aria-label="Ngày trước" onClick={() => onSelectDate(d => moveDate(d, -1))}><ChevronLeft size={17}/></button><span>{isToday ? 'Hôm nay' : formatDate(selectedDate, { day: 'numeric', month: 'short' })}</span><button disabled={selectedDate >= today} aria-label="Ngày tiếp theo" onClick={() => onSelectDate(d => moveDate(d, 1))}><ChevronRight size={17}/></button></div></div>
         <div className="quest-list">{!listed.length
-          ? <EmptyState icon={CalendarDays} title="Không có nhiệm vụ trong ngày này" details="Tạo một thói quen mới hoặc chọn ngày khác." action={<><button className="btn btn-secondary" onClick={onNewHabit}><Plus size={16}/> Tạo thói quen</button>{onImportPlan && <button className="btn btn-quiet" onClick={onImportPlan}><Dumbbell size={16}/> Nạp giáo án gym</button>}</>}/>
+          ? (habits && hasGymHabit(habits) ? <RestDayCard onBody={() => goTo('body')}/> : <EmptyState icon={CalendarDays} title="Không có nhiệm vụ trong ngày này" details="Tạo một thói quen mới hoặc chọn ngày khác." action={<><button className="btn btn-secondary" onClick={onNewHabit}><Plus size={16}/> Tạo thói quen</button>{onImportPlan && <button className="btn btn-quiet" onClick={onImportPlan}><Dumbbell size={16}/> Nạp giáo án gym</button>}</>}/>)
           : pendingFirst(listed).map(q => { const renderQuest = () => {
             const Icon = categoryIcons[q.category]; const completed = q.status === 'COMPLETED';
             if (q.objectives.length > 0) {

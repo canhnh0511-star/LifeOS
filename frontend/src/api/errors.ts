@@ -7,6 +7,7 @@ export const ErrorCode = {
   questOutsideSchedule: 'QUEST_OUTSIDE_SCHEDULE',
   questNotActive: 'QUEST_NOT_ACTIVE',
   planAlreadyImported: 'PLAN_ALREADY_IMPORTED',
+  planNotStarted: 'PLAN_NOT_STARTED',
   bossLocked: 'BOSS_LOCKED',
   unauthenticated: 'UNAUTHENTICATED',
   invalidCredentials: 'INVALID_CREDENTIALS',

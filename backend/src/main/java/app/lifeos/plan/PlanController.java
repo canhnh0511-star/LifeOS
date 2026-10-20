@@ -25,4 +25,8 @@ class PlanController {
         PlanService.Started r = service.start(UUID.fromString(auth.getName()), body.startDate());
         return ResponseEntity.status(r.created() ? HttpStatus.CREATED : HttpStatus.OK).body(r.plan());
     }
+
+    /** Adds the walks and stretching to a plan started before they existed (ADR-045). */
+    @PostMapping("/recovery")
+    TrainingPlanDto addRecovery(Authentication auth, @RequestBody StartPlanRequest body) { return service.addRecovery(UUID.fromString(auth.getName()), body.startDate()); }
 }

@@ -326,3 +326,33 @@ describe('body goal strip on Today', () => {
     expect(screen.queryByText(/mục tiêu cơ thể/i)).toBeNull();
   });
 });
+
+describe('rest and recovery days on Today (ADR-045)', () => {
+  const gymHabit = { id: 'a', goalId: 'g', title: 'Buổi A', targetMinutes: 45, xpReward: 40, weekdays: [1] as never, startDate: '2026-10-12', endDate: null, status: 'ACTIVE' as const, objectives: [{ id: 'o', title: 'Machine Chest Press', target: 20, unit: 'rep', step: 10 }] };
+  const walkHabit = { ...gymHabit, id: 'w', title: 'Đi bộ nhanh', weekdays: [2, 6] as never, objectives: [{ id: 'p', title: 'Đi bộ nhanh hoặc dốc nhẹ', target: 25, unit: 'phút', step: 5 }] };
+
+  it('shows a rest card, with no task and a way to the measurements, on a day of a gym plan with nothing scheduled', async () => {
+    const goTo = vi.fn();
+    render(<TodayPage {...props} goTo={goTo} habits={[gymHabit, walkHabit]} onToggleQuest={() => {}} dashboard={dashboard([])}/>);
+    const card = screen.getByLabelText('Ngày nghỉ');
+    expect(card.textContent).toContain('không ảnh hưởng chuỗi ngày');
+    expect(screen.queryByText('Không có nhiệm vụ trong ngày này')).toBeNull();
+    await userEvent.click(within(card).getByRole('button', { name: 'Mở số đo' }));
+    expect(goTo).toHaveBeenCalledWith('body');
+  });
+  it('keeps the plain empty state when there is no gym plan', () => {
+    render(<TodayPage {...props} habits={[]} onToggleQuest={() => {}} dashboard={dashboard([])}/>);
+    expect(screen.queryByLabelText('Ngày nghỉ')).toBeNull();
+    expect(screen.getByText('Không có nhiệm vụ trong ngày này')).toBeTruthy();
+  });
+  it('offers "Thêm ngày hồi phục" only to a gym plan without the recovery days, and the button calls the handler', async () => {
+    const onAddRecovery = vi.fn();
+    const { rerender } = render(<TodayPage {...props} habits={[gymHabit]} onAddRecovery={onAddRecovery} onToggleQuest={() => {}} dashboard={dashboard([quest('a', 'PENDING')])}/>);
+    await userEvent.click(within(screen.getByLabelText('Ngày hồi phục')).getByRole('button', { name: 'Thêm ngày hồi phục' }));
+    expect(onAddRecovery).toHaveBeenCalledTimes(1);
+    rerender(<TodayPage {...props} habits={[gymHabit, walkHabit]} onAddRecovery={onAddRecovery} onToggleQuest={() => {}} dashboard={dashboard([quest('a', 'PENDING')])}/>);
+    expect(screen.queryByLabelText('Ngày hồi phục')).toBeNull();
+    rerender(<TodayPage {...props} habits={[]} onAddRecovery={onAddRecovery} onToggleQuest={() => {}} dashboard={dashboard([quest('a', 'PENDING')])}/>);
+    expect(screen.queryByLabelText('Ngày hồi phục')).toBeNull();
+  });
+});
