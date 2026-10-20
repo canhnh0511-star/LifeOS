@@ -106,6 +106,18 @@ describe('workout runner: sets and rest as separate steps', () => {
     expect(screen.queryByRole('button', { name: 'Hoàn thành set' })).toBeNull();
     expect(onToggle).not.toHaveBeenCalled();
   });
+  it('shows the rest as a big number inside a glowing ring that is full at the start and stays a decorative picture', async () => {
+    await start(fakeApi());
+    await userEvent.click(screen.getByRole('button', { name: 'Hoàn thành set' }));
+    const rest = await screen.findByRole('region', { name: 'Nghỉ giữa set' });
+    const ring = rest.querySelector('.wr-ring')!;
+    expect(ring.getAttribute('data-fraction')).toBe('1.000');
+    expect(ring.querySelector('svg')!.getAttribute('aria-hidden')).toBe('true');
+    expect(ring.querySelector('.wr-ring-center')!.contains(within(rest).getByRole('timer', { name: 'Thời gian nghỉ' }))).toBe(true);
+    expect(ring.querySelector('.wr-ring-glow')).not.toBeNull(); expect(ring.querySelector('.wr-ring-arc')).not.toBeNull();
+    await userEvent.click(within(rest).getByRole('button', { name: 'Tăng thời gian nghỉ' })); // more time keeps the ring in proportion, never above full
+    expect(Number(ring.getAttribute('data-fraction'))).toBeLessThanOrEqual(1);
+  });
   it('adjusts the rest by 15 seconds on the rest step, remembers it, and can skip the countdown', async () => {
     await start(fakeApi());
     await userEvent.click(screen.getByRole('button', { name: 'Hoàn thành set' }));

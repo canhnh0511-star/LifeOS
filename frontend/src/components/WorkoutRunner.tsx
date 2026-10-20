@@ -16,6 +16,19 @@ import { ExerciseThumb } from './ExercisePicture';
 import { ExerciseDetail } from './ExerciseDetail';
 import { nextSetNo, type SetLogApi } from './SetLog';
 
+/** The rest countdown: the number in the middle of a glowing ring that shortens as the time runs out (warm colour in the last 10 seconds). Decorative; the timer inside carries the meaning. */
+function RestRing({ fraction, urgent, over, children }: { fraction: number; urgent: boolean; over: boolean; children: React.ReactNode }) {
+  const R = 96, C = 2 * Math.PI * R;
+  return <div className={`wr-ring ${urgent ? 'is-urgent' : ''} ${over ? 'is-over' : ''}`} data-fraction={fraction.toFixed(3)}>
+    <svg viewBox="0 0 220 220" aria-hidden="true" focusable="false">
+      <circle className="wr-ring-track" cx="110" cy="110" r={R}/>
+      <circle className="wr-ring-glow" cx="110" cy="110" r={R} strokeDasharray={C} strokeDashoffset={C * (1 - fraction)}/>
+      <circle className="wr-ring-arc" cx="110" cy="110" r={R} strokeDasharray={C} strokeDashoffset={C * (1 - fraction)}/>
+    </svg>
+    <div className="wr-ring-center">{children}</div>
+  </div>;
+}
+
 const WEIGHT_STEP = 2.5, REST_STEP = 15, REST_MIN = 15, REST_MAX = 600;
 const restKey = (id: string) => `lifeos.rest.${id}`;
 /** Rest chosen for an exercise last time (a local preference); the plan's rest when none or unreadable. */
@@ -69,7 +82,7 @@ export function WorkoutRunner({ quest, date, exercises, sets, busy, error, last,
   const totalSets = exercises.reduce((n, x) => n + x.sets, 0), doneSets = exercises.reduce((n, x) => n + Math.min(x.sets, mineOf(sets, x).length), 0);
   const [reps, setReps] = useState(e.reps);
   const [weight, setWeight] = useState(0);
-  const [rest, setRest] = useState<{ endsAt: number; exerciseId: string } | null>(null);
+  const [rest, setRest] = useState<{ endsAt: number; exerciseId: string; totalMs: number } | null>(null);
   const [reviewing, setReviewing] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -101,13 +114,13 @@ export function WorkoutRunner({ quest, date, exercises, sets, busy, error, last,
     const open = exercises.map((x, i) => i === index ? (exerciseDone ? 0 : 1) : mineOf(sets, x).length < x.sets ? 1 : 0);
     if (!open.some(Boolean)) return; // the last set of the session: the final screen takes over
     const next = exerciseDone ? (open.findIndex((v, i) => v && i > index) !== -1 ? open.findIndex((v, i) => v && i > index) : open.findIndex(Boolean)) : index;
-    const t = Date.now(); setNow(t); setRest({ endsAt: t + savedRest(e) * 1000, exerciseId: e.id }); setIndex(next);
+    const t = Date.now(); setNow(t); setRest({ endsAt: t + savedRest(e) * 1000, exerciseId: e.id, totalMs: savedRest(e) * 1000 }); setIndex(next);
   };
   const adjustRest = (delta: number) => {
     if (!rest) return;
     const src = exercises.find(x => x.id === rest.exerciseId) ?? e;
     try { localStorage.setItem(restKey(src.id), String(Math.min(REST_MAX, Math.max(REST_MIN, savedRest(src) + delta)))); } catch { /* not saved */ }
-    setRest({ ...rest, endsAt: Math.max(Date.now(), rest.endsAt + delta * 1000) });
+    setRest({ ...rest, endsAt: Math.max(Date.now(), rest.endsAt + delta * 1000), totalMs: Math.max(1000, rest.totalMs + delta * 1000) });
   };
   const go = (to: number) => { setIndex(to); setRest(null); setReviewing(false); };
   const step = (label: string, value: React.ReactNode, dec: () => void, inc: () => void, disDec: boolean, disInc: boolean, caption: string) =>
@@ -129,7 +142,9 @@ export function WorkoutRunner({ quest, date, exercises, sets, busy, error, last,
     const next = exercises[index]!, nextNo = nextSetNo(mineOf(sets, next));
     main = <div className="wr-rest" role="region" aria-label="Nghỉ giữa set">
       <p className="wr-kicker">Nghỉ giữa set</p>
-      <div className="wr-rest-clock" role="timer" aria-label="Thời gian nghỉ" aria-live="off">{restOver ? '00:00' : clock(restLeft)}</div>
+      <RestRing fraction={restOver ? 0 : Math.min(1, Math.max(0, (rest.endsAt - now) / rest.totalMs))} urgent={!restOver && restLeft <= 10} over={restOver}>
+        <div className="wr-rest-clock" role="timer" aria-label="Thời gian nghỉ" aria-live="off">{restOver ? '00:00' : clock(restLeft)}</div>
+      </RestRing>
       {restOver ? <p role="status" className="wr-over">Hết giờ nghỉ.</p>
         : <div className="wr-rest-adjust"><button type="button" className="btn btn-quiet" aria-label="Giảm thời gian nghỉ" onClick={() => adjustRest(-REST_STEP)}><Minus size={16}/> 15 giây</button>
             <button type="button" className="btn btn-quiet" aria-label="Tăng thời gian nghỉ" onClick={() => adjustRest(REST_STEP)}><Plus size={16}/> 15 giây</button></div>}
