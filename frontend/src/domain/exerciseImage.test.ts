@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { exerciseByName } from './exerciseLibrary';
-import { STANDARD_DAYS } from './standardPlan';
+import { STANDARD_DAYS_BY_VARIANT } from './standardPlan';
+
+const STANDARD_DAYS = Object.values(STANDARD_DAYS_BY_VARIANT).flat(); // every version of the standard plan
 import { exerciseCrop, exerciseImage, EXERCISE_CROP, EXERCISE_IMAGES } from './exerciseImage';
 
 const planIds = [...new Set(STANDARD_DAYS.flatMap(d => d.lines.map(l => exerciseByName(l.title)!.id)))];

@@ -91,4 +91,60 @@ class TrainingPlanIntegrationTest {
         assertThat(r.body()).contains("\"code\":\"VALIDATION_FAILED\"");
         assertThat(b.get("/api/v1/goals").body()).isEqualTo("[]");
     }
+
+    // ---- versions of the plan by body goal (ADR-044) ----
+    private static String bodyGoal(String height, String start, String target) {
+        return "{\"heightCm\":" + height + ",\"startWeightKg\":" + start + ",\"targetWeightKg\":" + target + ",\"startDate\":\"" + today() + "\",\"days\":100}";
+    }
+    private void setGoal(TestBrowser b, String height, String start, String target) throws Exception {
+        assertThat(b.send("PUT", "/api/v1/body-goal", bodyGoal(height, start, target), true).statusCode()).isEqualTo(200);
+    }
+
+    @Test
+    void withoutABodyGoalThePlanIsTheGentleVersion() throws Exception {
+        String body = user().get(PATH).body();
+        assertThat(body).contains("\"variant\":\"GENTLE\"", "\"suggestedVariant\":\"GENTLE\"").doesNotContain("Push-up");
+    }
+
+    @Test
+    void losingWeightWithABmiOfThirtyOrMoreIsGentle_BelowThirtyIsStandard_GainingIsBuild() throws Exception {
+        TestBrowser heavy = user(); setGoal(heavy, "166", "86", "78.5");            // BMI 31.2
+        assertThat(heavy.get(PATH).body()).contains("\"suggestedVariant\":\"GENTLE\"").doesNotContain("Push-up");
+        TestBrowser lighter = user(); setGoal(lighter, "175", "85", "78");           // BMI 27.8
+        assertThat(lighter.get(PATH).body()).contains("\"variant\":\"STANDARD\"", "Push-up", "\"step\":40");
+        TestBrowser gain = user(); setGoal(gain, "175", "60", "66");
+        String build = gain.get(PATH).body();
+        assertThat(build).contains("\"variant\":\"BUILD\"", "\"target\":40", "tăng cân và tăng cơ");   // Leg Press 4 x 10
+    }
+
+    @Test
+    void startingCreatesTheVersionTheGoalCallsFor() throws Exception {
+        TestBrowser b = user(); setGoal(b, "175", "60", "66");
+        HttpResponse<String> r = b.post(PATH, start());
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
+        assertThat(r.body()).contains("\"started\":true", "\"variant\":\"BUILD\"", "\"suggestedVariant\":\"BUILD\"");
+        assertThat(b.get("/api/v1/goals").body()).contains("tăng cân và tăng cơ");
+    }
+
+    @Test
+    void changingTheGoalAfterStartingShowsASuggestionButNeverChangesThePlan() throws Exception {
+        TestBrowser b = user(); setGoal(b, "166", "86", "78.5");
+        b.post(PATH, start());
+        setGoal(b, "175", "60", "66");
+        String body = b.get(PATH).body();
+        assertThat(body).contains("\"variant\":\"GENTLE\"", "\"suggestedVariant\":\"BUILD\"", "\"started\":true");
+        assertThat(b.post(PATH, start()).statusCode()).isEqualTo(200);   // starting again is still a no-op
+        assertThat(b.get(PATH).body()).contains("\"variant\":\"GENTLE\"");
+    }
+
+    @Test
+    void afterArchivingThePlanTheNewOneFollowsTheCurrentGoal() throws Exception {
+        TestBrowser b = user(); setGoal(b, "166", "86", "78.5");
+        String id = goalId(b.post(PATH, start()).body());
+        setGoal(b, "175", "60", "66");
+        assertThat(b.send("PATCH", "/api/v1/goals/" + id, "{\"status\":\"ARCHIVED\"}", true).statusCode()).isEqualTo(200);
+        HttpResponse<String> r = b.post(PATH, start());
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
+        assertThat(r.body()).contains("\"variant\":\"BUILD\"");
+    }
 }

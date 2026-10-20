@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
-import type { BodyGoalDto, MetricDto } from '../api/types';
+import type { BodyGoalDto, MetricDto, TrainingPlanDto } from '../api/types';
 import { BodyGoalCard } from '../components/BodyGoalCard';
 import { MetricCard } from '../components/MetricCard';
 
@@ -10,11 +10,11 @@ interface Props {
   onRemoveEntry: (metric: MetricDto, date: string) => void;
   onCreate: (name: string, unit: string) => Promise<boolean>;
   onDelete: (metric: MetricDto) => void;
-  /** the body goal; null when none is set yet, undefined while it loads */ goal?: BodyGoalDto | null; onSaveGoal?: (goal: BodyGoalDto) => Promise<boolean>;
+  /** the body goal; null when none is set yet, undefined while it loads */ goal?: BodyGoalDto | null; onSaveGoal?: (goal: BodyGoalDto) => Promise<boolean>; plan?: TrainingPlanDto | null; onUpdatePlan?: () => Promise<void>;
 }
 
 /** Body numbers over time (weight, waist, body fat, your own). They are for tracking only: no XP, no streak, no chests. */
-export function BodyPage({ metrics, failed, onRetry, today, busy, onRecord, onRemoveEntry, onCreate, onDelete, goal, onSaveGoal }: Props) {
+export function BodyPage({ metrics, failed, onRetry, today, busy, onRecord, onRemoveEntry, onCreate, onDelete, goal, onSaveGoal, plan, onUpdatePlan }: Props) {
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
   const [adding, setAdding] = useState(false);
@@ -31,7 +31,7 @@ export function BodyPage({ metrics, failed, onRetry, today, busy, onRecord, onRe
       <button className="btn btn-primary" type="submit" disabled={busy || !name.trim()}>Thêm</button>
     </form>}
     {failed && metrics.length === 0 && <div className="panel" role="alert"><p>Không tải được số đo.</p>{onRetry && <button className="btn btn-secondary" onClick={onRetry}>Thử lại</button>}</div>}
-    {goal !== undefined && onSaveGoal && <BodyGoalCard goal={goal} metrics={metrics} today={today} busy={busy} onSave={onSaveGoal}/>}
+    {goal !== undefined && onSaveGoal && <BodyGoalCard goal={goal} metrics={metrics} today={today} busy={busy} onSave={onSaveGoal} plan={plan} onUpdatePlan={onUpdatePlan}/>}
     <div className="metric-grid-page">{metrics.map(m => <MetricCard key={m.id} metric={m} today={today} busy={busy} onRecord={onRecord} onRemoveEntry={onRemoveEntry} onDelete={onDelete}/>)}</div>
   </>;
 }

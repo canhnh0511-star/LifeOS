@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { BodyGoalDto, MetricDto } from '../api/types';
+import type { BodyGoalDto, MetricDto, TrainingPlanDto } from '../api/types';
 import { BodyGoalCard } from './BodyGoalCard';
 
 afterEach(cleanup);
@@ -71,5 +71,38 @@ describe('body goal card', () => {
     expect(onSave).toHaveBeenLastCalledWith({ ...goal, startDate: '2026-11-18' });
     await user.click(screen.getByRole('button', { name: 'Chỉnh sửa mục tiêu' })); await user.click(screen.getByRole('button', { name: 'Huỷ' }));
     expect(screen.getByRole('region', { name: 'Mục tiêu cơ thể' })).toBeTruthy();
+  });
+
+  describe('does the gym plan suit the goal', () => {
+    const plan = (over: Partial<TrainingPlanDto>): TrainingPlanDto => ({ started: true, goalId: 'g', title: 't', description: 'd', sessions: [], variant: 'GENTLE', suggestedVariant: 'GENTLE', ...over });
+    const setupPlan = (p: TrainingPlanDto, onUpdatePlan?: () => Promise<void>) => {
+      render(<BodyGoalCard goal={goal} metrics={metrics(['2026-11-18', 83.5])} today="2026-11-18" busy={false} onSave={async () => true} plan={p} onUpdatePlan={onUpdatePlan}/>);
+      return userEvent.setup();
+    };
+    it('says the plan in use suits the goal when the versions match', () => {
+      setupPlan(plan({}));
+      expect(screen.getByText(/Giáo án đang dùng phù hợp với mục tiêu \(Giảm cân, nhẹ khớp\)/)).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Cập nhật giáo án' })).toBeNull();
+    });
+    it('says which version a plan not yet started would be', () => {
+      setupPlan(plan({ started: false, goalId: null, variant: 'BUILD', suggestedVariant: 'BUILD' }));
+      expect(screen.getByText(/Giáo án hợp với mục tiêu của bạn/).textContent).toContain('Tăng cân, tăng cơ');
+    });
+    it('when the goal changed it names both versions and changes nothing until confirmed', async () => {
+      const onUpdate = vi.fn().mockResolvedValue(undefined);
+      const user = setupPlan(plan({ variant: 'GENTLE', suggestedVariant: 'BUILD' }), onUpdate);
+      expect(screen.getByText(/chưa khớp mục tiêu mới/).textContent).toContain('Tăng cân, tăng cơ');
+      await user.click(screen.getByRole('button', { name: 'Cập nhật giáo án' }));
+      expect(onUpdate).not.toHaveBeenCalled();
+      expect(screen.getByText(/Giáo án cũ được lưu trữ/)).toBeTruthy();
+      await user.click(screen.getByRole('button', { name: 'Giữ giáo án cũ' }));
+      expect(onUpdate).not.toHaveBeenCalled();
+      await user.click(screen.getByRole('button', { name: 'Cập nhật giáo án' })); await user.click(screen.getByRole('button', { name: 'Xác nhận đổi giáo án' }));
+      expect(onUpdate).toHaveBeenCalledTimes(1);
+    });
+    it('does not nag about a plan whose text the person changed', () => {
+      setupPlan(plan({ variant: null, suggestedVariant: 'BUILD' }));
+      expect(screen.queryByRole('button', { name: 'Cập nhật giáo án' })).toBeNull();
+    });
   });
 });

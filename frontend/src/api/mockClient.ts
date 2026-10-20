@@ -7,7 +7,7 @@ import { ITEM_CATALOG, POOL } from '../domain/items';
 import { validateGoalInput } from '../domain/bodyGoal';
 import { ACHIEVEMENT_CATALOG, STREAK_TARGET, balancedAchieved, comebackAchieved, spreadAcrossAreas } from '../domain/achievements';
 import { BOSS_CATALOG, CHAPTERS } from '../domain/bosses';
-import { STANDARD_DAYS, STANDARD_PLAN_DESCRIPTION, STANDARD_PLAN_MINUTES, STANDARD_PLAN_TITLE, STANDARD_PLAN_XP, standardPlanTemplate } from '../domain/standardPlan';
+import { STANDARD_DAYS_BY_VARIANT, STANDARD_DESCRIPTION, STANDARD_PLAN_MINUTES, STANDARD_PLAN_TITLE, STANDARD_PLAN_XP, standardPlanTemplate, variantFor, variantOfDescription } from '../domain/standardPlan';
 import { categoryLabel, diffDays, isScheduled, levelProgress, longestStreakForHabit, moveDate, streakForHabit, todayInTimezone } from '../domain/rules';
 
 const DB_KEY = 'life-os.mock.v1';
@@ -466,10 +466,10 @@ async function mutateBoss(target:string,defeat:boolean):Promise<BossMutationDto>
 
 const findPlanGoal=(db:Db)=>db.goals.find(g=>g.status==='ACTIVE'&&g.title.trim().toLowerCase()===STANDARD_PLAN_TITLE.toLowerCase());
 function planOf(db:Db):TrainingPlanDto{
-  const goal=findPlanGoal(db);if(!goal)return standardPlanTemplate();
+  const suggested=variantFor(db.bodyGoal);const goal=findPlanGoal(db);if(!goal)return standardPlanTemplate(suggested);
   const sessions=db.habits.filter(h=>h.goalId===goal.id&&h.status==='ACTIVE').sort((a,b)=>a.title.localeCompare(b.title))
     .map(h=>({habitId:h.id,title:h.title,targetMinutes:h.targetMinutes,xpReward:h.xpReward,weekdays:[...h.weekdays],objectives:h.objectives.map(o=>({title:o.title,target:o.target,unit:o.unit,step:o.step}))}));
-  return {started:true,goalId:goal.id,title:goal.title,description:goal.description,sessions};
+  return {started:true,goalId:goal.id,title:goal.title,description:goal.description,sessions,variant:variantOfDescription(goal.description),suggestedVariant:suggested};
 }
 export const mockClient:LifeOsApi={
   async getMe(){await delay();return user;},
@@ -570,8 +570,9 @@ export const mockClient:LifeOsApi={
   async startPlan(startDate:string):Promise<TrainingPlanDto>{
     // One plan per account: an ACTIVE goal with the standard title. Starting it again returns it and creates nothing.
     const db=load();if(!findPlanGoal(db)){
-      await mockClient.importHabitPlan({startDate,goals:[{title:STANDARD_PLAN_TITLE,category:'HEALTH',description:STANDARD_PLAN_DESCRIPTION,
-        habits:STANDARD_DAYS.map(d=>({title:d.title,targetMinutes:STANDARD_PLAN_MINUTES,xpReward:STANDARD_PLAN_XP,weekdays:[...d.weekdays] as Weekday[],objectives:d.lines.map(l=>({...l}))}))}]});
+      const variant=variantFor(db.bodyGoal);
+      await mockClient.importHabitPlan({startDate,goals:[{title:STANDARD_PLAN_TITLE,category:'HEALTH',description:STANDARD_DESCRIPTION[variant],
+        habits:STANDARD_DAYS_BY_VARIANT[variant].map(d=>({title:d.title,targetMinutes:STANDARD_PLAN_MINUTES,xpReward:STANDARD_PLAN_XP,weekdays:[...d.weekdays] as Weekday[],objectives:d.lines.map(l=>({...l}))}))}]});
     }
     return planOf(load());
   },

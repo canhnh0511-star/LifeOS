@@ -4,7 +4,7 @@ import { api, isDemo } from './api';
 import { ApiError } from './api/errors';
 import { exportDemoData, resetDemoData } from './api/mockClient';
 import { clearDayRecords } from './api/dayRecords';
-import type { BodyGoalDto, ObjectiveInput, MetricDto, ItemDto, BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, PatchHabit, QuestDto, QuestObjectiveDto, RewardEffectDto } from './api/types';
+import type { TrainingPlanDto, BodyGoalDto, ObjectiveInput, MetricDto, ItemDto, BossDto, CreateGoalRequest, CreateHabitRequest, GoalDto, HabitDto, PatchHabit, QuestDto, QuestObjectiveDto, RewardEffectDto } from './api/types';
 import { formatDate, todayInTimezone } from './domain/rules';
 import { Celebration, hasCelebration, type CelebrationData } from './components/Celebration';
 import { levelUps } from './domain/levelUps';
@@ -113,8 +113,12 @@ export default function App() {
   const [bodyGoal, setBodyGoal] = useState<BodyGoalDto | null | undefined>(undefined);
   // The body goal loads once; "no goal yet" (404) is a normal state, and a failure to load simply hides the card.
   useEffect(() => { let alive = true; api.getBodyGoal().then(g => { if (alive) setBodyGoal(g); }, e => { if (alive) setBodyGoal(e instanceof ApiError && e.status === 404 ? null : undefined); }); return () => { alive = false; }; }, []);
+  // The gym plan, to tell whether it still suits the body goal (the server says which version the goal calls for).
+  const [plan, setPlan] = useState<TrainingPlanDto | null>(null);
+  const reloadPlan = useCallback(async () => { try { setPlan(await api.getPlan()); } catch { /* the card simply does not judge the plan */ } }, []);
+  useEffect(() => { void reloadPlan(); }, [reloadPlan]);
   const saveBodyGoal = async (g: BodyGoalDto): Promise<boolean> => {
-    try { setBodyGoal(await api.saveBodyGoal(g)); setNotice('Đã lưu mục tiêu cơ thể.'); return true; }
+    try { setBodyGoal(await api.saveBodyGoal(g)); setNotice('Đã lưu mục tiêu cơ thể.'); void reloadPlan(); return true; }
     catch (e) { setNotice(failure(e, 'Không lưu được mục tiêu.')); return false; }
   };
   const [bodyBusy, setBodyBusy] = useState(false);
@@ -199,7 +203,7 @@ export default function App() {
           {tab === 'exercises' && <ExercisesPage habits={habits} onAddToHabit={addToSession}/>}
           {tab === 'journey' && <JourneyPage onAddToHabit={addToSession} journey={dashboard?.journey} goals={goals} habits={habits} achievements={achievements} weekly={weekly} busyBossId={busyBossId} onBoss={bossAction} onToggleGoal={toggleGoal} onToggleHabit={toggleHabit} onEditHabit={h => { setEditing(h); setModal('editHabit'); }} onNewGoal={() => setModal('goal')} onNewHabit={() => setModal('habit')} onImportPlan={() => setWizard(true)}/>}
           {tab === 'character' && <CharacterPage loadBadges={loadBadges} habits={habits} today={today} loadHistory={loadHistory} dashboard={dashboard} items={items} busyItemCode={busyItemCode} onEquip={item => wear(item, true)} onUnequip={item => wear(item, false)}/>}
-          {tab === 'body' && <BodyPage metrics={metrics} failed={metricsFailed} onRetry={() => { void reloadMetrics(); }} today={today} busy={bodyBusy} onRecord={recordMeasure} onRemoveEntry={removeMeasure} onCreate={createMetric} goal={bodyGoal} onSaveGoal={saveBodyGoal} onDelete={deleteMetric}/>}
+          {tab === 'body' && <BodyPage metrics={metrics} failed={metricsFailed} onRetry={() => { void reloadMetrics(); }} today={today} busy={bodyBusy} onRecord={recordMeasure} onRemoveEntry={removeMeasure} onCreate={createMetric} goal={bodyGoal} onSaveGoal={saveBodyGoal} plan={plan} onUpdatePlan={plan?.started ? async () => { await startPlan({ goalIds: plan.goalId ? [plan.goalId] : [], habitIds: plan.sessions.flatMap(x => x.habitId ? [x.habitId] : []) }); await reloadPlan(); } : undefined} onDelete={deleteMetric}/>}
           {tab === 'insights' && <InsightsPage habits={habits} today={today} loadHistory={loadHistory}/>}
         </>}
         <footer className="footer"><span>© Life OS · Tiến bộ, không cần hoàn hảo.</span><span>Phiên bản 0.1.0 · {isDemo ? 'Dữ liệu thử' : 'Máy chủ thật'} · Asia/Ho_Chi_Minh</span></footer>

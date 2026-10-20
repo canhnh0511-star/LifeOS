@@ -1,13 +1,18 @@
 import { useState } from 'react';
 import { Target } from 'lucide-react';
-import type { BodyGoalDto, MetricDto } from '../api/types';
+import type { BodyGoalDto, MetricDto, TrainingPlanDto } from '../api/types';
+import { VARIANT_LABEL, VARIANT_WHY } from '../domain/standardPlan';
 import { bmi, bmiClass, goalProgress, latestWeight, paceLabel, validateGoalInput } from '../domain/bodyGoal';
 import { formatValue } from '../domain/measurements';
 import { dateText } from '../ui/format';
 import { parseNumber } from './MetricCard';
 import { ProgressBar } from './primitives';
 
-interface Props { goal: BodyGoalDto | null; metrics: MetricDto[]; today: string; busy: boolean; onSave: (goal: BodyGoalDto) => Promise<boolean>; }
+interface Props {
+  goal: BodyGoalDto | null; metrics: MetricDto[]; today: string; busy: boolean; onSave: (goal: BodyGoalDto) => Promise<boolean>;
+  /** the account's gym plan, to say whether it suits the goal (ADR-044) */ plan?: TrainingPlanDto | null;
+  /** archives the plan in use and starts the version the goal calls for */ onUpdatePlan?: () => Promise<void>;
+}
 
 const kg = (n: number) => `${formatValue(n)} kg`;
 
@@ -15,7 +20,7 @@ const kg = (n: number) => `${formatValue(n)} kg`;
  * The body goal: height, weight now, target weight and the number of days (100 by default), then day N of the goal, the way covered, the pace against a steady plan and BMI.
  * Tracking only: no XP and no change to the training plan. The weight comes from the weight measurements on this page.
  */
-export function BodyGoalCard({ goal, metrics, today, busy, onSave }: Props) {
+export function BodyGoalCard({ goal, metrics, today, busy, onSave, plan, onUpdatePlan }: Props) {
   const [editing, setEditing] = useState(false);
   if (!goal || editing) return <GoalForm goal={goal} metrics={metrics} today={today} busy={busy} onCancel={goal ? () => setEditing(false) : undefined} onSave={async g => { const ok = await onSave(g); if (ok) setEditing(false); return ok; }}/>;
   const p = goalProgress(goal, metrics, today);
@@ -35,8 +40,24 @@ export function BodyGoalCard({ goal, metrics, today, busy, onSave }: Props) {
     <p className="body-goal-bmi">BMI {p.bmiNow === null ? formatValue(p.bmiStart) : formatValue(p.bmiNow)} ({bmiClass(p.bmiNow ?? p.bmiStart)}) → mục tiêu {formatValue(p.bmiTarget)} ({bmiClass(p.bmiTarget)}). Chiều cao {goal.heightCm} cm.</p>
     {p.warnings.map(w => <p key={w} role="alert" className="body-goal-warn">{w}</p>)}
     <p className="form-note">Chỉ để theo dõi: không cộng XP. Mức giảm bền vững thường là 0,5–1% cân nặng mỗi tuần; đây không phải tư vấn y tế.</p>
+    {plan && <PlanFit plan={plan} busy={busy} onUpdate={onUpdatePlan}/>}
     <button type="button" className="btn btn-quiet" onClick={() => setEditing(true)}>Chỉnh sửa mục tiêu</button>
   </section>;
+}
+
+/** Says whether the gym plan suits the goal. The plan never changes by itself: the person confirms before the old one is archived. */
+function PlanFit({ plan, busy, onUpdate }: { plan: TrainingPlanDto; busy: boolean; onUpdate?: () => Promise<void> }) {
+  const [confirm, setConfirm] = useState(false);
+  const wanted = plan.suggestedVariant;
+  if (!plan.started) return <p className="body-goal-plan" role="status">Giáo án hợp với mục tiêu của bạn: <strong>{VARIANT_LABEL[wanted]}</strong>. {VARIANT_WHY[wanted]}</p>;
+  if (plan.variant === null || plan.variant === wanted) return <p className="body-goal-plan" role="status">Giáo án đang dùng phù hợp với mục tiêu{plan.variant ? ` (${VARIANT_LABEL[plan.variant]})` : ''}.</p>;
+  return <div className="body-goal-plan is-mismatch" role="status">
+    <p>Giáo án đang dùng (<strong>{VARIANT_LABEL[plan.variant]}</strong>) chưa khớp mục tiêu mới. Phù hợp hơn: <strong>{VARIANT_LABEL[wanted]}</strong>. {VARIANT_WHY[wanted]}</p>
+    {onUpdate && (confirm
+      ? <div className="sheet-actions"><button type="button" className="btn btn-primary" disabled={busy} onClick={async () => { await onUpdate(); setConfirm(false); }}>Xác nhận đổi giáo án</button><button type="button" className="btn btn-quiet" onClick={() => setConfirm(false)}>Giữ giáo án cũ</button></div>
+      : <button type="button" className="btn btn-secondary" onClick={() => setConfirm(true)}>Cập nhật giáo án</button>)}
+    {confirm && <p className="form-note">Giáo án cũ được lưu trữ (biến mất từ ngày mai, lịch sử và XP giữ nguyên). Giáo án mới bắt đầu từ hôm nay.</p>}
+  </div>;
 }
 
 function GoalForm({ goal, metrics, today, busy, onCancel, onSave }: { goal: BodyGoalDto | null; metrics: MetricDto[]; today: string; busy: boolean; onCancel?: () => void; onSave: (g: BodyGoalDto) => Promise<boolean> }) {

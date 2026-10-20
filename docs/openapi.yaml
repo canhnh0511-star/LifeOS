@@ -513,9 +513,11 @@ components:
         habits: {type: array, items: {$ref: '#/components/schemas/Habit'}}
     TrainingPlan:
       type: object
-      required: [started, goalId, title, description, sessions]
+      required: [started, goalId, title, description, sessions, variant, suggestedVariant]
       properties:
         started: {type: boolean}
+        variant: {type: string, nullable: true, enum: [GENTLE, STANDARD, BUILD, null], description: 'Which version of the standard plan this is; null when the stored text was changed.'}
+        suggestedVariant: {type: string, enum: [GENTLE, STANDARD, BUILD], description: 'The version the body goal calls for - GENTLE: losing weight with BMI 30 or more (or no goal), STANDARD: losing weight with BMI below 30, BUILD: gaining weight. Differs from variant when the goal changed after the plan started; the plan is never changed automatically.'}
         goalId: {type: string, nullable: true}
         title: {type: string}
         description: {type: string}

@@ -6,17 +6,24 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-class BodyGoalService {
+public class BodyGoalService {
     record Goal(int heightCm, double startWeightKg, double targetWeightKg, String startDate, int days) {}
+
+    /** What the training plan needs from the body goal: who the plan is for and which way the weight should go. */
+    public record Basis(int heightCm, double startWeightKg, double targetWeightKg) {}
 
     private final BodyGoalRepository goals;
 
     BodyGoalService(BodyGoalRepository goals) { this.goals = goals; }
+
+    @Transactional(readOnly = true)
+    public Optional<Basis> basis(UUID userId) { return goals.findById(userId).map(g -> new Basis(g.heightCm(), g.startWeightKg().doubleValue(), g.targetWeightKg().doubleValue())); }
 
     @Transactional(readOnly = true)
     Goal get(UUID userId) { return goals.findById(userId).map(BodyGoalService::dto).orElseThrow(() -> FieldErrors.notFound("mục tiêu cơ thể")); }

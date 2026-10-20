@@ -882,3 +882,20 @@ describe('mock body goal', () => {
     expect((await rejection(mockClient.getBodyGoal())).status).toBe(404);
   });
 });
+
+describe('mock plan versions by body goal (ADR-044)', () => {
+  const goal = (heightCm: number, startWeightKg: number, targetWeightKg: number) => ({ heightCm, startWeightKg, targetWeightKg, startDate: '2026-10-19', days: 100 });
+  it('shows the version the goal calls for before the plan is started', async () => {
+    expect(await mockClient.getPlan()).toMatchObject({ started: false, variant: 'GENTLE', suggestedVariant: 'GENTLE' });
+    await mockClient.saveBodyGoal(goal(175, 60, 66));
+    expect(await mockClient.getPlan()).toMatchObject({ variant: 'BUILD', suggestedVariant: 'BUILD' });
+  });
+  it('starts the version for the goal, then only suggests another one when the goal changes', async () => {
+    await mockClient.saveBodyGoal(goal(175, 85, 78));
+    const started = await mockClient.startPlan('2026-10-19');
+    expect(started).toMatchObject({ started: true, variant: 'STANDARD', suggestedVariant: 'STANDARD' });
+    expect(JSON.stringify(started.sessions)).toContain('Push-up');
+    await mockClient.saveBodyGoal(goal(175, 60, 66));
+    expect(await mockClient.getPlan()).toMatchObject({ started: true, variant: 'STANDARD', suggestedVariant: 'BUILD' });
+  });
+});

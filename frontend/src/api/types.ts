@@ -55,7 +55,10 @@ export interface ImportedHabitPlanDto { goals: GoalDto[]; habits: HabitDto[]; }
 /** The account's gym plan; while `started` is false it is the standard plan POST /plan would create (no goalId / habitId yet). */
 export interface TrainingPlanLineDto { title: string; target: number; unit: string; step: number; }
 export interface TrainingPlanSessionDto { habitId: string | null; title: string; targetMinutes: number; xpReward: number; weekdays: number[]; objectives: TrainingPlanLineDto[]; }
-export interface TrainingPlanDto { started: boolean; goalId: string | null; title: string; description: string; sessions: TrainingPlanSessionDto[]; }
+/** Which version of the standard plan: GENTLE (losing weight, BMI 30 or more), STANDARD (losing weight, lower BMI), BUILD (gaining weight). */
+export type PlanVariant = 'GENTLE' | 'STANDARD' | 'BUILD';
+/** `variant` is the version this plan is (null when its text was changed); `suggestedVariant` the one the body goal calls for. They differ when the goal changed after the plan started. */
+export interface TrainingPlanDto { started: boolean; goalId: string | null; title: string; description: string; sessions: TrainingPlanSessionDto[]; variant: PlanVariant | null; suggestedVariant: PlanVariant; }
 export interface ApiErrorDto { requestId?: string; code: string; message: string; fields?: Record<string, string>; }
 /** One set that was done for an exercise of a quest. `weightKg` is null for body weight or when not noted. Gives no XP. */
 export interface WorkoutSetDto { exercise: string; setNo: number; reps: number; weightKg: number | null; }
