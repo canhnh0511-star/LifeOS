@@ -935,6 +935,17 @@ describe('mock recovery days (ADR-045)', () => {
     expect((await mockClient.getHabits()).length).toBe(count);
     expect(again.sessions.filter(s => before.sessions.some(b => b.habitId === s.habitId))).toEqual(before.sessions);
   });
+  it('also works for an older gym plan that was not started from the standard plan', async () => {
+    const gymLine = { title: 'Leg Press', target: 36, unit: 'rep', step: 12 };
+    for (const title of ['Gym — Chương trình cũ', 'Chương trình của tôi']) {
+      resetDemoData();
+      await mockClient.importHabitPlan({ startDate: todayInTimezone(), goals: [{ title, category: 'HEALTH', description: 'cũ', habits: [{ title: 'Buổi cũ', targetMinutes: 50, xpReward: 40, weekdays: [1] as Weekday[], objectives: [gymLine] }] }] });
+      const plan = await mockClient.addRecoveryDays(tomorrow());
+      expect(plan).toBeTruthy();
+      const goal = (await mockClient.getGoals()).find(g => g.title === title)!;
+      expect((await mockClient.getHabits()).filter(h => h.goalId === goal.id).map(h => h.title).sort()).toEqual(['Buổi cũ', 'Giãn cơ phục hồi', 'Đi bộ nhanh']);
+    }
+  });
   it('refuses a malformed day even when there is nothing to add', async () => {
     await mockClient.startPlan(todayInTimezone());
     expect(await rejection(mockClient.addRecoveryDays('not-a-date'))).toMatchObject({ status: 422 });

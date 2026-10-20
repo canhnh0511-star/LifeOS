@@ -98,6 +98,13 @@ final class StandardPlan {
 
     static List<Recovery> recovery(Variant v) { return switch (v) { case GENTLE -> RECOVERY_GENTLE; case STANDARD -> RECOVERY_STANDARD; case BUILD -> RECOVERY_BUILD; }; }
 
+    /** Lower-cased names of every exercise in the gym sessions of any version: how a plan not made from the standard plan is told to be a gym plan. */
+    static java.util.Set<String> exerciseNames() {
+        java.util.Set<String> names = new java.util.HashSet<>();
+        for (Variant v : Variant.values()) for (Day d : days(v)) for (Line l : d.lines()) names.add(l.title().toLowerCase());
+        return names;
+    }
+
     /** Titles of the recovery sessions in every version: how an account's plan is told to already have them. */
     static boolean isRecoveryTitle(String title) {
         for (Variant v : Variant.values()) for (Recovery r : recovery(v)) if (r.title().equalsIgnoreCase(title.trim())) return true;

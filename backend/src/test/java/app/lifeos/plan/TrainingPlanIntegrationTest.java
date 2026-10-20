@@ -193,4 +193,20 @@ class TrainingPlanIntegrationTest {
         b.post(PATH, start());
         assertThat(b.post(PATH + "/recovery", from("not-a-date")).statusCode()).isEqualTo(422);
     }
+
+    private static String olderPlan(String title) {
+        return "{\"startDate\":\"" + today() + "\",\"goals\":[{\"title\":\"" + title + "\",\"category\":\"HEALTH\",\"description\":\"cũ\",\"habits\":["
+            + "{\"title\":\"Buổi cũ\",\"targetMinutes\":50,\"xpReward\":40,\"weekdays\":[1],\"objectives\":[{\"title\":\"Leg Press\",\"target\":36,\"unit\":\"rep\",\"step\":12}]}]}]}";
+    }
+
+    @Test
+    void recoveryDaysAlsoGoToAnOlderGymPlanNotStartedFromTheStandardPlan() throws Exception {
+        for (String title : new String[] {"Gym — Chương trình cũ", "Chương trình của tôi"}) {
+            TestBrowser b = user();
+            assertThat(b.post("/api/v1/imports/habit-plans", olderPlan(title)).statusCode()).isEqualTo(201);
+            HttpResponse<String> r = b.post(PATH + "/recovery", from(tomorrow()));
+            assertThat(r.statusCode()).as(title + ": " + r.body()).isEqualTo(200);
+            assertThat(r.body()).contains("Buổi cũ", "Đi bộ nhanh", "Giãn cơ phục hồi");
+        }
+    }
 }

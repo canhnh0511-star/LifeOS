@@ -2,6 +2,7 @@ import type { LifeOsApi } from './client';
 import type { BodyGoalDto, TrainingPlanDto, WorkoutSetDto, WorkoutSetInput, AchievementCode, AchievementDto, AnalyticsDto, AreaStatDto, BossDto, BossMutationDto, ChapterDto, CreateGoalRequest, CreateHabitRequest, DailyDashboardDto, DailyRewardDto, ItemDto, MetricDto, GoalCategory, GoalDto, HabitDto, ImportHabitPlanRequest, ImportedHabitPlanDto, JourneyDto, ProgressDto, QuestDto, QuestMutationDto, RecordStatus, RewardEffectDto, UserDto, Weekday, HabitObjectiveDto, ObjectiveInput, QuestObjectiveDto } from './types';
 import { ApiError, ErrorCode } from './errors';
 import { ALL_CATEGORIES } from '../domain/insights';
+import { isLibraryLine } from '../domain/exerciseLibrary';
 import { DAILY_TIERS, hasChests, rewardThreshold } from '../domain/dailyRewards';
 import { ITEM_CATALOG, POOL } from '../domain/items';
 import { validateGoalInput } from '../domain/bodyGoal';
@@ -580,9 +581,12 @@ export const mockClient:LifeOsApi={
   async addRecoveryDays(startDate:string):Promise<TrainingPlanDto>{
     // Adds only the sessions the plan lacks, from startDate on, so no lived day changes. Without a plan there is nothing to add to.
     if(!isLocalDate(startDate))fail({startDate:'Ngày bắt đầu phải có dạng YYYY-MM-DD.'});
-    const db0=load();const goal=findPlanGoal(db0);
+    const db0=load();
+    // A gym plan not started from the standard plan (an older program or an import) also gets them: an ACTIVE goal titled "Gym ...", else the goal of an ACTIVE habit with a library exercise.
+    const olderGym=()=>db0.goals.find(g=>g.status==='ACTIVE'&&/^gym/i.test(g.title.trim()))??db0.goals.find(g=>g.status==='ACTIVE'&&db0.habits.some(h=>h.goalId===g.id&&h.status==='ACTIVE'&&h.objectives.some(isLibraryLine)));
+    const goal=findPlanGoal(db0)??olderGym();
     if(!goal)throw new ApiError(409,ErrorCode.planNotStarted,'Chưa có giáo án; hãy bắt đầu giáo án trước.');
-    const variant=variantOfDescription(goal.description)??'GENTLE';
+    const variant=variantOfDescription(goal.description)??variantFor(db0.bodyGoal);
     const have=new Set(db0.habits.filter(h=>h.goalId===goal.id&&h.status==='ACTIVE').map(h=>h.title.trim().toLowerCase()));
     for(const d of RECOVERY_DAYS_BY_VARIANT[variant]){
       if(have.has(d.title.toLowerCase()))continue;

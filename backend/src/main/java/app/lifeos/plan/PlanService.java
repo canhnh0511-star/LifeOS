@@ -71,14 +71,14 @@ public class PlanService {
     @Transactional
     public TrainingPlanDto addRecovery(UUID userId, String startDate) {
         checkStartDate(startDate);
-        GoalDto goal = find(userId).orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "PLAN_NOT_STARTED", "Chưa có giáo án; hãy bắt đầu giáo án trước."));
+        GoalDto goal = find(userId).or(() -> olderGymGoal(userId)).orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "PLAN_NOT_STARTED", "Chưa có giáo án; hãy bắt đầu giáo án trước."));
         Set<String> have = habits.list(userId).stream().filter(h -> h.goalId().equals(goal.id()) && RecordStatus.ACTIVE.name().equals(h.status()))
             .map(h -> h.title().trim().toLowerCase()).collect(Collectors.toSet());
-        for (StandardPlan.Recovery r : StandardPlan.recovery(variantOfPlan(goal))) {
+        for (StandardPlan.Recovery r : StandardPlan.recovery(StandardPlan.variantOf(goal.description()).orElseGet(() -> suggested(userId)))) {
             if (have.contains(r.title().toLowerCase())) continue;
             habits.create(userId, new CreateHabitRequest(goal.id(), r.title(), r.targetMinutes(), r.xpReward(), r.weekdays(), startDate, lineMaps(r.lines())));
         }
-        return current(userId);
+        return fromAccount(userId, goal, suggested(userId));
     }
 
     /** Checked up front, so a bad day is refused even when there is nothing to add. */
@@ -93,8 +93,20 @@ public class PlanService {
         return out;
     }
 
-    /** The version of a started plan; the suggested one when its text was changed. */
-    private Variant variantOfPlan(GoalDto goal) { return StandardPlan.variantOf(goal.description()).orElse(StandardPlan.Variant.GENTLE); }
+    /**
+     * A gym plan that was not started from the standard plan (an older program or an import): an ACTIVE goal whose title starts with "Gym",
+     * otherwise the goal that holds an ACTIVE habit with one of the standard plan's exercises. The recovery days can be added to it all the same.
+     */
+    private Optional<GoalDto> olderGymGoal(UUID userId) {
+        List<GoalDto> active = goals.list(userId).stream().filter(g -> RecordStatus.ACTIVE.name().equals(g.status())).toList();
+        Optional<GoalDto> byTitle = active.stream().filter(g -> g.title().trim().toLowerCase().startsWith("gym")).findFirst();
+        if (byTitle.isPresent()) return byTitle;
+        Set<String> exercises = StandardPlan.exerciseNames();
+        return habits.list(userId).stream()
+            .filter(h -> RecordStatus.ACTIVE.name().equals(h.status()) && h.objectives().stream().anyMatch(o -> exercises.contains(o.title().trim().toLowerCase())))
+            .flatMap(h -> active.stream().filter(g -> g.id().equals(h.goalId())))
+            .findFirst();
+    }
 
     private Optional<GoalDto> find(UUID userId) {
         return goals.list(userId).stream()
